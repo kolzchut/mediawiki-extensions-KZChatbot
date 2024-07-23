@@ -1,0 +1,56 @@
+{
+	"name": "KZChatbot",
+	"version": "0.0.1",
+  "author": ["Joel R. ([http://www.kolzchut.org.il Kol-Zchut])"],
+  "url": "https://github.com/kolzchut/mediawiki-extensions-KZChatbot",
+  "descriptionmsg": "kzchatbot-desc",
+  "license-name": "GPL-2.0-or-later",
+  "type": "other",
+  "requires": {
+    "MediaWiki": ">= 1.35.0"
+  },
+  "AutoloadNamespaces": {
+    "MediaWiki\\Extension\\KZChatbot\\": "src/"
+  },
+	"ExtensionMessagesFiles": {
+		"KZChatbotLinksAliases": "KZChatbot.i18n.alias.php"
+	},
+  "SpecialPages": {
+    "KZChatbotSettings": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSettings",
+    "KZChatbotSlugs": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSlugs",
+    "KZChatbotBannedWords": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotBannedWords"
+  },
+  "config": {
+    "KZChatbotGPT": {
+      "description": "ChatGPT configuration.",
+      "value": {
+				"token": "",
+				"key": ""
+			}
+		}
+  },
+  "HookHandlers": {
+    "KZChatbotHooks": {
+      "class": "MediaWiki\\Extension\\KZChatbot\\Hooks"
+    }
+  },
+  "Hooks": {
+    "LoadExtensionSchemaUpdates": "KZChatbotHooks"
+  },
+	"ResourceModules": {
+		"ext.KZChatbot.form": {
+			"localBasePath": "resources/ext.KZChatbot.form",
+			"remoteExtPath": "KZChatbot",
+			"scripts": ["convertmessagebox.js"],
+			"styles": ["forms.css"],
+			"dependencies": ["mediawiki.notification.convertmessagebox"]
+		}
+	},
+	"AvailableRights": [
+		"manage-kolzchut-chatbot"
+	],
+	"MessagesDirs": {
+    "KZChatbot": ["i18n"]
+  },
+	"manifest_version": 2
+}

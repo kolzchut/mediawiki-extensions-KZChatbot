@@ -12,14 +12,6 @@
   "AutoloadNamespaces": {
     "MediaWiki\\Extension\\KZChatbot\\": "src/"
   },
-	"ExtensionMessagesFiles": {
-		"KZChatbotLinksAliases": "KZChatbot.i18n.alias.php"
-	},
-  "SpecialPages": {
-    "KZChatbotSettings": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSettings",
-    "KZChatbotSlugs": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSlugs",
-    "KZChatbotBannedWords": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotBannedWords"
-  },
   "config": {
     "KZChatbotGPT": {
       "description": "ChatGPT configuration.",
@@ -29,6 +21,20 @@
 			}
 		}
   },
+	"AvailableRights": [
+		"manage-kolzchut-chatbot"
+	],
+  "SpecialPages": {
+    "KZChatbotSettings": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSettings",
+    "KZChatbotSlugs": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSlugs",
+    "KZChatbotBannedWords": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotBannedWords"
+  },
+	"APIModules": {
+		"kzchatbot_get_config": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotGetConfig",
+		"kzchatbot_get_status": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotGetStatus",
+		"kzchatbot_submit_question": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotSubmitQuestion",
+		"kzchatbot_rate_answer": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotRateAnswer"
+	},
   "HookHandlers": {
     "KZChatbotHooks": {
       "class": "MediaWiki\\Extension\\KZChatbot\\Hooks"
@@ -46,9 +52,9 @@
 			"dependencies": ["mediawiki.notification.convertmessagebox"]
 		}
 	},
-	"AvailableRights": [
-		"manage-kolzchut-chatbot"
-	],
+	"ExtensionMessagesFiles": {
+		"KZChatbotLinksAliases": "KZChatbot.i18n.alias.php"
+	},
 	"MessagesDirs": {
     "KZChatbot": ["i18n"]
   },

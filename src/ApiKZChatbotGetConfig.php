@@ -33,6 +33,7 @@ class ApiKZChatbotGetConfig extends ApiBase {
 		if ( empty( $userData ) ) {
 			$userData = KZChatbot::newUser();
 		}
+		$uuid = $userData[ $fieldNames['uuid'] ];
 
 		// Provide updated cookie expiry.
 		$settings = KZChatbot::getGeneralSettings();

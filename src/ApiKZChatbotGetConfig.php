@@ -5,8 +5,8 @@ namespace MediaWiki\Extension\KZChatbot;
 use ApiBase;
 
 class ApiKZChatbotGetConfig extends ApiBase {
+
 	/**
-	 * Define form parameters and default values
 	 * @return array
 	 */
 	protected function getAllowedParams() {
@@ -16,7 +16,7 @@ class ApiKZChatbotGetConfig extends ApiBase {
 	}
 
   /**
-   * Fetch configuration settings needed by the chatbot app.
+   * Compile configuration settings for the chatbot app launcher.
    */
   public function execute() {
 		$result = $this->getResult();

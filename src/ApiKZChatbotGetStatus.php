@@ -19,17 +19,17 @@ class ApiKZChatbotGetStatus extends ApiBase {
 	 * Compile chatbot status info for the React app.
 	 */
 	public function execute() {
-		$uuid = $this->getParameter('uuid');
-		if (empty($uuid)) {
-			$this->dieWithError('param_uuid_missing', 'param_uuid_missing');
+		$uuid = $this->getParameter( 'uuid' );
+		if ( empty( $uuid ) ) {
+			$this->dieWithError( 'param_uuid_missing', 'param_uuid_missing' );
 		}
-		$userData = KZChatbot::getUserData($uuid);
-		$fieldNames = array_flip(KZChatbot::mappingDbToJson());
+		$userData = KZChatbot::getUserData( $uuid );
+		$fieldNames = array_flip( KZChatbot::mappingDbToJson() );
 		$status = [
 			'chatbotIsShown' => $userData[$fieldNames['chatbotIsShown']],
 			'questionsPermitted' => $userData[$fieldNames['questionsLastActiveDay']],
 		];
 		$result = $this->getResult();
-		$result->addValue(null, 'config', $status);
+		$result->addValue( null, 'config', $status );
 	}
 }

@@ -238,7 +238,7 @@ class KZChatbot {
 	 * @return \IResultWrapper
 	 */
 	public static function saveSlug( $slug, $text ) {
-		//@TODO: additional data sanitization?
+		// @TODO: additional data sanitization?
 		$dbw = wfGetDB( DB_PRIMARY );
 		// Clear prior value if one exists.
 		$dbw->delete(
@@ -287,7 +287,7 @@ class KZChatbot {
 	 * @return \IResultWrapper
 	 */
 	public static function deleteSlug( $slug ) {
-		//@TODO: additional data sanitization?
+		// @TODO: additional data sanitization?
 		$dbw = wfGetDB( DB_PRIMARY );
 		return $dbw->delete(
 			'kzchatbot_text',

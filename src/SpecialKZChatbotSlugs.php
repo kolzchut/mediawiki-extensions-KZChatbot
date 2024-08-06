@@ -223,7 +223,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 		}
 		$text = preg_replace( "/[^a-zA-Z_א-ת\\s\\<\\>\\\"\\/\\,\\`\\'\\%\\*\\(\\)\\!\\.]+/", '', $postData['kzcText'] );
 
-		//@TODO: Check for existing slug by same name?
+		// @TODO: Check for existing slug by same name?
 		// Save slug
 		KZChatbot::saveSlug( $slug, $text );
 

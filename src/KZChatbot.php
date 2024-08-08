@@ -167,6 +167,38 @@ class KZChatbot {
 		];
 	}
 
+	public static function getQuestionsPermitted( $uuid ) {
+		$userData = self::getUserData( $uuid );
+		$settings = self::getGeneralSettings();
+		$dailyLimit = $settings['questions_daily_limit'] ?? 100;
+		$lastActive = wfTimestamp( TS_UNIX, $userData['kzcbu_last_active'] );
+		$lastActiveDay = date( 'z', $lastActive );
+		if ( $lastActiveDay !== date( 'z' ) ) {
+			return $dailyLimit;
+		}
+		$questionsLastActiveDay = $userData['kzcbu_questions_last_active_day'] ?? 0;
+		return $dailyLimit - $questionsLastActiveDay;
+	}
+
+	/**
+	 * Increments the questions last active day for a specific user.
+	 *
+	 * @param string $uuid The UUID of the user.
+	 * @return void
+	 */
+	public static function incrementQuestionsLastActiveDay( $uuid ) {
+		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw->update(
+			'kzchatbot_users',
+			[
+				'kzcbu_questions_last_active_day = kzcbu_questions_last_active_day + 1',
+				'kzcbu_last_active' => wfTimestampNow(),
+			],
+			[ 'kzcbu_uuid' => $uuid ],
+			__METHOD__
+		);
+	}
+
 	/**
 	 * @param array $data
 	 * @return \IResultWrapper

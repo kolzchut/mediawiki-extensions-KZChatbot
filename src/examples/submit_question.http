@@ -1,0 +1,7 @@
+post http://localhost:8080/w/rest.php/kzchatbot/v0/question
+Content-Type: application/json
+
+{
+    "text": "What is the capital of France?",
+    "uuid": "66b5037bb76e1"
+}

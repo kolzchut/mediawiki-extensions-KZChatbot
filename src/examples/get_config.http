@@ -1,0 +1,1 @@
+get http://localhost:8080/w/api.php?action=kzchatbot_get_config&format=json&uuid=66b5037bb76e1

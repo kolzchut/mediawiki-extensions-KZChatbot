@@ -52,6 +52,13 @@
 			"dependencies": ["mediawiki.notification.convertmessagebox"]
 		}
 	},
+  "RestRoutes": [
+    {
+      "path": "/kzchatbot/v0/question",
+      "class": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotSubmitQuestion",
+      "method": "POST"
+    }
+  ],
 	"ExtensionMessagesFiles": {
 		"KZChatbotLinksAliases": "KZChatbot.i18n.alias.php"
 	},

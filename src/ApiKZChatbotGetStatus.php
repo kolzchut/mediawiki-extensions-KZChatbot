@@ -27,7 +27,7 @@ class ApiKZChatbotGetStatus extends ApiBase {
 		$fieldNames = array_flip( KZChatbot::mappingDbToJson() );
 		$status = [
 			'chatbotIsShown' => $userData[$fieldNames['chatbotIsShown']],
-			'questionsPermitted' => $userData[$fieldNames['questionsLastActiveDay']],
+			'questionsPermitted' => KZChatbot::getQuestionsPermitted( $uuid ),
 		];
 		$result = $this->getResult();
 		$result->addValue( null, 'config', $status );

@@ -32,8 +32,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	 * @param string|null $par Parameters passed to the page
 	 */
 	public function execute( $par ) {
-		$this->setHeaders();
-		$this->outputHeader();
+		parent::execute( $par );
 		$output = $this->getOutput();
 		$output->addModules( 'ext.KZChatbot.form' );
 
@@ -221,7 +220,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 		if ( empty( $slug ) ) {
 			return 'kzchatbot-slugs-error-alphanumeric-only';
 		}
-		$text = preg_replace( "/[^a-zA-Z_א-ת\\s\\<\\>\\\"\\/\\,\\`\\'\\%\\*\\(\\)\\!\\.]+/", '', $postData['kzcText'] );
+		$text = preg_replace( "/[^a-zA-Z_א-ת\\s<>\"\/,`'%*()!.?:]+/", '', $postData['kzcText'] );
 
 		// @TODO: Check for existing slug by same name?
 		// Save slug

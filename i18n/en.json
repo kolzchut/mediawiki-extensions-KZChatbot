@@ -59,5 +59,7 @@
 	"kzchatbot-slug-update": "Update",
 	"kzchatbot-slugs-error-alphanumeric-only": "Slug should consist of alphanumeric characters and underscores only.",
 	"kzchatbot-slugs-status-save-success": "Successfully saved slug '$1'.",
-	"kzchatbot-slugs-status-delete-success": "Successfully removed slug '$1'."
+	"kzchatbot-slugs-status-delete-success": "Successfully removed slug '$1'.",
+	"right-manage-kolzchut-chatbot": "Manage the chatbot settings",
+	"action-manage-kolzchut-chatbot": "manage the chatbot settings"
 }

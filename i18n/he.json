@@ -59,5 +59,7 @@
 	"kzchatbot-slug-update": "עדכן",
 	"kzchatbot-slugs-error-alphanumeric-only": "שם הסלאג צריך להיות מורכב רק תווים אלפאנומרים וקווים תחתונים.",
 	"kzchatbot-slugs-status-save-success": "סלאג '$1' נשמר בהצלחה",
-	"kzchatbot-slugs-status-delete-success": "סלאג '$1' נמחק בהצלחה"
+	"kzchatbot-slugs-status-delete-success": "סלאג '$1' נמחק בהצלחה",
+	"right-manage-kolzchut-chatbot": "ניהול הגדרות הצ'טבוט",
+	"action-manage-kolzchut-chatbot": "לנהל את הגדרות הצ'טבוט"
 }

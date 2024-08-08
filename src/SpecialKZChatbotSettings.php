@@ -32,8 +32,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 	 * @param string|null $par Parameters passed to the page
 	 */
 	public function execute( $par ) {
-		$this->setHeaders();
-		$this->outputHeader();
+		parent::execute( $par );
 		$output = $this->getOutput();
 
 		// Successful save? If so, show status message.

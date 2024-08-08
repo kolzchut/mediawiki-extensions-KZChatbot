@@ -220,7 +220,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 		if ( empty( $slug ) ) {
 			return 'kzchatbot-slugs-error-alphanumeric-only';
 		}
-		$text = preg_replace( "/[^a-zA-Z_א-ת\\s<>\"\/,`'%*()!.?:]+/", '', $postData['kzcText'] );
+		$text = preg_replace( "/[^a-zA-Z_א-ת\\s<>\"\/,`'%*()!?:.]+/", '', $postData['kzcText'] );
 
 		// @TODO: Check for existing slug by same name?
 		// Save slug

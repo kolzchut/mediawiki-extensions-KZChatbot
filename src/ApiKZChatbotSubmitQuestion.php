@@ -22,7 +22,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	private function callChatGPTAPI() {
 		$question = $this->question;
 		$uuid = $this->uuid;
-		KZChatbot::incrementQuestionsLastActiveDay($uuid);
+		KZChatbot::useQusetion($uuid);
 		$apiUrl = 'http://20.15.205.25/search';
 		$client = new \GuzzleHttp\Client();
 		$result = $client->post($apiUrl, [
@@ -34,12 +34,17 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 			]
 		]);
 		$response = json_decode($result->getBody()->getContents());
-		return $response;
-		// return [
-		// 	'llmResult' => $response->llm_result,
-		// 	'docs' => $response->docs,
-		// 	'conversationId' => $response->conversation_id,
-		// ];
+		$docs = array_map(function ($doc) {
+			return [
+				'title' => $doc->title,
+				'url' => $doc->url,
+			];
+		}, $response[0]);
+		return [
+			'llmResult' => $response[1],
+			'docs' => $docs,
+			'conversationId' => $response->conversation_id,
+		];
 	}
 
 	/**

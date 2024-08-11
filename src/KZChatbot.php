@@ -186,12 +186,15 @@ class KZChatbot {
 	 * @param string $uuid The UUID of the user.
 	 * @return void
 	 */
-	public static function incrementQuestionsLastActiveDay( $uuid ) {
+	public static function useQusetion($uuid) {
+		$userData = self::getUserData( $uuid );
+		$lastActiveDay = date( 'z', wfTimestamp( TS_UNIX, $userData['kzcbu_last_active'] ) );
+		$questionsLastActiveDay = $lastActiveDay === date( 'z' ) ? ( $userData['kzcbu_questions_last_active_day'] ?? 0 ) : 0;
 		$dbw = wfGetDB( DB_PRIMARY );
 		$dbw->update(
 			'kzchatbot_users',
 			[
-				'kzcbu_questions_last_active_day = kzcbu_questions_last_active_day + 1',
+				'kzcbu_questions_last_active_day' => $questionsLastActiveDay + 1,
 				'kzcbu_last_active' => wfTimestampNow(),
 			],
 			[ 'kzcbu_uuid' => $uuid ],

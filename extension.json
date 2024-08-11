@@ -13,13 +13,13 @@
     "MediaWiki\\Extension\\KZChatbot\\": "src/"
   },
   "config": {
-    "KZChatbotGPT": {
-      "description": "ChatGPT configuration.",
-      "value": {
-				"token": "",
-				"key": ""
-			}
-		}
+    "KZChatbotLlmApiUrl": {
+      "description": "LLM API URL",
+      "value": null
+    }
+  },
+  "ConfigRegistry": {
+    "KZChatbot": "GlobalVarConfig::newInstance"
   },
 	"AvailableRights": [
 		"manage-kolzchut-chatbot"

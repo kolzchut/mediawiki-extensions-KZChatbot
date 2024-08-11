@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Validator\JsonBodyValidator;
@@ -19,11 +20,12 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	 */
 	private $question;
 
-	private function callChatGPTAPI() {
+	private function generateAnswer() {
+		$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'KZChatbot' );
 		$question = $this->question;
 		$uuid = $this->uuid;
 		KZChatbot::useQusetion( $uuid );
-		$apiUrl = 'http://20.15.205.25/search';
+		$apiUrl = $config->get( 'KZChatbotLlmApiUrl' ) . '/search';
 		$client = new \GuzzleHttp\Client();
 		$result = $client->post( $apiUrl, [
 			'headers' => [
@@ -50,14 +52,14 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	/**
 	 * Pass user question to ChatGPT API, checking first that user hasn't exceeded daily limit.
 	 * Return answer from ChatGPT API.
-	 * @return \JsonBodyValidator
+	 * @return array
 	 */
 	public function execute() {
 		$body = $this->getValidatedBody();
 		$this->uuid = $body['uuid'];
 		$this->validateUser();
 		$this->question = $body['text'];
-		return $this->callChatGPTAPI();
+		return $this->generateAnswer();
 	}
 
 	/**
@@ -73,7 +75,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 			);
 		}
 
-		return new JsonBodyValidator([
+		return new JsonBodyValidator( [
 			'text' => [
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'string',
@@ -84,7 +86,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
 			],
-		]);
+		] );
 	}
 
 	/**

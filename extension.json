@@ -57,6 +57,11 @@
       "path": "/kzchatbot/v0/question",
       "class": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotSubmitQuestion",
       "method": "POST"
+    },
+    {
+      "path": "/kzchatbot/v0/rate",
+      "class": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotRateAnswer",
+      "method": "POST"
     }
   ],
 	"ExtensionMessagesFiles": {

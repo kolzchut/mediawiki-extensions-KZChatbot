@@ -1,4 +1,7 @@
 {
+	"require": {
+		"mediawiki/mediawiki": ">=1.35"
+	},
 	"require-dev": {
 		"mediawiki/mediawiki-codesniffer": "41.0.0",
 		"mediawiki/mediawiki-phan-config": "0.12.1",
@@ -7,6 +10,15 @@
 		"php-parallel-lint/php-parallel-lint": "1.3.2"
 	},
 	"scripts": {
+		"post-install-cmd": [
+			"@build-react-chatbot"
+		],
+		"post-update-cmd": [
+			"@build-react-chatbot"
+		],
+		"build-react-chatbot": [
+			"cd resources/ext.KZChatbot.react && npm install && npm run build"
+		],
 		"test": [
 			"parallel-lint . --exclude vendor --exclude node_modules",
 			"@phpcs",

@@ -50,6 +50,11 @@
 			"localBasePath": "resources/ext.KZChatbot.launcher",
 			"remoteExtPath": "KZChatbot",
 			"scripts": ["kzChatbotLauncher.js"]
+		},
+		"ext.KZChatbot.react": {
+			"localBasePath": "resources/ext.KZChatbot.react",
+			"remoteExtPath": "KZChatbot",
+			"scripts": []
 		}
 	},
   "RestRoutes": [

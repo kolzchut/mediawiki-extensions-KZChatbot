@@ -12,10 +12,12 @@ Mediawiki for administration by permitted wiki admins of the chatbot user experi
 ## Installation
 
 1. Download the extension
-2. Run `composer update` in MediaWiki's installation directory.
-3. Add `wfLoadExtension( 'KZChatbot' );` to `LocalSettings.php` or your custom PHP config file.
-4. Run `php update.php` in MediaWiki's `maintenance` directory.
-5. Add the `manage-kolzchut-chatbot` right to the desired group(s) in `$wgGroupPermissions`.
+2. From the extension root (`./extensions/KZChatbot`) run
+   `git clone git@github.com:kolzchut/react-app-KZChatbot.git resources/ext.KZChatbot.launcher`
+3. Run `composer update` in MediaWiki's installation directory.
+4. Add `wfLoadExtension( 'KZChatbot' );` to `LocalSettings.php` or your custom PHP config file.
+5. Run `php update.php` in MediaWiki's `maintenance` directory.
+6. Add the `manage-kolzchut-chatbot` right to the desired group(s) in `$wgGroupPermissions`.
 
 ## Configuration
 

@@ -57,6 +57,9 @@ class Hooks implements
 	 */
 	public static function onBeforePageDisplay( OutputPage &$out, Skin &$skin ) {
 		$out->addModules( [ 'ext.KZChatbot.launcher' ] );
+		$out->addJsConfigVars( [
+			'KZChatbotSlugs' => KZChatbot::getSlugs(),
+		] );
 		return true;
 	}
 

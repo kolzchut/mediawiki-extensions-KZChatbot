@@ -41,7 +41,7 @@ class ApiKZChatbotGetConfig extends Handler {
 		// Provide updated cookie expiry.
 		$settings = KZChatbot::getGeneralSettings();
 		$cookieExpiryDays = $settings['cookie_expiry_days'] ?? 365;
-		$cookieExpiry = date( 'D, d M Y H:i:s \G\M\T', time() + $cookieExpiryDays * 60 * 60 * 24 );
+		$cookieExpiry = date( DATE_RFC3339, time() + $cookieExpiryDays * 60 * 60 * 24 );
 
 		return [
 			'uuid' => $uuid,

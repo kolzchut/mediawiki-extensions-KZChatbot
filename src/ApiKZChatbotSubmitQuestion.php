@@ -54,9 +54,9 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 				'title' => $doc->title,
 				'url' => $doc->url,
 			];
-		}, $response[0] );
+		}, $response->results[0]);
 		return [
-			'llmResult' => $response[1],
+			'llmResult' => $response->results[1],
 			'docs' => $docs,
 			'conversationId' => $response->conversation_id,
 		];

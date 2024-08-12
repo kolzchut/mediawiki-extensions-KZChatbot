@@ -29,10 +29,6 @@
     "KZChatbotSlugs": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSlugs",
     "KZChatbotBannedWords": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotBannedWords"
   },
-	"APIModules": {
-		"kzchatbot_get_config": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotGetConfig",
-    "kzchatbot_get_status": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotGetStatus"
-	},
   "HookHandlers": {
     "KZChatbotHooks": {
       "class": "MediaWiki\\Extension\\KZChatbot\\Hooks"
@@ -51,6 +47,16 @@
 		}
 	},
   "RestRoutes": [
+    {
+      "path": "/kzchatbot/v0/config",
+      "class": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotGetConfig",
+      "method": "GET"
+    },
+    {
+      "path": "/kzchatbot/v0/status",
+      "class": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotGetStatus",
+      "method": "GET"
+    },
     {
       "path": "/kzchatbot/v0/question",
       "class": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotSubmitQuestion",

@@ -9,6 +9,9 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class ApiKZChatbotRateAnswer extends Handler {
 
+	/**
+	 * @return array
+	 */
 	public function getBodyValidator( $contentType ) {
 		if ( $contentType !== 'application/json' ) {
 			throw new HttpException(

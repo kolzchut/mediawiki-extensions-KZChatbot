@@ -167,6 +167,10 @@ class KZChatbot {
 		];
 	}
 
+	/**
+	 * @param string $uuid
+	 * @return int
+	 */
 	public static function getQuestionsPermitted( $uuid ) {
 		$userData = self::getUserData( $uuid );
 		$settings = self::getGeneralSettings();

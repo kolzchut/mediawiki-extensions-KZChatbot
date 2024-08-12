@@ -167,6 +167,10 @@ class KZChatbot {
 		];
 	}
 
+	/**
+	 * @param string $uuid
+	 * @return int
+	 */
 	public static function getQuestionsPermitted( $uuid ) {
 		$userData = self::getUserData( $uuid );
 		$settings = self::getGeneralSettings();
@@ -186,7 +190,7 @@ class KZChatbot {
 	 * @param string $uuid The UUID of the user.
 	 * @return void
 	 */
-	public static function useQusetion($uuid) {
+	public static function useQusetion( $uuid ) {
 		$userData = self::getUserData( $uuid );
 		$lastActiveDay = date( 'z', wfTimestamp( TS_UNIX, $userData['kzcbu_last_active'] ) );
 		$questionsLastActiveDay = $lastActiveDay === date( 'z' ) ? ( $userData['kzcbu_questions_last_active_day'] ?? 0 ) : 0;

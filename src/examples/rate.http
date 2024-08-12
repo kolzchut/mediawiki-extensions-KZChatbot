@@ -1,0 +1,8 @@
+post http://localhost:8080/w/rest.php/kzchatbot/v0/rate
+Content-Type: application/json
+
+{
+    "text": "האם מגיע לי לקבל כסף עבור ראש השנה? לא עבדתי אבל הבנתי שכן אמורים לשלם על זה",
+    "rating":1,
+    "answerId": "5f5b1b4b"
+}

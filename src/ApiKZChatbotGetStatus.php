@@ -2,34 +2,39 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
-use ApiBase;
+use MediaWiki\Rest\Handler;
+use Wikimedia\ParamValidator\ParamValidator;
 
-class ApiKZChatbotGetStatus extends ApiBase {
+class ApiKZChatbotGetStatus extends Handler {
 
 	/**
+	 * Compile chatbot status info for the React app.
 	 * @return array
 	 */
-	protected function getAllowedParams() {
+	public function execute() {
+		$uuid = $this->getValidatedParams()[ 'uuid' ];
+		$userData = KZChatbot::getUserData( $uuid );
+		$fieldNames = array_flip( KZChatbot::mappingDbToJson() );
 		return [
-			'uuid' => '',
+			'chatbotIsShown' => $userData[$fieldNames['chatbotIsShown']],
+			'questionsPermitted' => KZChatbot::getQuestionsPermitted( $uuid ),
 		];
 	}
 
 	/**
-	 * Compile chatbot status info for the React app.
+	 * @return array
 	 */
-	public function execute() {
-		$uuid = $this->getParameter( 'uuid' );
-		if ( empty( $uuid ) ) {
-			$this->dieWithError( 'param_uuid_missing', 'param_uuid_missing' );
-		}
-		$userData = KZChatbot::getUserData( $uuid );
-		$fieldNames = array_flip( KZChatbot::mappingDbToJson() );
-		$status = [
-			'chatbotIsShown' => $userData[$fieldNames['chatbotIsShown']],
-			'questionsPermitted' => KZChatbot::getQuestionsPermitted( $uuid ),
+	public function getParamSettings() {
+		return [
+			'uuid' => [
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => true,
+				self::PARAM_SOURCE => 'query',
+			]
 		];
-		$result = $this->getResult();
-		$result->addValue( null, 'config', $status );
+	}
+
+	public function needsWriteAccess() {
+		return false;
 	}
 }

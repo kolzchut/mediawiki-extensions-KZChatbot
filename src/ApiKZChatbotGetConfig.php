@@ -2,28 +2,31 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
-use ApiBase;
+use MediaWiki\Rest\Handler;
+use Wikimedia\ParamValidator\ParamValidator;
 
-class ApiKZChatbotGetConfig extends ApiBase {
+class ApiKZChatbotGetConfig extends Handler {
 
 	/**
 	 * @return array
 	 */
-	protected function getAllowedParams() {
+	public function getParamSettings() {
 		return [
-			'uuid' => '',
+			'uuid' => [
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => false,
+				self::PARAM_SOURCE => 'query',
+			]
 		];
 	}
 
   /**
    * Compile configuration settings for the chatbot app launcher.
+   * @return array
    */
-  public function execute() {
-		$result = $this->getResult();
+	public function execute() {
 		$fieldNames = array_flip( KZChatbot::mappingDbToJson() );
-
-		// Look up UUID if given.
-		$uuid = $this->getParameter( 'uuid' );
+		$uuid = $this->getValidatedParams()['uuid'];
 		if ( !empty( $uuid ) ) {
 			$userData = KZChatbot::getUserData( $uuid );
 			$uuid = $userData[ $fieldNames['uuid'] ];
@@ -40,14 +43,16 @@ class ApiKZChatbotGetConfig extends ApiBase {
 		$cookieExpiryDays = $settings['cookie_expiry_days'] ?? 365;
 		$cookieExpiry = date( 'D, d M Y H:i:s \G\M\T', time() + $cookieExpiryDays * 60 * 60 * 24 );
 
-		// Prepare output
-		$config = [
+		return [
 			'uuid' => $uuid,
 			'chatbotIsShown' => $userData[ $fieldNames['chatbotIsShown'] ],
 			'chatbotProminence' => $settings[ $fieldNames['chatbotProminence'] ],
 			'cookieExpiry' => $cookieExpiry,
 		];
-		$result->addValue( null, 'config', $config );
-  }
+	}
+
+	public function needsWriteAccess() {
+		return false;
+	}
 
 }

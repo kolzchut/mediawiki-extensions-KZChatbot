@@ -1,1 +1,1 @@
-get http://localhost:8080/w/api.php?action=kzchatbot_get_status&format=json&uuid=66b5037bb76e1
+get http://localhost:8080/w/rest.php/kzchatbot/v0/status?uuid=66b9b5387bfcf

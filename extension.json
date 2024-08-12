@@ -13,13 +13,13 @@
     "MediaWiki\\Extension\\KZChatbot\\": "src/"
   },
   "config": {
-    "KZChatbotGPT": {
-      "description": "ChatGPT configuration.",
-      "value": {
-				"token": "",
-				"key": ""
-			}
-		}
+    "KZChatbotLlmApiUrl": {
+      "description": "LLM API URL",
+      "value": null
+    }
+  },
+  "ConfigRegistry": {
+    "KZChatbot": "GlobalVarConfig::newInstance"
   },
 	"AvailableRights": [
 		"manage-kolzchut-chatbot"
@@ -29,12 +29,6 @@
     "KZChatbotSlugs": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSlugs",
     "KZChatbotBannedWords": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotBannedWords"
   },
-	"APIModules": {
-		"kzchatbot_get_config": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotGetConfig",
-		"kzchatbot_get_status": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotGetStatus",
-		"kzchatbot_submit_question": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotSubmitQuestion",
-		"kzchatbot_rate_answer": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotRateAnswer"
-	},
   "HookHandlers": {
     "KZChatbotHooks": {
       "class": "MediaWiki\\Extension\\KZChatbot\\Hooks"
@@ -60,8 +54,23 @@
 	},
   "RestRoutes": [
     {
+      "path": "/kzchatbot/v0/config",
+      "class": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotGetConfig",
+      "method": "GET"
+    },
+    {
+      "path": "/kzchatbot/v0/status",
+      "class": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotGetStatus",
+      "method": "GET"
+    },
+    {
       "path": "/kzchatbot/v0/question",
       "class": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotSubmitQuestion",
+      "method": "POST"
+    },
+    {
+      "path": "/kzchatbot/v0/rate",
+      "class": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotRateAnswer",
       "method": "POST"
     }
   ],

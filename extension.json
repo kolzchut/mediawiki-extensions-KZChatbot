@@ -41,6 +41,7 @@
     }
   },
   "Hooks": {
+		"BeforePageDisplay": "KZChatbotHooks",
     "LoadExtensionSchemaUpdates": "KZChatbotHooks"
   },
 	"ResourceModules": {
@@ -50,6 +51,11 @@
 			"scripts": ["convertmessagebox.js"],
 			"styles": ["forms.css"],
 			"dependencies": ["mediawiki.notification.convertmessagebox"]
+		},
+		"ext.KZChatbot.launcher": {
+			"localBasePath": "resources/ext.KZChatbot.launcher",
+			"remoteExtPath": "KZChatbot",
+			"scripts": ["kzChatbotLauncher.js"]
 		}
 	},
   "RestRoutes": [

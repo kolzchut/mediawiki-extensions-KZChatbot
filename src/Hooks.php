@@ -19,6 +19,9 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use OutputPage;
+use Skin;
+
 class Hooks implements
 	\MediaWiki\Installer\Hook\LoadExtensionSchemaUpdatesHook
 {
@@ -41,6 +44,19 @@ class Hooks implements
 			'kzchatbot_text',
 			__DIR__ . '/../sql/table_kzchatbot_text.sql'
 		);
+		return true;
+	}
+
+	/**
+	 * Provide the chatbot launcher JS on every page.
+	 * Launcher logic will determine whether the chatbot is displayed and further resources are loaded.
+	 *
+	 * @param OutputPage &$out The OutputPage object
+	 * @param Skin &$skin Skin object that will be used to generate the page
+	 * @return bool true
+	 */
+	public static function onBeforePageDisplay( OutputPage &$out, Skin &$skin ) {
+		$out->addModules( [ 'ext.KZChatbot.launcher' ] );
 		return true;
 	}
 

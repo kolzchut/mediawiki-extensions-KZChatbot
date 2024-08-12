@@ -10,6 +10,7 @@ use Wikimedia\ParamValidator\ParamValidator;
 class ApiKZChatbotRateAnswer extends Handler {
 
 	/**
+	 * @param string $contentType
 	 * @return array
 	 */
 	public function getBodyValidator( $contentType ) {
@@ -40,9 +41,10 @@ class ApiKZChatbotRateAnswer extends Handler {
 		] );
 	}
 
-  /**
-   * Pass user rating on specified chatbot answer to the ChatGPT API.
-   */
+	/**
+	 * Pass user rating on specified chatbot answer to the ChatGPT API.
+	 * @return \MediaWiki\Rest\Response
+	 */
   public function execute() {
 		$response = $this->getResponseFactory()->create();
 		$response->setStatus( 200 );

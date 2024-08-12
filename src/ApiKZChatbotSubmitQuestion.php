@@ -20,6 +20,19 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	 */
 	private $question;
 
+	/**
+	 * Pass user question to ChatGPT API, checking first that user hasn't exceeded daily limit.
+	 * Return answer from ChatGPT API.
+	 * @return array
+	 */
+	public function execute() {
+		$body = $this->getValidatedBody();
+		$this->uuid = $body['uuid'];
+		$this->validateUser();
+		$this->question = $body['text'];
+		return $this->generateAnswer();
+	}
+
 	private function generateAnswer() {
 		$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'KZChatbot' );
 		$question = $this->question;
@@ -50,19 +63,6 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	}
 
 	/**
-	 * Pass user question to ChatGPT API, checking first that user hasn't exceeded daily limit.
-	 * Return answer from ChatGPT API.
-	 * @return array
-	 */
-	public function execute() {
-		$body = $this->getValidatedBody();
-		$this->uuid = $body['uuid'];
-		$this->validateUser();
-		$this->question = $body['text'];
-		return $this->generateAnswer();
-	}
-
-	/**
 	 * @param string $contentType MIME Type
 	 * @return \JsonBodyValidator
 	 */
@@ -87,6 +87,10 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 				ParamValidator::PARAM_REQUIRED => true,
 			],
 		] );
+	}
+
+	public function needsWriteAccess() {
+		return false;
 	}
 
 	/**

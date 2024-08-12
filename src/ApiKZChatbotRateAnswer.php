@@ -46,4 +46,8 @@ class ApiKZChatbotRateAnswer extends Handler {
 		return $response;
   }
 
+	public function needsWriteAccess() {
+		return false;
+	}
+
 }

@@ -31,9 +31,7 @@
   },
 	"APIModules": {
 		"kzchatbot_get_config": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotGetConfig",
-		"kzchatbot_get_status": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotGetStatus",
-		"kzchatbot_submit_question": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotSubmitQuestion",
-		"kzchatbot_rate_answer": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotRateAnswer"
+    "kzchatbot_get_status": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotGetStatus"
 	},
   "HookHandlers": {
     "KZChatbotHooks": {

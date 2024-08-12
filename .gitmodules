@@ -1,3 +1,6 @@
 [submodule "react-app-KZChatbot"]
 	path = ext.KZChatbot.react
 	url = git@github.com:kolzchut/react-app-KZChatbot.git
+[submodule "resources/ext.KZChatbot.react"]
+	path = resources/ext.KZChatbot.react
+	url = git@github.com:kolzchut/react-app-KZChatbot.git

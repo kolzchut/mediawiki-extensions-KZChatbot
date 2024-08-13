@@ -3,8 +3,8 @@ const cookieName = 'kzchatbot-uuid';
 const cookie = mw.cookie.get( cookieName );
 const uuid = ( cookie !== null ) ? cookie : '';
 
-// Build config endpoint
-const serverName = mw.config.get( 'wgServer' ).replace( /^(https?:)?\/\//, '' );
+// Build config endpoint. MW sometimes messes up http/s, so we match the current protocol
+const serverName = mw.config.get( 'wgServer' ).replace( /^(https?:)?\/\//, location.protocol + '//' );
 const restPath = serverName + mw.config.get( 'wgScriptPath' ) + '/rest.php';
 const getConfigPath = '/kzchatbot/v0/config';
 const endpoint = restPath + getConfigPath;

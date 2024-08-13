@@ -36,7 +36,8 @@
   },
   "Hooks": {
 		"BeforePageDisplay": "KZChatbotHooks",
-    "LoadExtensionSchemaUpdates": "KZChatbotHooks"
+		"LoadExtensionSchemaUpdates": "KZChatbotHooks",
+  		"ResourceLoaderGetConfigVars": "KZChatbotHooks"
   },
 	"ResourceModules": {
 		"ext.KZChatbot.form": {

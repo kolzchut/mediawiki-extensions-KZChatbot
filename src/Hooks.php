@@ -19,11 +19,14 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use MediaWiki\Installer\Hook\LoadExtensionSchemaUpdatesHook;
+use MediaWiki\ResourceLoader\Hook\ResourceLoaderGetConfigVarsHook;
 use OutputPage;
 use Skin;
 
 class Hooks implements
-	\MediaWiki\Installer\Hook\LoadExtensionSchemaUpdatesHook
+	LoadExtensionSchemaUpdatesHook,
+	ResourceLoaderGetConfigVarsHook
 {
 
 	/**
@@ -53,14 +56,21 @@ class Hooks implements
 	 *
 	 * @param OutputPage &$out The OutputPage object
 	 * @param Skin &$skin Skin object that will be used to generate the page
-	 * @return bool true
 	 */
 	public static function onBeforePageDisplay( OutputPage &$out, Skin &$skin ) {
 		$out->addModules( [ 'ext.KZChatbot.launcher' ] );
-		$out->addJsConfigVars( [
-			'KZChatbotSlugs' => KZChatbot::getSlugs(),
-		] );
-		return true;
+	}
+
+	/**
+	 * Adds extra variables to the global config
+	 *
+	 * @param array &$vars Global variables object
+	 * @param string $skin
+	 * @param \Config $config
+	 * @return void
+	 */
+	public function onResourceLoaderGetConfigVars( array &$vars, $skin, \Config $config ) : void {
+		$vars['KZChatbotSlugs'] = KZChatbot::getSlugs();
 	}
 
 }

@@ -1,7 +1,4 @@
 {
-	"require": {
-		"mediawiki/mediawiki": ">=1.35"
-	},
 	"require-dev": {
 		"mediawiki/mediawiki-codesniffer": "41.0.0",
 		"mediawiki/mediawiki-phan-config": "0.12.1",

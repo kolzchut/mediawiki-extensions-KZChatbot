@@ -49,13 +49,16 @@
 		"ext.KZChatbot.launcher": {
 			"localBasePath": "resources/ext.KZChatbot.launcher",
 			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.launcher",
-			"scripts": ["kzChatbotLauncher.js"]
+			"scripts": ["kzChatbotLauncher.js"],
+			"dependencies": [
+				"mediawiki.cookie"
+			]
 		},
 		"ext.KZChatbot.react": {
 			"localBasePath": "resources/ext.KZChatbot.react",
 			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.react",
-			"scripts": ["dist/assets/index.js"],
-      "styles": "dist/assets/index.css"
+			"scripts": "dist/assets/index.js",
+      		"styles": "dist/assets/index.css"
 		}
 	},
   "RestRoutes": [

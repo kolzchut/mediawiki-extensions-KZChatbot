@@ -48,13 +48,14 @@
 		},
 		"ext.KZChatbot.launcher": {
 			"localBasePath": "resources/ext.KZChatbot.launcher",
-			"remoteExtPath": "KZChatbot",
+			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.launcher",
 			"scripts": ["kzChatbotLauncher.js"]
 		},
 		"ext.KZChatbot.react": {
 			"localBasePath": "resources/ext.KZChatbot.react",
-			"remoteExtPath": "KZChatbot",
-			"scripts": []
+			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.react",
+			"scripts": ["dist/assets/index.js"],
+      "styles": "dist/assets/index.css"
 		}
 	},
   "RestRoutes": [

@@ -20,6 +20,7 @@
 namespace MediaWiki\Extension\KZChatbot;
 
 use MediaWiki\Installer\Hook\LoadExtensionSchemaUpdatesHook;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderGetConfigVarsHook;
 use OutputPage;
 use Skin;
@@ -59,6 +60,9 @@ class Hooks implements
 	 */
 	public static function onBeforePageDisplay( OutputPage &$out, Skin &$skin ) {
 		$out->addModules( [ 'ext.KZChatbot.launcher' ] );
+		$extensionAssetsPath = MediaWikiServices::getInstance()->getMainConfig()->get( 'ExtensionAssetsPath' );
+		$stylePath = $extensionAssetsPath . '/KZChatbot/resources/ext.KZChatbot.react/dist/assets/index.css?1';
+		$out->addStyle( $stylePath, 'screen' );
 	}
 
 	/**

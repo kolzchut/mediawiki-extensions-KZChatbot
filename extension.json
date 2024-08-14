@@ -52,8 +52,7 @@
 			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.launcher",
 			"scripts": ["kzChatbotLauncher.js"],
 			"dependencies": [
-				"mediawiki.cookie",
-				"ext.KZChatbot.react.styles"
+				"mediawiki.cookie"
 			]
 		},
 		"ext.KZChatbot.react.styles": {

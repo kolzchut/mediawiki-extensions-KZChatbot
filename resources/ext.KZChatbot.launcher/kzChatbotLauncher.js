@@ -24,7 +24,7 @@ $.get( endpoint + '?uuid=' + uuid, function ( data ) {
 		config.slugs = mw.config.get('KZChatbotSlugs');
 		config.restPath = restPath;
 		window.KZChatbotConfig = config;
-		document.body.insertAdjacentHTML('beforeend', '<div id="root"></div>');
+		document.body.insertAdjacentHTML('beforeend', '<div id="kzchatbot" class="kzchatbot"></div>');
 
 		// Launch React app
 		mw.loader.load( extensionCodePath + '/index.js' , 'text/javascript' );

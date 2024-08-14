@@ -26,12 +26,12 @@ class ApiKZChatbotRateAnswer extends Handler {
 		return new JsonBodyValidator( [
 			'answerClassification' => [
 				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_REQUIRED => true,
+				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_TYPE => 'string',
 			],
 			'text' => [
 				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_REQUIRED => true,
+				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_TYPE => 'string',
 			],
 			'answerId' => [
@@ -41,7 +41,7 @@ class ApiKZChatbotRateAnswer extends Handler {
 			],
 			'like' => [
 				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_REQUIRED => true,
+				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_TYPE => 'boolean',
 			],
 		] );

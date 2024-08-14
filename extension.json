@@ -52,10 +52,18 @@
 			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.launcher",
 			"scripts": ["kzChatbotLauncher.js"],
 			"dependencies": [
-				"mediawiki.cookie"
+				"mediawiki.cookie",
+				"ext.KZChatbot.react.styles"
 			]
 		},
+		"ext.KZChatbot.react.styles": {
+			"localBasePath": "resources/ext.KZChatbot.react",
+			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.react",
+			"styles": "dist/assets/index.css"
+		},
+
 		"ext.KZChatbot.react": {
+			"es6": true,
 			"localBasePath": "resources/ext.KZChatbot.react",
 			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.react",
 			"scripts": "dist/assets/index.js",

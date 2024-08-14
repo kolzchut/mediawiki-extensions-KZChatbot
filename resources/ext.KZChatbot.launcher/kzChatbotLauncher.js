@@ -5,7 +5,9 @@ const uuid = ( cookie !== null ) ? cookie : '';
 
 // Build config endpoint. MW sometimes messes up http/s, so we match the current protocol
 const serverName = mw.config.get( 'wgServer' ).replace( /^(https?:)?\/\//, location.protocol + '//' );
-const restPath = serverName + mw.config.get( 'wgScriptPath' ) + '/rest.php';
+const scriptPath = serverName + mw.config.get( 'wgScriptPath' );
+const restPath = scriptPath + '/rest.php';
+const extensionCodePath = scriptPath + '/extensions/KZChatbot/resources/ext.KZChatbot.react/dist/assets';
 const getConfigPath = '/kzchatbot/v0/config';
 const endpoint = restPath + getConfigPath;
 
@@ -17,7 +19,6 @@ $.get( endpoint + '?uuid=' + uuid, function ( data ) {
 
 	// Is chatbot shown to this user?
 	if ( data.chatbotIsShown == "1" ) {
-
 		// Build config data for React app
 		const config = data;
 		config.slugs = mw.config.get('KZChatbotSlugs');
@@ -26,10 +27,6 @@ $.get( endpoint + '?uuid=' + uuid, function ( data ) {
 		document.body.insertAdjacentHTML('beforeend', '<div id="root"></div>');
 
 		// Launch React app
-		mw.loader.using( [ 'ext.KZChatbot.react' ], function () {
-
-			// React is loaded and ready.
-
-		} );
+		mw.loader.load( extensionCodePath + '/index.js' , 'text/javascript' );
 	}
 } );

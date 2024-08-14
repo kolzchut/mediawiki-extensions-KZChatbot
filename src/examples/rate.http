@@ -4,5 +4,6 @@ Content-Type: application/json
 {
     "text": "האם מגיע לי לקבל כסף עבור ראש השנה? לא עבדתי אבל הבנתי שכן אמורים לשלם על זה",
     "rating":1,
-    "answerId": "5f5b1b4b"
+    "answerId": "5f5b1b4b",
+    "like": true
 }

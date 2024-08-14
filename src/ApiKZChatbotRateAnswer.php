@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Validator\JsonBodyValidator;
@@ -38,6 +39,11 @@ class ApiKZChatbotRateAnswer extends Handler {
 				ParamValidator::PARAM_REQUIRED => true,
 				ParamValidator::PARAM_TYPE => 'string',
 			],
+			'like' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_REQUIRED => true,
+				ParamValidator::PARAM_TYPE => 'boolean',
+			],
 		] );
 	}
 
@@ -46,6 +52,7 @@ class ApiKZChatbotRateAnswer extends Handler {
 	 * @return \MediaWiki\Rest\Response
 	 */
   public function execute() {
+		// return $this->rateAnswer();
 		$response = $this->getResponseFactory()->create();
 		$response->setStatus( 200 );
 		return $response;
@@ -53,6 +60,30 @@ class ApiKZChatbotRateAnswer extends Handler {
 
 	public function needsWriteAccess() {
 		return false;
+	}
+
+	private function rateAnswer() {
+		$body = $this->getValidatedBody();
+		$rating = $body['rating'];
+		$text = $body['text'];
+		$answerId = $body['answerId'];
+		$like = $body['like'];
+		$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'KZChatbot' );
+		$apiUrl = $config->get( 'KZChatbotLlmApiUrl' ) . '/rate';
+		$client = new \GuzzleHttp\Client();
+		$result = $client->post( $apiUrl, [
+			'headers' => [
+				'X-FORWARDED-FOR' => $_SERVER['REMOTE_ADDR'],
+			],
+			'json' => [
+				'rating' => $rating,
+				'free_text' => $text,
+				'conversation_id' => $answerId,
+				'like' => $like,
+			]
+		] );
+		$response = json_decode( $result->getBody()->getContents() );
+		return $response;
 	}
 
 }

@@ -30,6 +30,12 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		$this->uuid = $body['uuid'];
 		$this->validateUser();
 		$this->question = $body['text'];
+		$bannedWords = KZChatbot::getBannedWords();
+		foreach ( $bannedWords as $bannedWord ) {
+			if ( stripos( $this->question, $bannedWord ) !== false ) {
+				throw new HttpException( 'Banned word found', 403 );
+			}
+		}
 		return $this->generateAnswer();
 	}
 

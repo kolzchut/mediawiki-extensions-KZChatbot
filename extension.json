@@ -55,18 +55,12 @@
 				"mediawiki.cookie"
 			]
 		},
-		"ext.KZChatbot.react.styles": {
-			"localBasePath": "resources/ext.KZChatbot.react",
-			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.react",
-			"styles": "dist/assets/index.css"
-		},
-
-		"ext.KZChatbot.react": {
+		"ext.KZChatbot.bot": {
 			"es6": true,
-			"localBasePath": "resources/ext.KZChatbot.react",
-			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.react",
-			"scripts": "dist/assets/index.js",
-      		"styles": "dist/assets/index.css"
+			"localBasePath": "resources/ext.KZChatbot.bot",
+			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.bot",
+			"scripts": "index.js",
+			"styles": "index.css"
 		}
 	},
   "RestRoutes": [
@@ -95,7 +89,7 @@
 		"KZChatbotLinksAliases": "KZChatbot.i18n.alias.php"
 	},
 	"MessagesDirs": {
-    "KZChatbot": ["i18n"]
+    	"KZChatbot": ["i18n"]
   },
 	"manifest_version": 2
 }

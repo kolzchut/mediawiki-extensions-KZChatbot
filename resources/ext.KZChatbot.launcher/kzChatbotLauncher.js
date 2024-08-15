@@ -7,7 +7,7 @@ const uuid = ( cookie !== null ) ? cookie : '';
 const serverName = mw.config.get( 'wgServer' ).replace( /^(https?:)?\/\//, location.protocol + '//' );
 const scriptPath = serverName + mw.config.get( 'wgScriptPath' );
 const restPath = scriptPath + '/rest.php';
-const extensionCodePath = scriptPath + '/extensions/KZChatbot/resources/ext.KZChatbot.react/dist/assets';
+const extensionCodePath = scriptPath + '/extensions/KZChatbot/resources/ext.KZChatbot.bot';
 const getConfigPath = '/kzchatbot/v0/config';
 const endpoint = restPath + getConfigPath;
 

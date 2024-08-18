@@ -91,9 +91,6 @@ class SpecialKZChatbotSettings extends SpecialPage {
 		foreach ( $this->getFormNameToDbNameMapping() as $inputName => $dbField ) {
 			$defaults[ $inputName ] = isset( $settings[ $dbField ] ) ? $settings[ $dbField ] : '0';
 		}
-		if ( $defaults['kzcChatbotProminence'] == '0' ) {
-			$defaults['kzcChatbotProminence'] = 'low';
-		}
 
 		// Build form.
 		$output->setPageTitle( $this->msg( 'kzchatbot-settings-title' ) );
@@ -114,7 +111,6 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			'kzcNewUsersChatbotRate' => 'new_users_chatbot_rate',
 			'kzcActiveUsersLimit' => 'active_users_limit',
 			'kzcActiveUsersLimitDays' => 'active_users_limit_days',
-			'kzcChatbotProminence' => 'chatbot_prominence',
 			'kzcQuestionsDailyLimit' => 'questions_daily_limit',
 			'kzcQuestionWordsLimit' => 'question_words_limit',
 			'kzcCookieExpiryDays' => 'cookie_expiry_days',
@@ -154,19 +150,6 @@ class SpecialKZChatbotSettings extends SpecialPage {
 				'label-message' => 'kzchatbot-settings-label-active-users-limit-days',
 				'help-message' => 'kzchatbot-settings-help-active-users-limit-days',
 				'section' => 'kzchatbot-settings-section-throttle',
-				'required' => true,
-			],
-			'kzcChatbotProminence' => [
-				'type' => 'select',
-				'options' => [
-					$this->msg( 'kzchatbot-settings-option-chatbot-prominence-low' )->text() => 'low',
-					$this->msg( 'kzchatbot-settings-option-chatbot-prominence-high' )->text() => 'high',
-				],
-				'default' => $defaults['kzcChatbotProminence'],
-				'cssclass' => 'ksl-chatbot-prominence',
-				'label-message' => 'kzchatbot-settings-label-chatbot-prominence',
-				'help-message' => 'kzchatbot-settings-help-chatbot-prominence',
-				'section' => 'kzchatbot-settings-section-display',
 				'required' => true,
 			],
 			'kzcQuestionsDailyLimit' => [

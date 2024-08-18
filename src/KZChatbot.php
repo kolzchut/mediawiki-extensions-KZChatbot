@@ -35,8 +35,7 @@ class KZChatbot {
 			'kzcbu_cookie_expiry' => 'cookieExpiry',
 			'kzcbu_last_active' => 'lastActive',
 			'kzcbu_questions_last_active_day' => 'questionsLastActiveDay',
-			'kzcbu_ranking_eligible_answer_id' => 'eligibleAnswerId',
-			'chatbot_prominence' => 'chatbotProminence'
+			'kzcbu_ranking_eligible_answer_id' => 'eligibleAnswerId'
 		];
 	}
 
@@ -162,7 +161,7 @@ class KZChatbot {
 	 */
 	public static function getGeneralSettingsNames() {
 		return [
-			'new_users_chatbot_rate', 'active_users_limit', 'active_users_limit_days', 'chatbot_prominence',
+			'new_users_chatbot_rate', 'active_users_limit', 'active_users_limit_days',
 			'questions_daily_limit', 'question_words_limit', 'cookie_expiry_days', 'uuid_request_limit'
 		];
 	}
@@ -213,16 +212,6 @@ class KZChatbot {
 	public static function saveGeneralSettings( $data ) {
 		$dbw = wfGetDB( DB_PRIMARY );
 		$generalSettingsNames = self::getGeneralSettingsNames();
-
-		// Sanitize data.
-		foreach ( array_diff( $generalSettingsNames, [ 'chatbot_prominence' ] ) as $intField ) {
-			if ( !empty( $data[$intField] ) ) {
-				$data[$intField] = intval( $data[$intField] );
-			}
-		}
-		if ( !in_array( $data['chatbot_prominence'], [ 'low', 'high' ] ) ) {
-			$data['chatbot_prominence'] = 'low';
-		}
 
 		// Clear prior values.
 		$dbw->delete(

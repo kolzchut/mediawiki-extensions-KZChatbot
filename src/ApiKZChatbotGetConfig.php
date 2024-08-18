@@ -46,7 +46,6 @@ class ApiKZChatbotGetConfig extends Handler {
 		return [
 			'uuid' => $uuid,
 			'chatbotIsShown' => $userData[ $fieldNames['chatbotIsShown'] ],
-			'chatbotProminence' => $settings[ $fieldNames['chatbotProminence'] ],
 			'cookieExpiry' => $cookieExpiry,
 		];
 	}

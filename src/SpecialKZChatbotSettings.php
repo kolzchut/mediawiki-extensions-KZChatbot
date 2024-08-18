@@ -113,6 +113,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			'kzcActiveUsersLimitDays' => 'active_users_limit_days',
 			'kzcQuestionsDailyLimit' => 'questions_daily_limit',
 			'kzcQuestionWordsLimit' => 'question_words_limit',
+			'kzcFeedbackCharacterLimit' => 'feedback_character_limit',
 			'kzcCookieExpiryDays' => 'cookie_expiry_days',
 			'kzcUUIDRequestLimit' => 'uuid_request_limit',
 		];
@@ -171,6 +172,15 @@ class SpecialKZChatbotSettings extends SpecialPage {
 				'label-message' => 'kzchatbot-settings-label-question-words-limit',
 				'section' => 'kzchatbot-settings-section-per-user',
 				'required' => true,
+			],
+			'kzcFeedbackCharacterLimit' => [
+				'type' => 'int',
+				'default' => $defaults['kzcFeedbackCharacterLimit'],
+				'cssclass' => 'ksl-feedback-character-limit',
+				'label-message' => 'kzchatbot-settings-label-feedback-character-limit',
+				'section' => 'kzchatbot-settings-section-per-user',
+				'required' => true,
+				'min' => 0
 			],
 			'kzcCookieExpiryDays' => [
 				'type' => 'int',

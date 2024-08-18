@@ -30,9 +30,13 @@ $.get( endpoint + '?uuid=' + uuid, function ( data ) {
 	// Is chatbot shown to this user?
 	if ( data.chatbotIsShown == "1" ) {
 		// Build config data for React app
-		const config = data;
+		const config = data,
+			savedSettings = mw.config.get( 'KZChatbotSettings' );
 		config.slugs = mw.config.get('KZChatbotSlugs');
 		config.restPath = restPath;
+
+		config.feedbackCharacterLimit = savedSettings['feedbackCharacterLimit'];
+
 		window.KZChatbotConfig = config;
 		document.body.insertAdjacentHTML('beforeend', '<div id="kzchatbot" class="kzchatbot"></div>');
 		// Launch React app

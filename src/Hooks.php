@@ -60,9 +60,6 @@ class Hooks implements
 	 */
 	public static function onBeforePageDisplay( OutputPage &$out, Skin &$skin ) {
 		$out->addModules( [ 'ext.KZChatbot.launcher' ] );
-		$extensionAssetsPath = MediaWikiServices::getInstance()->getMainConfig()->get( 'ExtensionAssetsPath' );
-		$stylePath = $extensionAssetsPath . '/KZChatbot/resources/ext.KZChatbot.bot/index.css?2';
-		$out->addStyle( $stylePath, 'screen' );
 	}
 
 	/**

@@ -1,4 +1,5 @@
 // Check cookie
+const scriptVersion = 2;
 const cookieName = 'kzchatbot-uuid';
 const cookie = mw.cookie.get( cookieName );
 const uuid = ( cookie !== null ) ? cookie : '';
@@ -10,6 +11,15 @@ const restPath = scriptPath + '/rest.php';
 const extensionCodePath = scriptPath + '/extensions/KZChatbot/resources/ext.KZChatbot.bot';
 const getConfigPath = '/kzchatbot/v0/config';
 const endpoint = restPath + getConfigPath;
+
+$.getStylesheet = function (href) {
+	return $.ajax({
+		dataType: "text",
+		url: href,
+	}).done( function(text){
+		$("<style>").html(text).appendTo("head");
+	} );
+};
 
 // Callout to config endpoint
 $.get( endpoint + '?uuid=' + uuid, function ( data ) {
@@ -25,8 +35,13 @@ $.get( endpoint + '?uuid=' + uuid, function ( data ) {
 		config.restPath = restPath;
 		window.KZChatbotConfig = config;
 		document.body.insertAdjacentHTML('beforeend', '<div id="kzchatbot" class="kzchatbot"></div>');
-
 		// Launch React app
-		mw.loader.load( extensionCodePath + '/index.js' , 'text/javascript' );
+		$.ajaxSetup({
+			cache: true
+		});
+		$.getStylesheet( extensionCodePath + '/index.css?' + scriptVersion ).then(
+			$.getScript( extensionCodePath + '/index.js?' + scriptVersion )
+		);
+
 	}
 } );

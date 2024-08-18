@@ -26,9 +26,8 @@
 	"kzchatbot-settings-label-request-limit": "מקסימום הבקשות בשעה למזהה חדש (UUID) מאותו IP",
 	"kzchatbot-settings-help-uuid-request-limit": "על מנת למנוע חלקית ממשתמש למחוק את העוגיה שלו ולעקוף את המגבלות",
 	"kzchatbot-settings-label-question-words-limit": "מקסימום מילים בשאלה",
+	"kzchatbot-settings-label-feedback-character-limit": "מקסימום תווים במשוב",
 	"kzchatbot-settings-status-save-success": "ההגדרות נשמרו בהצלחה.",
-	"kzchatbot-settings-error-integer-required": "נא להזין ערך מספר שלם ל$1.",
-	"kzchatbot-settings-error-new-users-chatbot-rate": "נא להזין מספר שלם בין 0 ל-100 ל$1.",
 
 	"kzchatbot-banned-words-title": "מילים ודפוסים אסורים לצ'טבוט כל זכות",
 	"kzchatbot-banned-words-status-empty": "אין מילים ודפוסים אסורים שמוגדרים כרגע.",

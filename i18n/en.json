@@ -26,9 +26,8 @@
 	"kzchatbot-settings-label-cookie-expiry-days": "Days to Cookie Expiry",
 	"kzchatbot-settings-help-cookie-expiry-days": "Number of days past a user's last activity when their cookie will expire",
 	"kzchatbot-settings-label-question-words-limit": "Question Words Limit",
+	"kzchatbot-settings-label-feedback-character-limit": "Feedback Character Limit",
 	"kzchatbot-settings-status-save-success": "Settings updated successfully.",
-	"kzchatbot-settings-error-integer-required": "Please enter an integer value for $1.",
-	"kzchatbot-settings-error-new-users-chatbot-rate": "Please enter an integer between 0 and 100 for $1.",
 
 	"kzchatbot-banned-words-title": "Kol-Zchut Chatbot Banned Words and Patterns",
 	"kzchatbot-banned-words-status-empty": "No banned words or patterns currently defined.",

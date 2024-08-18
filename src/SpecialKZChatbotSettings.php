@@ -126,25 +126,29 @@ class SpecialKZChatbotSettings extends SpecialPage {
 	private function getSettingsForm( $defaults ) {
 		$form = [
 			'kzcNewUsersChatbotRate' => [
-				'type' => 'text',
+				'type' => 'int',
 				'default' => $defaults['kzcNewUsersChatbotRate'],
 				'cssclass' => 'ksl-new-users-chatbot-rate',
 				'label-message' => 'kzchatbot-settings-label-new-users-chatbot-rate',
 				'help-message' => 'kzchatbot-settings-help-new-users-chatbot-rate',
 				'section' => 'kzchatbot-settings-section-throttle',
 				'required' => true,
+				// Min/Max values
+				'min' => 0,
+				'max' => 100,
 			],
 			'kzcActiveUsersLimit' => [
-				'type' => 'text',
+				'type' => 'int',
 				'default' => $defaults['kzcActiveUsersLimit'],
 				'cssclass' => 'ksl-active-users-limit',
 				'label-message' => 'kzchatbot-settings-label-active-users-limit',
 				'help-message' => 'kzchatbot-settings-help-active-users-limit',
 				'section' => 'kzchatbot-settings-section-throttle',
 				'required' => true,
+				'min' => 0,
 			],
 			'kzcActiveUsersLimitDays' => [
-				'type' => 'text',
+				'type' => 'int',
 				'default' => $defaults['kzcActiveUsersLimitDays'],
 				'cssclass' => 'ksl-active-users-limit-days',
 				'label-message' => 'kzchatbot-settings-label-active-users-limit-days',
@@ -153,7 +157,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 				'required' => true,
 			],
 			'kzcQuestionsDailyLimit' => [
-				'type' => 'text',
+				'type' => 'int',
 				'default' => $defaults['kzcQuestionsDailyLimit'],
 				'cssclass' => 'ksl-questions-daily-limit',
 				'label-message' => 'kzchatbot-settings-label-questions-daily-limit',
@@ -161,7 +165,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 				'required' => true,
 			],
 			'kzcQuestionWordsLimit' => [
-				'type' => 'text',
+				'type' => 'int',
 				'default' => $defaults['kzcQuestionWordsLimit'],
 				'cssclass' => 'ksl-question-words-limit',
 				'label-message' => 'kzchatbot-settings-label-question-words-limit',
@@ -169,7 +173,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 				'required' => true,
 			],
 			'kzcCookieExpiryDays' => [
-				'type' => 'text',
+				'type' => 'int',
 				'default' => $defaults['kzcCookieExpiryDays'],
 				'cssclass' => 'ksl-uuid-cookie-expiry-days',
 				'label-message' => 'kzchatbot-settings-label-cookie-expiry-days',
@@ -178,7 +182,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 				'required' => true,
 			],
 			'kzcUUIDRequestLimit' => [
-				'type' => 'text',
+				'type' => 'int',
 				'default' => $defaults['kzcUUIDRequestLimit'],
 				'cssclass' => 'ksl-uuid-request-limit',
 				'label-message' => 'kzchatbot-settings-label-uuid-request-limit',
@@ -196,36 +200,6 @@ class SpecialKZChatbotSettings extends SpecialPage {
 	 * @return string|bool Return true on success, error message on failure
 	 */
 	public function handleSettingsSave( $postData ) {
-		// Check integer values.
-		$numericFields = [
-			'kzcNewUsersChatbotRate' => 'new-users-chatbot-rate',
-			'kzcActiveUsersLimit' => 'active-users-limit',
-			'kzcActiveUsersLimitDays' => 'active-users-limit-days',
-			'kzcQuestionsDailyLimit' => 'questions-daily-limit',
-			'kzcQuestionWordsLimit' => 'question-words-limit',
-			'kzcCookieExpiryDays' => 'cookie-expiry-days',
-			'kzcUUIDRequestLimit' => 'uuid-request-limit',
-		];
-		foreach ( array_keys( $numericFields ) as $fieldName ) {
-			if ( !isset( $postData[$fieldName] ) || !is_numeric( $postData[$fieldName] )
-				|| intval( $postData[$fieldName] ) != $postData[$fieldName]
-				|| $postData[$fieldName] < 0
-			) {
-				return [ [
-					'kzchatbot-settings-error-integer-required',
-					$this->msg( 'kzchatbot-settings-label-' . $numericFields[$fieldName] )->text()
-				] ];
-			}
-		}
-
-		// Chatbot rate should be 0-100.
-		if ( $postData['kzcNewUsersChatbotRate'] > 100 ) {
-			return [ [
-				'kzchatbot-settings-error-new-users-chatbot-rate',
-				$this->msg( 'kzchatbot-settings-label-new-users-chatbot-rate' )->text()
-			] ];
-		}
-
 		// Save new values to database.
 		$formNameToDbName = $this->getFormNameToDbNameMapping();
 		$data = array_map(

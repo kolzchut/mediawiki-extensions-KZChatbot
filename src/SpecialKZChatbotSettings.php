@@ -169,7 +169,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 				'type' => 'int',
 				'default' => $defaults['kzcQuestionCharacterLimit'],
 				'cssclass' => 'ksl-question-words-limit',
-				'label-message' => 'kzchatbot-settings-label-question-words-limit',
+				'label-message' => 'kzchatbot-settings-label-question-character-limit',
 				'section' => 'kzchatbot-settings-section-per-user',
 				'required' => true,
 			],

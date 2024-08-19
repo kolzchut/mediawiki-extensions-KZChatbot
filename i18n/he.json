@@ -1,14 +1,14 @@
 {
-  "@metadata": {
-    "authors": ["Joel R. ([https://www.kolzchut.org.il Kol-Zchut])"]
-  },
-  "kolzchut-chatbot-desc": "ממשק ניהול וממשק מודאל המספק למשתמש הקצה גישה לצ'טבוט כל זכות",
+	"@metadata": {
+		"authors": [
+			"Joel R. ([https://www.kolzchut.org.il Kol-Zchut])"
+		]
+	},
+	"kolzchut-chatbot-desc": "ממשק ניהול וממשק מודאל המספק למשתמש הקצה גישה לצ'טבוט כל זכות",
 	"kolzchut-chatbot-name": "צ'טבוט כל זכות",
-
 	"kzchatbot-toplink-general-settings": "ניהול הגדרות כלליות »",
 	"kzchatbot-toplink-banned-words": "ניהול מילים ודפוסים אסורים »",
 	"kzchatbot-toplink-slugs": "ניהול סלאגים »",
-
 	"kzchatbot-settings-title": "הגדרות צ'טבוט כל זכות",
 	"kzchatbot-settings-section-throttle": "רמת החשיפה לצ'טבוט",
 	"kzchatbot-settings-section-display": "הצגת הצ'טבוט",
@@ -25,10 +25,9 @@
 	"kzchatbot-settings-help-cookie-expiry-days": "מספר הימים מאז פעילותו האחרונה של משתמש שלאחריו העוגיה תפוג",
 	"kzchatbot-settings-label-request-limit": "מקסימום הבקשות בשעה למזהה חדש (UUID) מאותו IP",
 	"kzchatbot-settings-help-uuid-request-limit": "על מנת למנוע חלקית ממשתמש למחוק את העוגיה שלו ולעקוף את המגבלות",
-	"kzchatbot-settings-label-question-words-limit": "מקסימום מילים בשאלה",
+	"kzchatbot-settings-label-question-character-limit": "מקסימום תווים בשאלה",
 	"kzchatbot-settings-label-feedback-character-limit": "מקסימום תווים במשוב",
 	"kzchatbot-settings-status-save-success": "ההגדרות נשמרו בהצלחה.",
-
 	"kzchatbot-banned-words-title": "מילים ודפוסים אסורים לצ'טבוט כל זכות",
 	"kzchatbot-banned-words-status-empty": "אין מילים ודפוסים אסורים שמוגדרים כרגע.",
 	"kzchatbot-banned-words-label-banned-word": "מילה/דפוס",
@@ -39,7 +38,6 @@
 	"kzchatbot-banned-words-error-alphanumeric-only": "מילה או דפוס צריך להיות מורכב רק תווים אלפאנומרים ורווחים.",
 	"kzchatbot-banned-words-status-save-success": "הוסף '$1' בהצלחה",
 	"kzchatbot-banned-words-status-delete-success": "נמחק '$1' בהצלחה",
-
 	"kzchatbot-slugs-title": "סלאגים וטקטסטים לצ'טבוט כל זכות",
 	"kzchatbot-slugs-status-empty": "אין סלאגים שמוגדרים כרגע.",
 	"kzchatbot-slugs-label-slug": "סלאג",

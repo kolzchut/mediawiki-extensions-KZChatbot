@@ -1,14 +1,14 @@
 {
-  "@metadata": {
-    "authors": ["Joel R. ([http://www.kolzchut.org.il Kol-Zchut])"]
-  },
-  "kolzchut-chatbot-desc": "Modal end-user interface and admin controls for the Kol-Zchut answers chatbot.",
+	"@metadata": {
+		"authors": [
+			"Joel R. ([http://www.kolzchut.org.il Kol-Zchut])"
+		]
+	},
+	"kolzchut-chatbot-desc": "Modal end-user interface and admin controls for the Kol-Zchut answers chatbot.",
 	"kolzchut-chatbot-name": "Kol-Zchut Chatbot",
-
 	"kzchatbot-toplink-general-settings": "Manage General Settings »",
 	"kzchatbot-toplink-banned-words": "Manage Banned Words and Patterns »",
 	"kzchatbot-toplink-slugs": "Manage Slugs »",
-
 	"kzchatbot-settings-title": "Kol-Zchut Chatbot Settings",
 	"kzchatbot-settings-section-throttle": "Chatbot Throttle Settings",
 	"kzchatbot-settings-section-display": "Chatbot Display Settings",
@@ -25,10 +25,9 @@
 	"kzchatbot-settings-help-uuid-request-limit": "Maximum permitted number of questions for new UUIDs from a single IP address within an hour",
 	"kzchatbot-settings-label-cookie-expiry-days": "Days to Cookie Expiry",
 	"kzchatbot-settings-help-cookie-expiry-days": "Number of days past a user's last activity when their cookie will expire",
-	"kzchatbot-settings-label-question-words-limit": "Question Words Limit",
+	"kzchatbot-settings-label-question-character-limit": "Question Character Limit",
 	"kzchatbot-settings-label-feedback-character-limit": "Feedback Character Limit",
 	"kzchatbot-settings-status-save-success": "Settings updated successfully.",
-
 	"kzchatbot-banned-words-title": "Kol-Zchut Chatbot Banned Words and Patterns",
 	"kzchatbot-banned-words-status-empty": "No banned words or patterns currently defined.",
 	"kzchatbot-banned-words-label-banned-word": "Word or pattern",
@@ -39,7 +38,6 @@
 	"kzchatbot-banned-words-error-alphanumeric-only": "Word or pattern should consist of alphanumeric characters and spaces only.",
 	"kzchatbot-banned-words-status-save-success": "Successfully added '$1'.",
 	"kzchatbot-banned-words-status-delete-success": "Successfully removed '$1'.",
-
 	"kzchatbot-slugs-title": "Kol-Zchut Chatbot Slugs and Texts",
 	"kzchatbot-slugs-status-empty": "No slugs currently defined.",
 	"kzchatbot-slugs-label-slug": "Slug",

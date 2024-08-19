@@ -78,6 +78,7 @@ class ApiKZChatbotRateAnswer extends Handler {
 			'json' => [
 				'rating' => 1,
 				'free_text' => $text,
+				'answer_classification' => $answerClassification,
 				'conversation_id' => $answerId,
 				'like' => $like,
 			]

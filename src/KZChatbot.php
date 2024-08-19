@@ -137,10 +137,40 @@ class KZChatbot {
 		return $bannedWords;
 	}
 
-	/**
-	 * @return array|bool
-	 */
+
 	public static function getSlugs() {
+		return array_merge( self::getDefaultSlugs(), self::getSlugsFromDB() );
+	}
+
+	public static function getDefaultSlugs() {
+		return [
+			'chat_icon' => 'כל שאלה',
+			'chat_tip_link' => 'טיפים לניסוח שאלה טובה',
+			'close_chat_icon' => 'סגירה',
+			'dislike_follow_up_question' => 'תודה על המשוב. נשמח לדעת למה.',
+			'dislike_followup_q_first' => 'המידע לא נכון',
+			'dislike_followup_q_second' => 'התשובה לא קשורה לשאלה',
+			'dislike_followup_q_third' => 'התשובה לא ברורה',
+			'feedback_free_text' => 'רוצה לפרט? זה יעזור לנו להשתפר',
+			'feedback_free_text_disclaimer' => 'אין לשתף פרטים מזהים או מידע רגיש',
+			'new_question_button' => 'שאלה חדשה',
+			'new_question_filed' => 'שאלה חדשה',
+			'question_disclaimer' => 'אין לשתף פרטים מזהים או מידע רגיש',
+			'question_field' => 'מה רצית לדעת',
+			'ranking_request' => 'האם התשובה עזרה לך?',
+			'returning_links_title' => 'כדאי לבדוק את התשובה גם כאן =>',
+			'tc_link' => 'תנאי שימוש',
+			'welcome_message_first' => 'שלום! הצ\'אט של \'כל זכות\' יכול למצוא לך תשובות מתוך \'כל זכות\' מהר ובקלות בעזרת בינה מלאכותית. אפשר לשאול כל שאלה על זכויות בשפה חופשית. כדאי לציין מאפיינים רלוונטיים כמו גיל ומצב משפחתי.',
+			'welcome_message_second' => 'חשוב * אין למסור מידע מזהה או רגיש כמו שם, כתובת או מידע רפואי. המידע נאסף לצורך שיפור השירות. * הצ\'אט יכול לטעות. כל זכות אינה אחראית לנכונות התשובות וממליצה לבדוק את המידע גם בעמוד המתאים באתר. בתקופת ההרצה הצ\'אט יופיע רק לחלק מהגולשים.',
+			'welcome_message_third' => null,
+			'feedback_character_limit' => 'מקסימום $1 תווים'
+		];
+	}
+
+	/**
+	 * @return array
+	 */
+	public static function getSlugsFromDB() {
 		$dbr = wfGetDB( DB_REPLICA );
 		$res = $dbr->select(
 			[ 'text' => 'kzchatbot_text' ],
@@ -270,10 +300,7 @@ class KZChatbot {
 		// @TODO: additional data sanitization?
 		$dbw = wfGetDB( DB_PRIMARY );
 		// Clear prior value if one exists.
-		$dbw->delete(
-			'kzchatbot_text',
-			[ 'kzcbt_slug' => $slug ]
-		);
+		self::deleteSlug( $slug );
 		// Insert and return result.
 		return $dbw->insert(
 			'kzchatbot_text',
@@ -282,6 +309,19 @@ class KZChatbot {
 				'kzcbt_text' => $text,
 			],
 			__METHOD__
+		);
+	}
+
+	/**
+	 * @param string $slug
+	 * @return \IResultWrapper
+	 */
+	public static function deleteSlug( $slug ) {
+		// @TODO: additional data sanitization?
+		$dbw = wfGetDB( DB_PRIMARY );
+		return $dbw->delete(
+			'kzchatbot_text',
+			[ 'kzcbt_slug' => $slug ]
 		);
 	}
 
@@ -308,19 +348,6 @@ class KZChatbot {
 				'kzcbs_value' => json_encode( $bannedWords ),
 			],
 			__METHOD__
-		);
-	}
-
-	/**
-	 * @param text $slug
-	 * @return \IResultWrapper
-	 */
-	public static function deleteSlug( $slug ) {
-		// @TODO: additional data sanitization?
-		$dbw = wfGetDB( DB_PRIMARY );
-		return $dbw->delete(
-			'kzchatbot_text',
-			[ 'kzcbt_slug' => $slug ]
 		);
 	}
 

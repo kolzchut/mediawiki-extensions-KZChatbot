@@ -24,7 +24,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	 * @inheritDoc
 	 */
 	public function getDescription() {
-		return $this->msg( 'kolzchut-chatbot-desc' )->text();
+		return $this->msg( 'kzchatbot-slugs-title' )->text();
 	}
 
 	/**
@@ -34,6 +34,23 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	public function execute( $par ) {
 		parent::execute( $par );
 		$output = $this->getOutput();
+		$request = $this->getRequest();
+
+		$slugs = [];
+
+		foreach( KZChatbot::getDefaultSlugs() as $name => $value ) {
+			$slugs[$name] = [
+				'value' => $value,
+				'changed' => false
+			];
+		}
+		foreach( KZChatbot::getSlugsFromDB() as $name => $value ) {
+			$slugs[$name] = [
+				'value' => $value,
+				'changed' => true
+			];
+		}
+
 		$output->addModules( 'ext.KZChatbot.form' );
 
 		// Delete operation?
@@ -44,24 +61,31 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 		}
 
 		// Edit operation?
-		if ( !empty( $queryParams['edit'] ) ) {
-			$slugs = KZChatbot::getSlugs();
-			if ( isset( $slugs[ $queryParams['edit'] ] ) ) {
-				$output->setPageTitle( $this->msg( 'kzchatbot-slugs-title' ) );
-				$currentValues = [
-					'slug' => $queryParams['edit'],
-					'text' => $slugs[ $queryParams['edit'] ],
-				];
-				$htmlForm = HTMLForm::factory( 'ooui', $this->getSlugForm( $currentValues ), $this->getContext() );
-				$htmlForm->setId( 'KZChatbotSlugForm' )
-					->setFormIdentifier( 'KZChatbotSlugForm' )
-					->setSubmitName( "kzcSubmit" )
-					->setSubmitTextMsg( 'kzchatbot-slug-update' )
-					->setSubmitCallback( [ $this, 'handleSlugSave' ] )
-					->show();
-				return;
+		if( !empty($queryParams['edit'] ) || $request->getVal( 'wpkzcAction' ) === 'edit' ) {
+			$currentValues = [
+				'slug' => $request->wasPosted() ? $request->getVal('wpkzcSlug' ) : $queryParams['edit'],
+				'text' => $request->wasPosted() ? $request->getVal('wpkzcText' ) : $slugs[$queryParams['edit']]['value'],
+			];
+			$htmlForm = HTMLForm::factory('ooui', $this->getSlugForm($currentValues), $this->getContext());
+			$htmlForm->setId('KZChatbotSlugForm')
+				->setFormIdentifier('KZChatbotSlugForm')
+				->setSubmitName("kzcSubmit")
+				->setSubmitTextMsg('kzchatbot-slug-update')
+				->setSubmitCallback([$this, 'handleSlugSave']);
+
+			if ($request->wasPosted()) {
+				if ($this->getRequest()->getVal('wpkzcAction') === 'edit') {
+					$htmlForm->prepareForm()
+						->trySubmit();
+				}
+			} elseif (!empty($queryParams['edit'])) {
+				if (isset($slugs[$queryParams['edit']])) {
+					$htmlForm->show();
+					return;
+				}
 			}
 		}
+
 
 		// Successful operation? If so, show status message.
 		$session = $this->getRequest()->getSession();
@@ -120,7 +144,6 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 		);
 
 		// Build table of existing slugs.
-		$slugs = KZChatbot::getSlugs();
 		if ( !empty( $slugs ) ) {
 			$output->addModuleStyles( 'jquery.tablesorter.styles' );
 			$output->addModules( 'jquery.tablesorter' );
@@ -139,18 +162,18 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 			);
 			$editLabel = $this->msg( 'kzchatbot-slugs-op-edit' )->text();
 			$deleteLabel = $this->msg( 'kzchatbot-slugs-op-delete' )->text();
-			foreach ( $slugs as $slug => $text ) {
+			foreach ( $slugs as $slug => $attribs ) {
 				$editUrl = $output->getTitle()->getLocalURL( [ 'edit' => $slug ] );
 				$deleteUrl = $output->getTitle()->getLocalURL( [ 'delete' => $slug ] );
 				$output->addHTML(
 					Html::openElement( 'tr' )
 					. Html::element( 'td', [], $slug )
-					. Html::element( 'td', [], $text )
+					. Html::element( 'td', [ 'class' => $attribs['changed'] ? '' : 'default-value'], $attribs['value'] )
 					. Html::rawElement( 'td', [],
 						Html::element( 'a', [ 'href' => $editUrl ], $editLabel )
 					)
 					. Html::rawElement( 'td', [],
-						Html::element( 'a', [ 'href' => $deleteUrl ], $deleteLabel )
+						$attribs['changed'] ? Html::element( 'a', [ 'href' => $deleteUrl ], $deleteLabel ) : ''
 					)
 					. Html::closeElement( 'tr' )
 				);
@@ -168,16 +191,6 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				)
 			);
 		}
-
-		// Build form.
-		$output->setPageTitle( $this->msg( 'kzchatbot-slugs-title' ) );
-		$htmlForm = HTMLForm::factory( 'ooui', $this->getSlugForm(), $this->getContext() );
-		$htmlForm->setId( 'KZChatbotSlugForm' )
-			->setFormIdentifier( 'KZChatbotSlugForm' )
-			->setSubmitName( "kzcSubmit" )
-			->setSubmitTextMsg( 'kzchatbot-slug-submit' )
-			->setSubmitCallback( [ $this, 'handleSlugSave' ] )
-			->show();
 	}
 
 	/**
@@ -191,7 +204,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				'type' => 'text',
 				'cssclass' => 'ksl-new-slug',
 				'label-message' => 'kzchatbot-slugs-label-add-slug',
-				'help-message' => 'kzchatbot-slugs-help-add-slug',
+				'readonly' => true,
 				'required' => true,
 			],
 			'kzcText' => [
@@ -201,6 +214,10 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				'label-message' => 'kzchatbot-slugs-label-add-slug-text',
 				'required' => true,
 			],
+			'kzcAction' => [
+				'type' => 'hidden',
+				'default' => 'edit'
+			]
 		];
 		if ( !empty( $editValues ) ) {
 			$form['kzcSlug']['default'] = $editValues['slug'];
@@ -221,6 +238,8 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 			return 'kzchatbot-slugs-error-alphanumeric-only';
 		}
 		$text = preg_replace( "/[^a-zA-Z_א-ת\\s<>\"\/,`'%*()!?:.]+/", '', $postData['kzcText'] );
+
+		// @TODO check there's actually a valid slug by that name
 
 		// @TODO: Check for existing slug by same name?
 		// Save slug

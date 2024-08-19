@@ -85,16 +85,9 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			)
 		);
 
-		// Determine form defaults from current settings.
-		$settings = KZChatbot::getGeneralSettings();
-		$defaults = [];
-		foreach ( $this->getFormNameToDbNameMapping() as $inputName => $dbField ) {
-			$defaults[ $inputName ] = isset( $settings[ $dbField ] ) ? $settings[ $dbField ] : '0';
-		}
-
 		// Build form.
 		$output->setPageTitle( $this->msg( 'kzchatbot-settings-title' ) );
-		$htmlForm = HTMLForm::factory( 'ooui', $this->getSettingsForm( $defaults ), $this->getContext() );
+		$htmlForm = HTMLForm::factory( 'ooui', $this->getSettingsForm(), $this->getContext() );
 		$htmlForm->setId( 'KZChatbotSettingsForm' )
 			->setFormIdentifier( 'KZChatbotSettingsForm' )
 			->setSubmitName( "kzcSubmit" )
@@ -116,19 +109,19 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			'kzcFeedbackCharacterLimit' => 'feedback_character_limit',
 			'kzcCookieExpiryDays' => 'cookie_expiry_days',
 			'kzcUUIDRequestLimit' => 'uuid_request_limit',
+			'kzcUsageHelpUrl' => 'usage_help_url',
+			'kzcTermsOfServiceUrl' => 'terms_of_service_url'
 		];
 	}
 
 	/**
 	 * Define settings form structure
-	 * @param array $defaults
 	 * @return array
 	 */
-	private function getSettingsForm( $defaults ) {
+	private function getSettingsForm() {
 		$form = [
 			'kzcNewUsersChatbotRate' => [
 				'type' => 'int',
-				'default' => $defaults['kzcNewUsersChatbotRate'],
 				'cssclass' => 'ksl-new-users-chatbot-rate',
 				'label-message' => 'kzchatbot-settings-label-new-users-chatbot-rate',
 				'help-message' => 'kzchatbot-settings-help-new-users-chatbot-rate',
@@ -140,7 +133,6 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			],
 			'kzcActiveUsersLimit' => [
 				'type' => 'int',
-				'default' => $defaults['kzcActiveUsersLimit'],
 				'cssclass' => 'ksl-active-users-limit',
 				'label-message' => 'kzchatbot-settings-label-active-users-limit',
 				'help-message' => 'kzchatbot-settings-help-active-users-limit',
@@ -150,7 +142,6 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			],
 			'kzcActiveUsersLimitDays' => [
 				'type' => 'int',
-				'default' => $defaults['kzcActiveUsersLimitDays'],
 				'cssclass' => 'ksl-active-users-limit-days',
 				'label-message' => 'kzchatbot-settings-label-active-users-limit-days',
 				'help-message' => 'kzchatbot-settings-help-active-users-limit-days',
@@ -159,7 +150,6 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			],
 			'kzcQuestionsDailyLimit' => [
 				'type' => 'int',
-				'default' => $defaults['kzcQuestionsDailyLimit'],
 				'cssclass' => 'ksl-questions-daily-limit',
 				'label-message' => 'kzchatbot-settings-label-questions-daily-limit',
 				'section' => 'kzchatbot-settings-section-per-user',
@@ -167,7 +157,6 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			],
 			'kzcQuestionCharacterLimit' => [
 				'type' => 'int',
-				'default' => $defaults['kzcQuestionCharacterLimit'],
 				'cssclass' => 'ksl-question-words-limit',
 				'label-message' => 'kzchatbot-settings-label-question-character-limit',
 				'section' => 'kzchatbot-settings-section-per-user',
@@ -175,7 +164,6 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			],
 			'kzcFeedbackCharacterLimit' => [
 				'type' => 'int',
-				'default' => $defaults['kzcFeedbackCharacterLimit'],
 				'cssclass' => 'ksl-feedback-character-limit',
 				'label-message' => 'kzchatbot-settings-label-feedback-character-limit',
 				'section' => 'kzchatbot-settings-section-per-user',
@@ -184,7 +172,6 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			],
 			'kzcCookieExpiryDays' => [
 				'type' => 'int',
-				'default' => $defaults['kzcCookieExpiryDays'],
 				'cssclass' => 'ksl-uuid-cookie-expiry-days',
 				'label-message' => 'kzchatbot-settings-label-cookie-expiry-days',
 				'help-message' => 'kzchatbot-settings-help-cookie-expiry-days',
@@ -193,14 +180,38 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			],
 			'kzcUUIDRequestLimit' => [
 				'type' => 'int',
-				'default' => $defaults['kzcUUIDRequestLimit'],
 				'cssclass' => 'ksl-uuid-request-limit',
 				'label-message' => 'kzchatbot-settings-label-uuid-request-limit',
 				'help-message' => 'kzchatbot-settings-help-uuid-request-limit',
 				'section' => 'kzchatbot-settings-section-per-user',
 				'required' => true,
 			],
+			'kzcTermsOfServiceUrl' => [
+				'type' => 'url',
+				'label-message' => 'kzchatbot-settings-label-terms-of-service-url',
+				'section' => 'kzchatbot-settings-section-general',
+				'required' => true,
+			],
+			'kzcUsageHelpUrl' => [
+				'type' => 'url',
+				'label-message' => 'kzchatbot-settings-label-usage-help-url',
+				'section' => 'kzchatbot-settings-section-general',
+				'required' => true,
+			],
 		];
+
+		// Determine form defaults from current settings.
+		$settings = KZChatbot::getGeneralSettings();
+		$formNameToDbName = $this->getFormNameToDbNameMapping();
+		foreach ( $form as $inputName => &$attribs ) {
+			$valueName = $formNameToDbName[ $inputName ];
+			if ( isset( $settings[$valueName] ) ) {
+				$attribs['default'] = $settings[$valueName];
+			} elseif ( $attribs['type'] === 'int' ) {
+				$attribs['default'] = 0;
+			}
+		}
+
 		return $form;
 	}
 

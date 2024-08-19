@@ -162,7 +162,8 @@ class KZChatbot {
 	public static function getGeneralSettingsNames() {
 		return [
 			'new_users_chatbot_rate', 'active_users_limit', 'active_users_limit_days', 'questions_daily_limit',
-			'question_character_limit', 'feedback_character_limit', 'cookie_expiry_days', 'uuid_request_limit'
+			'question_character_limit', 'feedback_character_limit', 'cookie_expiry_days', 'uuid_request_limit',
+			'usage_help_url', 'terms_of_service_url'
 		];
 	}
 

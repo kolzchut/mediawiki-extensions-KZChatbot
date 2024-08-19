@@ -73,8 +73,11 @@ class Hooks implements
 	public function onResourceLoaderGetConfigVars( array &$vars, $skin, \Config $config ) : void {
 		$vars['KZChatbotSlugs'] = KZChatbot::getSlugs();
 		$chatbotSettings = KZChatbot::getGeneralSettings();
-		$vars['KZChatbotSettings'] = [];
-		$vars['KZChatbotSettings']['feedbackCharacterLimit'] = $chatbotSettings['feedback_character_limit'];
+		$vars['KZChatbotSettings'] = [
+			'feedbackCharacterLimit' => $chatbotSettings['feedback_character_limit'],
+			'usageHelpUrl' => $chatbotSettings['usage_help_url'],
+			'termsofServiceUrl' => $chatbotSettings['terms_of_service_url']
+		];
 	}
 
 }

@@ -26,7 +26,9 @@ $.get( endpoint + '?uuid=' + uuid, function ( data ) {
 		config.slugs = mw.config.get('KZChatbotSlugs');
 		config.restPath = restPath;
 
-		config.feedbackCharacterLimit = savedSettings['feedbackCharacterLimit'];
+		for (const [key, value] of Object.entries( savedSettings ) ) {
+			config[key] = value;
+		}
 
 		window.KZChatbotConfig = config;
 		document.body.insertAdjacentHTML('beforeend', '<div id="kzchatbot" class="kzchatbot"></div>');

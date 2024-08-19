@@ -5,14 +5,17 @@ namespace MediaWiki\Extension\KZChatbot;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\HttpException;
+use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\Validator\JsonBodyValidator;
+use MediaWiki\Rest\Validator\Validator;
+use Wikimedia\Message\MessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ApiKZChatbotRateAnswer extends Handler {
 
 	/**
 	 * @param string $contentType
-	 * @return array
+	 * @return JsonBodyValidator
 	 */
 	public function getBodyValidator( $contentType ) {
 		if ( $contentType !== 'application/json' ) {

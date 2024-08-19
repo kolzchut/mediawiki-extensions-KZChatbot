@@ -30,6 +30,10 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		$this->uuid = $body['uuid'];
 		$this->validateUser();
 		$this->question = $body['text'];
+		$questionCharacterLimit = KZChatbot::getGeneralSettings()['question_character_limit'];
+		if ( mb_strlen( $this->question ) > $questionCharacterLimit ) {
+			throw new HttpException( 'Question too long', 413 );
+		}
 		$bannedWords = KZChatbot::getBannedWords();
 		foreach ( $bannedWords as $bannedWord ) {
 			if ( stripos( $this->question, $bannedWord ) !== false ) {

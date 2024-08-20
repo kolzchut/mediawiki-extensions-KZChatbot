@@ -174,10 +174,11 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 			foreach ( $slugs as $slug => $attribs ) {
 				$editUrl = $output->getTitle()->getLocalURL( [ 'edit' => $slug ] );
 				$deleteUrl = $output->getTitle()->getLocalURL( [ 'delete' => $slug ] );
+				$cssClass = $attribs['changed'] ? '' : 'default-value';
 				$output->addHTML(
-					Html::openElement( 'tr' )
+					Html::openElement( 'tr', [ 'class' => $cssClass ] )
 					. Html::element( 'td', [], $slug )
-					. Html::element( 'td', [ 'class' => $attribs['changed'] ? '' : 'default-value'], $attribs['value'] )
+					. Html::element( 'td', [], $attribs['value'] )
 					. Html::rawElement( 'td', [],
 						Html::element( 'a', [ 'href' => $editUrl ], $editLabel )
 					)

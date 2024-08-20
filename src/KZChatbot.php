@@ -4,6 +4,7 @@ namespace MediaWiki\Extension\KZChatbot;
 
 use MediaWiki\Logger\LoggerFactory;
 use Psr\Log\LoggerInterface;
+use Wikimedia\Rdbms\DBError;
 
 /**
  * @TODO general class description
@@ -297,35 +298,53 @@ class KZChatbot {
 	/**
 	 * @param string $slug
 	 * @param string $text
-	 * @return \IResultWrapper
+	 * @return true
+	 * @throws \MWException
 	 */
-	public static function saveSlug( $slug, $text ) {
-		// @TODO: additional data sanitization?
+	public static function saveSlug( string $slug, string $text ) {
+		$slugs = self::getDefaultSlugs();
+		if ( !array_key_exists( $slug, $slugs ) ) {
+			throw new \MWException( 'invalid slug name' );
+		}
+		if ( $text === $slugs[$slug] ) {
+			throw new \MWException( 'same as default text' );
+		}
 		$dbw = wfGetDB( DB_PRIMARY );
 		// Clear prior value if one exists.
-		self::deleteSlug( $slug );
-		// Insert and return result.
-		return $dbw->insert(
+		$dbw->upsert(
 			'kzchatbot_text',
 			[
 				'kzcbt_slug' => $slug,
 				'kzcbt_text' => $text,
 			],
-			__METHOD__
+			'kzcbt_slug',
+			[
+				'kzcbt_text' => $text
+			]
 		);
+
+		return true;
 	}
 
 	/**
 	 * @param string $slug
-	 * @return \IResultWrapper
+	 * @return bool
+	 * @throws \MWException
 	 */
 	public static function deleteSlug( $slug ) {
-		// @TODO: additional data sanitization?
+		if ( !self::isValidSlugName( $slug ) ) {
+			throw new \MWException( 'invalid slug name' );
+		}
 		$dbw = wfGetDB( DB_PRIMARY );
 		return $dbw->delete(
 			'kzchatbot_text',
 			[ 'kzcbt_slug' => $slug ]
 		);
+	}
+
+	public static function isValidSlugName( $slug ): bool {
+		$slugs = KZChatbot::getDefaultSlugs();
+		return ( array_key_exists( $slug, $slugs ) );
 	}
 
 	/**

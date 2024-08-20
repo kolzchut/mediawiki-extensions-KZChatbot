@@ -74,7 +74,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 
 	/**
 	 * @param string $contentType MIME Type
-	 * @return \JsonBodyValidator
+	 * @return JsonBodyValidator
 	 */
 	public function getBodyValidator( $contentType ) {
 		if ( $contentType !== 'application/json' ) {

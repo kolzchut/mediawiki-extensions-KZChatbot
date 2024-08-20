@@ -4,6 +4,7 @@ namespace MediaWiki\Extension\KZChatbot;
 
 use Html;
 use HTMLForm;
+use MediaWiki\OAuthClient\Exception;
 use SpecialPage;
 
 /**
@@ -62,10 +63,18 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 
 		// Edit operation?
 		if( !empty($queryParams['edit'] ) || $request->getVal( 'wpkzcAction' ) === 'edit' ) {
-			$currentValues = [
-				'slug' => $request->wasPosted() ? $request->getVal('wpkzcSlug' ) : $queryParams['edit'],
-				'text' => $request->wasPosted() ? $request->getVal('wpkzcText' ) : $slugs[$queryParams['edit']]['value'],
-			];
+			if ( $request->wasPosted() ) {
+				$currentValues = [
+					'slug' => $request->getVal('wpkzcSlug' ),
+					'text' => $request->getVal('wpkzcText' )
+				];
+			} else {
+				$currentValues = [
+					'slug' => $queryParams['edit'],
+					'text' => $slugs[$queryParams['edit']]['value'] ?? null,
+				];
+			}
+
 			$htmlForm = HTMLForm::factory('ooui', $this->getSlugForm($currentValues), $this->getContext());
 			$htmlForm->setId('KZChatbotSlugForm')
 				->setFormIdentifier('KZChatbotSlugForm')
@@ -206,6 +215,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				'label-message' => 'kzchatbot-slugs-label-add-slug',
 				'readonly' => true,
 				'required' => true,
+				'validation-callback' => [ KZChatbot::class, 'isValidSlugName' ]
 			],
 			'kzcText' => [
 				'type' => 'textarea',
@@ -229,50 +239,48 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	/**
 	 * Handle new slug form submission
 	 * @param array $postData Form submission data
-	 * @return string|bool Return true on success, error message on failure
+	 * @return bool
 	 */
-	public function handleSlugSave( $postData ) {
-		// Sanitize user input.
-		$slug = preg_replace( "/[^a-zA-Z_א-ת]+/", '', $postData['kzcSlug'] );
-		if ( empty( $slug ) ) {
-			return 'kzchatbot-slugs-error-alphanumeric-only';
+	public function handleSlugSave( $postData ): bool {
+		$slug = $postData['kzcSlug'];
+		$text = $postData['kzcText'];
+
+		// @TODO handle exceptions
+		try {
+			$result = KZChatbot::saveSlug($slug, $text);
+		} catch ( \Exception $e) {
+			$result = false;
 		}
-		$text = preg_replace( "/[^a-zA-Z_א-ת\\s<>\"\/,`'%*()!?:.]+/", '', $postData['kzcText'] );
 
-		// @TODO check there's actually a valid slug by that name
-
-		// @TODO: Check for existing slug by same name?
-		// Save slug
-		KZChatbot::saveSlug( $slug, $text );
-
-		// Set session data for the success message
-		$this->getRequest()->getSession()->set( 'kzSlugSaved', $slug );
+		if ( $result ) {
+			// Set session data for the success message
+			$this->getRequest()->getSession()->set('kzSlugSaved', $slug);
+		}
 
 		// Return to form.
 		$url = $this->getPageTitle()->getFullUrlForRedirect();
 		$this->getOutput()->redirect( $url );
-		return true;
+		return $result;
 	}
 
 	/**
 	 * Handle new banned word deletion
 	 * @param string $slug Slug to be deleted
-	 * @return string|bool Return true on success, error message on failure
+	 * @return bool
 	 */
-	public function handleSlugDelete( $slug ) {
-		// Sanitize user input.
-		$slug = preg_replace( "/[^a-zA-Z_א-ת]+/", '', $slug );
-
+	public function handleSlugDelete( $slug ): bool	{
 		// Delete word/pattern.
-		KZChatbot::deleteSlug( $slug );
+		$result = KZChatbot::deleteSlug( $slug );
 
-		// Set session data for the success message
-		$this->getRequest()->getSession()->set( 'kzSlugDeleted', $slug );
+		if ( $result ) {
+			// Set session data for the success message
+			$this->getRequest()->getSession()->set('kzSlugDeleted', $slug);
+		}
 
 		// Return to form.
 		$url = $this->getPageTitle()->getFullUrlForRedirect();
 		$this->getOutput()->redirect( $url );
-		return true;
+		return $result;
 	}
 
 }

@@ -50,7 +50,7 @@ class ApiKZChatbotRateAnswer extends Handler {
 		] );
 	}
 
-	/* @inheritDoc */
+	/** @inheritDoc */
 	public function validate( Validator $restValidator ) {
 		$feedbackCharacterLimit = KZChatbot::getGeneralSettings()['feedback_character_limit'];
 		parent::validate( $restValidator );
@@ -61,19 +61,18 @@ class ApiKZChatbotRateAnswer extends Handler {
 				400
 			);
 		}
-
 	}
 
 	/**
 	 * Pass user rating on specified chatbot answer to the ChatGPT API.
 	 * @return \MediaWiki\Rest\Response
 	 */
-  public function execute() {
+	public function execute() {
 		$responseCode = $this->rateAnswer();
 		$response = $this->getResponseFactory()->create();
 		$response->setStatus( $responseCode );
 		return $response;
-  }
+	}
 
 	public function needsWriteAccess() {
 		return false;

@@ -4,7 +4,6 @@ namespace MediaWiki\Extension\KZChatbot;
 
 use MediaWiki\Logger\LoggerFactory;
 use Psr\Log\LoggerInterface;
-use Wikimedia\Rdbms\DBError;
 
 /**
  * @TODO general class description
@@ -138,12 +137,23 @@ class KZChatbot {
 		return $bannedWords;
 	}
 
-
+	/**
+	 * Get the final list of slugs, including overrides saved in the database
+	 *
+	 * @return array
+	 */
 	public static function getSlugs() {
 		return array_merge( self::getDefaultSlugs(), self::getSlugsFromDB() );
 	}
 
+	/**
+	 * Get the default slugs
+	 * @todo move these to MW i18n json format?
+	 *
+	 * @return array
+	 */
 	public static function getDefaultSlugs() {
+		// phpcs:disable Generic.Files.LineLength.TooLong
 		return [
 			'chat_icon' => 'כל שאלה',
 			'chat_tip_link' => 'טיפים לניסוח שאלה טובה',
@@ -169,6 +179,7 @@ class KZChatbot {
 			'question_character_limit' => 'מקסימום $1 תווים',
 			'banned_word_found' => 'אנא נסחו מחדש את השאלה'
 		];
+		// phpcs:enable Generic.Files.LineLength.TooLong
 	}
 
 	/**
@@ -227,11 +238,11 @@ class KZChatbot {
 	public static function useQusetion( $uuid ) {
 		$userData = self::getUserData( $uuid );
 		// Check if the user already asked some questions today, or we should start from scratch
-		$userLastActiveTimestamp = wfTimestamp(TS_UNIX, $userData['kzcbu_last_active']);
-		$userLastActiveDay = date('z', $userLastActiveTimestamp);
-		$currentDayOfYear = date('z');
+		$userLastActiveTimestamp = wfTimestamp( TS_UNIX, $userData['kzcbu_last_active'] );
+		$userLastActiveDay = date( 'z', $userLastActiveTimestamp );
+		$currentDayOfYear = date( 'z' );
 		$userQuestionsLastActiveDay = $userData['kzcbu_questions_last_active_day'] ?? 0;
-		$questionsLastActiveDay = ($userLastActiveDay === $currentDayOfYear)
+		$questionsLastActiveDay = ( $userLastActiveDay === $currentDayOfYear )
 			? $userQuestionsLastActiveDay
 			: 0;
 
@@ -263,7 +274,7 @@ class KZChatbot {
 
 		// Insert data.
 		$insertRows = array_map(
-			fn( $name ) => [
+			fn ( $name ) => [
 				'kzcbs_name' => $name,
 				'kzcbs_value' => $data[$name]
 			],
@@ -349,9 +360,13 @@ class KZChatbot {
 		);
 	}
 
-	public static function isValidSlugName( $slug ): bool {
-		$slugs = KZChatbot::getDefaultSlugs();
-		return ( array_key_exists( $slug, $slugs ) );
+	/**
+	 * @param string $slugName
+	 * @return bool
+	 */
+	public static function isValidSlugName( string $slugName ): bool {
+		$slugs = self::getDefaultSlugs();
+		return ( array_key_exists( $slugName, $slugs ) );
 	}
 
 	/**

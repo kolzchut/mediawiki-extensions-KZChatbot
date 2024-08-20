@@ -20,10 +20,10 @@ class ApiKZChatbotGetConfig extends Handler {
 		];
 	}
 
-  /**
-   * Compile configuration settings for the chatbot app launcher.
-   * @return array
-   */
+	/**
+	 * Compile configuration settings for the chatbot app launcher.
+	 * @return array
+	 */
 	public function execute() {
 		$fieldNames = array_flip( KZChatbot::mappingDbToJson() );
 		$uuid = $this->getValidatedParams()['uuid'];

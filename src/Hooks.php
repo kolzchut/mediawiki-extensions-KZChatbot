@@ -20,7 +20,6 @@
 namespace MediaWiki\Extension\KZChatbot;
 
 use MediaWiki\Installer\Hook\LoadExtensionSchemaUpdatesHook;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderGetConfigVarsHook;
 use OutputPage;
 use Skin;
@@ -70,7 +69,7 @@ class Hooks implements
 	 * @param \Config $config
 	 * @return void
 	 */
-	public function onResourceLoaderGetConfigVars( array &$vars, $skin, \Config $config ) : void {
+	public function onResourceLoaderGetConfigVars( array &$vars, $skin, \Config $config ): void {
 		$vars['KZChatbotSlugs'] = KZChatbot::getSlugs();
 		$chatbotSettings = KZChatbot::getGeneralSettings();
 		$vars['KZChatbotSettings'] = [

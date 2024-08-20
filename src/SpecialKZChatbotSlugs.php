@@ -4,7 +4,6 @@ namespace MediaWiki\Extension\KZChatbot;
 
 use Html;
 use HTMLForm;
-use MediaWiki\OAuthClient\Exception;
 use SpecialPage;
 
 /**
@@ -39,13 +38,13 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 
 		$slugs = [];
 
-		foreach( KZChatbot::getDefaultSlugs() as $name => $value ) {
+		foreach ( KZChatbot::getDefaultSlugs() as $name => $value ) {
 			$slugs[$name] = [
 				'value' => $value,
 				'changed' => false
 			];
 		}
-		foreach( KZChatbot::getSlugsFromDB() as $name => $value ) {
+		foreach ( KZChatbot::getSlugsFromDB() as $name => $value ) {
 			$slugs[$name] = [
 				'value' => $value,
 				'changed' => true
@@ -62,11 +61,11 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 		}
 
 		// Edit operation?
-		if( !empty($queryParams['edit'] ) || $request->getVal( 'wpkzcAction' ) === 'edit' ) {
+		if ( !empty( $queryParams['edit'] ) || $request->getVal( 'wpkzcAction' ) === 'edit' ) {
 			if ( $request->wasPosted() ) {
 				$currentValues = [
-					'slug' => $request->getVal('wpkzcSlug' ),
-					'text' => $request->getVal('wpkzcText' )
+					'slug' => $request->getVal( 'wpkzcSlug' ),
+					'text' => $request->getVal( 'wpkzcText' )
 				];
 			} else {
 				$currentValues = [
@@ -75,26 +74,25 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				];
 			}
 
-			$htmlForm = HTMLForm::factory('ooui', $this->getSlugForm($currentValues), $this->getContext());
-			$htmlForm->setId('KZChatbotSlugForm')
-				->setFormIdentifier('KZChatbotSlugForm')
-				->setSubmitName("kzcSubmit")
-				->setSubmitTextMsg('kzchatbot-slug-update')
-				->setSubmitCallback([$this, 'handleSlugSave']);
+			$htmlForm = HTMLForm::factory( 'ooui', $this->getSlugForm( $currentValues ), $this->getContext() );
+			$htmlForm->setId( 'KZChatbotSlugForm' )
+				->setFormIdentifier( 'KZChatbotSlugForm' )
+				->setSubmitName( "kzcSubmit" )
+				->setSubmitTextMsg( 'kzchatbot-slug-update' )
+				->setSubmitCallback( [ $this, 'handleSlugSave' ] );
 
-			if ($request->wasPosted()) {
-				if ($this->getRequest()->getVal('wpkzcAction') === 'edit') {
+			if ( $request->wasPosted() ) {
+				if ( $this->getRequest()->getVal( 'wpkzcAction' ) === 'edit' ) {
 					$htmlForm->prepareForm()
 						->trySubmit();
 				}
-			} elseif (!empty($queryParams['edit'])) {
-				if (isset($slugs[$queryParams['edit']])) {
+			} elseif ( !empty( $queryParams['edit'] ) ) {
+				if ( isset( $slugs[$queryParams['edit']] ) ) {
 					$htmlForm->show();
 					return;
 				}
 			}
 		}
-
 
 		// Successful operation? If so, show status message.
 		$session = $this->getRequest()->getSession();
@@ -248,14 +246,14 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 
 		// @TODO handle exceptions
 		try {
-			$result = KZChatbot::saveSlug($slug, $text);
-		} catch ( \Exception $e) {
+			$result = KZChatbot::saveSlug( $slug, $text );
+		} catch ( \Exception $e ) {
 			$result = false;
 		}
 
 		if ( $result ) {
 			// Set session data for the success message
-			$this->getRequest()->getSession()->set('kzSlugSaved', $slug);
+			$this->getRequest()->getSession()->set( 'kzSlugSaved', $slug );
 		}
 
 		// Return to form.
@@ -269,13 +267,13 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	 * @param string $slug Slug to be deleted
 	 * @return bool
 	 */
-	public function handleSlugDelete( $slug ): bool	{
+	public function handleSlugDelete( $slug ): bool {
 		// Delete word/pattern.
 		$result = KZChatbot::deleteSlug( $slug );
 
 		if ( $result ) {
 			// Set session data for the success message
-			$this->getRequest()->getSession()->set('kzSlugDeleted', $slug);
+			$this->getRequest()->getSession()->set( 'kzSlugDeleted', $slug );
 		}
 
 		// Return to form.

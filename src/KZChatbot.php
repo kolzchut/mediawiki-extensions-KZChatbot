@@ -226,8 +226,15 @@ class KZChatbot {
 	 */
 	public static function useQusetion( $uuid ) {
 		$userData = self::getUserData( $uuid );
-		$lastActiveDay = date( 'z', wfTimestamp( TS_UNIX, $userData['kzcbu_last_active'] ) );
-		$questionsLastActiveDay = $lastActiveDay === date( 'z' ) ? ( $userData['kzcbu_questions_last_active_day'] ?? 0 ) : 0;
+		// Check if the user already asked some questions today, or we should start from scratch
+		$userLastActiveTimestamp = wfTimestamp(TS_UNIX, $userData['kzcbu_last_active']);
+		$userLastActiveDay = date('z', $userLastActiveTimestamp);
+		$currentDayOfYear = date('z');
+		$userQuestionsLastActiveDay = $userData['kzcbu_questions_last_active_day'] ?? 0;
+		$questionsLastActiveDay = ($userLastActiveDay === $currentDayOfYear)
+			? $userQuestionsLastActiveDay
+			: 0;
+
 		$dbw = wfGetDB( DB_PRIMARY );
 		$dbw->update(
 			'kzchatbot_users',

@@ -1,6 +1,6 @@
 {
-  "@metadata": {
-    "authors": ["Joel R. ([https://www.kolzchut.org.il Kol-Zchut])"]
-  },
-  "kolsherutlinks-desc": "{{desc|name=KZChatbot|url=https://github.com/kolzchut/mediawiki-extensions-KZChatbot}}"
+	"@metadata": {
+		"authors": [ "Joel R. ([https://www.kolzchut.org.il Kol-Zchut])" ]
+	},
+	"kolsherutlinks-desc": "{{desc|name=KZChatbot|url=https://github.com/kolzchut/mediawiki-extensions-KZChatbot}}"
 }

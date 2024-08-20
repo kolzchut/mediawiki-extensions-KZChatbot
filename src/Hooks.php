@@ -75,6 +75,7 @@ class Hooks implements
 		$chatbotSettings = KZChatbot::getGeneralSettings();
 		$vars['KZChatbotSettings'] = [
 			'feedbackCharacterLimit' => $chatbotSettings['feedback_character_limit'],
+			'questionCharacterLimit' => $chatbotSettings['question_character_limit'],
 			'usageHelpUrl' => $chatbotSettings['usage_help_url'],
 			'termsofServiceUrl' => $chatbotSettings['terms_of_service_url']
 		];

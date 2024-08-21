@@ -147,6 +147,21 @@ class KZChatbot {
 	}
 
 	/**
+	 * This returns the slugs from self::getSlugs(), but replaced parameters with the real values
+	 *
+	 * @return array
+	 */
+	public static function getSlugsWithReplacedParams() {
+		$slugs = self::getSlugs();
+		$settings = self::getGeneralSettings();
+
+		$slugs[ 'feedback_character_limit' ] = str_replace( '$1', $settings['feedback_character_limit'], $slugs[ 'feedback_character_limit' ] );
+		$slugs[ 'question_character_limit' ] = str_replace( '$1', $settings['question_character_limit'], $slugs[ 'question_character_limit' ] );
+
+		return $slugs;
+	}
+
+	/**
 	 * Get the default slugs
 	 * @todo move these to MW i18n json format?
 	 *

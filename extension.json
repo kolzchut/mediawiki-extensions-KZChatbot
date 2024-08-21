@@ -42,7 +42,7 @@
 	"ResourceModules": {
 		"ext.KZChatbot.form": {
 			"localBasePath": "resources/ext.KZChatbot.form",
-			"remoteExtPath": "KZChatbot",
+			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.form",
 			"scripts": [ "convertmessagebox.js" ],
 			"styles": [ "forms.css" ],
 			"dependencies": [ "mediawiki.notification.convertmessagebox" ]

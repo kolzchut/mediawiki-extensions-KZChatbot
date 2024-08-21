@@ -32,12 +32,12 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		$this->question = $body['text'];
 		$questionCharacterLimit = KZChatbot::getGeneralSettings()['question_character_limit'];
 		if ( mb_strlen( $this->question ) > $questionCharacterLimit ) {
-			throw new HttpException( 'Question too long', 413 );
+			throw new HttpException( Slugs::getSlug( 'question_character_limit' ), 413 );
 		}
 		$bannedWords = KZChatbot::getBannedWords();
 		foreach ( $bannedWords as $bannedWord ) {
 			if ( stripos( $this->question, $bannedWord ) !== false ) {
-				throw new HttpException( 'Banned word found', 403 );
+				throw new HttpException( Slugs::getSlug( 'banned_word_found' ), 403 );
 			}
 		}
 		return $this->generateAnswer();
@@ -105,6 +105,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 
 	/**
 	 * Validate the request parameters.
+	 * @throws HttpException
 	 */
 	private function validateUser() {
 		$uuid = $this->uuid;
@@ -114,7 +115,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		}
 		$questionsPermitted = KZChatbot::getQuestionsPermitted( $uuid );
 		if ( $questionsPermitted <= 0 ) {
-			throw new HttpException( 'Daily limit exceeded', 429 );
+			throw new HttpException( Slugs::getSlug( 'questions_daily_limit' ), 429 );
 		}
 	}
 }

@@ -38,13 +38,13 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 
 		$slugs = [];
 
-		foreach ( KZChatbot::getDefaultSlugs() as $name => $value ) {
+		foreach ( Slugs::getDefaultSlugs() as $name => $value ) {
 			$slugs[$name] = [
 				'value' => $value,
 				'changed' => false
 			];
 		}
-		foreach ( KZChatbot::getSlugsFromDB() as $name => $value ) {
+		foreach ( Slugs::getSlugsFromDB() as $name => $value ) {
 			$slugs[$name] = [
 				'value' => $value,
 				'changed' => true
@@ -214,7 +214,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				'label-message' => 'kzchatbot-slugs-label-add-slug',
 				'readonly' => true,
 				'required' => true,
-				'validation-callback' => [ KZChatbot::class, 'isValidSlugName' ]
+				'validation-callback' => [ Slugs::class, 'isValidSlugName' ]
 			],
 			'kzcText' => [
 				'type' => 'textarea',
@@ -246,7 +246,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 
 		// @TODO handle exceptions
 		try {
-			$result = KZChatbot::saveSlug( $slug, $text );
+			$result = Slugs::saveSlug( $slug, $text );
 		} catch ( \Exception $e ) {
 			$result = false;
 		}
@@ -269,7 +269,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	 */
 	public function handleSlugDelete( $slug ): bool {
 		// Delete word/pattern.
-		$result = KZChatbot::deleteSlug( $slug );
+		$result = Slugs::deleteSlug( $slug );
 
 		if ( $result ) {
 			// Set session data for the success message

@@ -12,12 +12,24 @@ class ApiKZChatbotGetStatus extends Handler {
 	 * @return array
 	 */
 	public function execute() {
-		$uuid = $this->getValidatedParams()[ 'uuid' ];
-		$userData = KZChatbot::getUserData( $uuid );
 		$fieldNames = array_flip( KZChatbot::mappingDbToJson() );
+		$uuid = $this->getValidatedParams()[ 'uuid' ];
+		if ( !empty( $uuid ) ) {
+			$userData = KZChatbot::getUserData( $uuid );
+			$uuid = $userData[ $fieldNames['uuid'] ];
+		}
+		if ( empty( $userData ) ) {
+			$userData = KZChatbot::newUser();
+		}
+		$uuid = $userData[ $fieldNames['uuid'] ];
+		$settings = KZChatbot::getGeneralSettings();
+		$cookieExpiryDays = $settings['cookie_expiry_days'] ?? 365;
+		$cookieExpiry = date( DATE_RFC3339, time() + $cookieExpiryDays * 60 * 60 * 24 );
 		return [
+			'uuid' => $uuid,
 			'chatbotIsShown' => $userData[$fieldNames['chatbotIsShown']],
 			'questionsPermitted' => KZChatbot::getQuestionsPermitted( $uuid ),
+			'cookieExpiry' => $cookieExpiry,
 		];
 	}
 
@@ -28,7 +40,7 @@ class ApiKZChatbotGetStatus extends Handler {
 		return [
 			'uuid' => [
 				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
+				ParamValidator::PARAM_REQUIRED => false,
 				self::PARAM_SOURCE => 'query',
 			]
 		];

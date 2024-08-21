@@ -8,7 +8,7 @@ const scriptVersion = 9,
 	scriptPath = serverName + mw.config.get( 'wgScriptPath' ),
 	restPath = scriptPath + '/rest.php',
 	extensionCodePath = scriptPath + '/extensions/KZChatbot/resources/ext.KZChatbot.bot',
-	getConfigPath = '/kzchatbot/v0/config',
+	getConfigPath = '/kzchatbot/v0/status',
 	endpoint = restPath + getConfigPath;
 
 // Callout to config endpoint

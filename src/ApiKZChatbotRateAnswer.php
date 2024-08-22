@@ -92,7 +92,6 @@ class ApiKZChatbotRateAnswer extends Handler {
 				'X-FORWARDED-FOR' => $_SERVER['REMOTE_ADDR'],
 			],
 			'json' => [
-				'rating' => 1,
 				'free_text' => $text,
 				'answer_classification' => $answerClassification,
 				'conversation_id' => $answerId,

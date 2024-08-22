@@ -36,7 +36,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		}
 		$bannedWords = KZChatbot::getBannedWords();
 		foreach ( $bannedWords as $bannedWord ) {
-			if ( stripos( $this->question, $bannedWord ) !== false ) {
+			if ( preg_match( $bannedWord, $this->question ) ) {
 				throw new HttpException( Slugs::getSlug( 'banned_word_found' ), 403 );
 			}
 		}

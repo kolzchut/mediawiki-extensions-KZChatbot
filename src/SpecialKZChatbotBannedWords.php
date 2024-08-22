@@ -179,7 +179,7 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 	 */
 	public function handleBannedWordSave( $postData ) {
 		// Sanitize user input.
-		$newWord = preg_replace( "/[^a-zA-Zא-ת \\/\\`\\'\\-]+/", '', $postData['kzcNewBannedWord'] );
+		$newWord = $postData['kzcNewBannedWord'];
 		if ( empty( $newWord ) ) {
 			return 'kzchatbot-banned-words-error-alphanumeric-only';
 		}

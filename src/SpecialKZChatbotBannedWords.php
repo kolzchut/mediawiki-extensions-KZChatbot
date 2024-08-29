@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use Exception;
 use Html;
 use HTMLForm;
 use SpecialPage;
@@ -181,7 +182,10 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 		// Sanitize user input.
 		$newWord = $postData['kzcNewBannedWord'];
 		if ( empty( $newWord ) ) {
-			return 'kzchatbot-banned-words-error-alphanumeric-only';
+			return 'kzchatbot-banned-words-error-empty-string';
+		}
+		if ( $newWord[0] === '/' && !self::validateRegexPattern( $newWord ) ) {
+			return 'kzchatbot-banned-words-error-invalid-regex';
 		}
 
 		// Save word/pattern.
@@ -220,6 +224,54 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 		$url = $this->getPageTitle()->getFullUrlForRedirect();
 		$this->getOutput()->redirect( $url );
 		return true;
+	}
+
+	/**
+	 * Validate a regular expression.
+	 * In our case, regular expressions should not be empty or contain any modifiers.
+	 *
+	 * @param string $pattern
+	 * @return bool
+	 */
+	private static function validateRegexPattern( $pattern ) {
+		// Check if the pattern is a non-empty string
+		if ( !is_string( $pattern ) || empty( $pattern ) ) {
+			return false;
+		}
+
+		// Check if the pattern starts and ends with delimiters
+		if ( $pattern[0] !== $pattern[strlen( $pattern ) - 1] ) {
+			return false;
+		}
+
+		// Get the delimiter
+		$delimiter = $pattern[0];
+
+		// Split the pattern into parts
+		$parts = explode( $delimiter, $pattern );
+
+		// Check if there are exactly 3 parts (empty start, pattern, modifiers)
+		if ( count( $parts ) !== 3 ) {
+			return false;
+		}
+
+		// Do not allow an empty pattern
+		if ( $parts[1] === '' ) {
+			return false;
+		}
+
+		// Check if there are any modifiers
+		if ( !empty( $parts[2] ) ) {
+			return false;
+		}
+
+		// Try to compile the pattern
+		try {
+			preg_match( $pattern, '' );
+			return true;
+		} catch ( Exception $e ) {
+			return false;
+		}
 	}
 
 }

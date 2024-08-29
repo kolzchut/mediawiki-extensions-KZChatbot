@@ -36,7 +36,10 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		}
 		$bannedWords = KZChatbot::getBannedWords();
 		foreach ( $bannedWords as $bannedWord ) {
-			if (strpos( $this->question, $bannedWord )!== false || preg_match( $bannedWord, $this->question ) ) {
+			// Add the 'u' modifier when testing a regular expression
+			if ( strpos( $this->question, $bannedWord ) !== false ||
+				preg_match( $bannedWord . 'u', $this->question )
+			) {
 				throw new HttpException( Slugs::getSlug( 'banned_word_found' ), 403 );
 			}
 		}

@@ -29,11 +29,13 @@ class Slugs {
 			'chat_icon' => 'כל שאלה',
 			'chat_tip_link' => 'טיפים לניסוח שאלה טובה',
 			'close_chat_icon' => 'סגירה',
-			'dislike_follow_up_question' => 'תודה על המשוב. נשמח לדעת למה.',
+			'dislike_follow_up_question' => 'תודה! נשמח לדעת למה',
 			'dislike_followup_q_first' => 'המידע לא נכון',
 			'dislike_followup_q_second' => 'התשובה לא קשורה לשאלה',
 			'dislike_followup_q_third' => 'התשובה לא ברורה',
-			'feedback_free_text' => 'רוצה לפרט? זה יעזור לנו להשתפר',
+			'dislike_free_text' => 'רוצה לפרט? זה יעזור לנו להשתפר',
+			'like_follow_up_question' => 'תודה!',
+			'like_free_text' => 'רוצה לפרט?',
 			'feedback_free_text_disclaimer' => 'אין לשתף פרטים מזהים או מידע רגיש',
 			'new_question_button' => 'שאלה חדשה',
 			'new_question_filed' => 'שאלה חדשה',
@@ -48,7 +50,8 @@ class Slugs {
 			'feedback_character_limit' => 'מקסימום $1 תווים',
 			'questions_daily_limit' => 'לא ניתן לשאול שאלות נוספות היום',
 			'question_character_limit' => 'מקסימום $1 תווים',
-			'banned_word_found' => 'אנא נסחו מחדש את השאלה'
+			'banned_word_found' => 'אנא נסחו מחדש את השאלה',
+			'general_error' => 'אירעה שגיאה במערכת. אנא נסו שנית מאוחר יותר.'
 		];
         // phpcs:enable Generic.Files.LineLength.TooLong
 	}

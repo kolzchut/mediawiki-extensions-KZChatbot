@@ -2,7 +2,8 @@
 	"name": "KZChatbot",
 	"private": true,
 	"scripts": {
-		"test": "grunt test"
+		"test": "grunt test",
+		"build": "cd resources/ext.KZChatbot.react && npm install && npm run build && cp dist/assets/* ../ext.KZChatbot.bot/"
 	},
 	"devDependencies": {
 		"eslint-config-wikimedia": "0.28.2",

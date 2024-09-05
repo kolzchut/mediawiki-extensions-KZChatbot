@@ -7,15 +7,6 @@
 		"php-parallel-lint/php-parallel-lint": "1.4.0"
 	},
 	"scripts": {
-		"post-install-cmd": [
-			"@build-react-chatbot"
-		],
-		"post-update-cmd": [
-			"@build-react-chatbot"
-		],
-		"build-react-chatbot": [
-			"cd resources/ext.KZChatbot.react && npm install && npm run build && cp dist/assets/* ../ext.KZChatbot.bot/"
-		],
 		"test": [
 			"parallel-lint . --exclude vendor --exclude node_modules",
 			"@phpcs",

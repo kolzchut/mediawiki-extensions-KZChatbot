@@ -34,11 +34,11 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		if ( mb_strlen( $this->question ) > $questionCharacterLimit ) {
 			throw new HttpException( Slugs::getSlug( 'question_character_limit' ), 413 );
 		}
-		$bannedWords = KZChatbot::getBannedWords();
-		foreach ( $bannedWords as $bannedWord ) {
+		$bannedWords = BannedWord::getAll();
+		foreach ( $bannedWords as $word ) {
 			// Add the 'u' modifier when testing a regular expression
-			if ( strpos( $this->question, $bannedWord ) !== false ||
-				preg_match( $bannedWord . 'u', $this->question )
+			if ( strpos( $this->question, $word->getPattern() ) !== false ||
+				preg_match( $word->getPattern() . 'u', $this->question )
 			) {
 				throw new HttpException( Slugs::getSlug( 'banned_word_found' ), 403 );
 			}

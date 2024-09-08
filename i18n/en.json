@@ -37,6 +37,8 @@
 	"kzchatbot-banned-words-op-delete": "delete",
 	"kzchatbot-banned-words-label-add-banned-word": "Add new banned word or pattern",
 	"kzchatbot-banned-words-help-add-banned-word": "When entering a regular expression, enclose in '/' characters.",
+	"kzchatbot-banned-words-label-banned-word-desc": "Description",
+	"kzchatbot-banned-words-help-banned-word-desc": "Please include a description for RegEx",
 	"kzchatbot-banned-word-submit": "Save",
 	"kzchatbot-banned-words-error-empty-string": "Word or pattern cannot be empty.",
 	"kzchatbot-banned-words-error-invalid-regex": "You have entered an invalid regular expression.",

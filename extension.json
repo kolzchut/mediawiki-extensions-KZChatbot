@@ -1,6 +1,6 @@
 {
 	"name": "KZChatbot",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"author": [ "Joel R. ([https://www.kolzchut.org.il Kol-Zchut])" ],
 	"url": "https://github.com/kolzchut/mediawiki-extensions-KZChatbot",
 	"descriptionmsg": "kzchatbot-desc",

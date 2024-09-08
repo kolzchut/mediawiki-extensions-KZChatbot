@@ -32,9 +32,9 @@ class Hooks implements
 	/**
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/LoadExtensionSchemaUpdates
 	 * @param \DatabaseUpdater $updater DatabaseUpdater subclass
-	 * @return bool|void True or no return value to continue or false to abort
+	 * @return void True or no return value to continue or false to abort
 	 */
-	public function onLoadExtensionSchemaUpdates( $updater ): bool {
+	public function onLoadExtensionSchemaUpdates( $updater ) {
 		$updater->addExtensionTable(
 			'kzchatbot_users',
 			__DIR__ . '/../sql/table_kzchatbot_users.sql'
@@ -47,7 +47,10 @@ class Hooks implements
 			'kzchatbot_text',
 			__DIR__ . '/../sql/table_kzchatbot_text.sql'
 		);
-		return true;
+		$updater->addExtensionTable(
+			'kzchatbot_bannedwords',
+			__DIR__ . '/../sql/table_kzchatbot_bannedwords.sql'
+		);
 	}
 
 	/**

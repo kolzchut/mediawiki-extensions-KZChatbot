@@ -122,22 +122,6 @@ class KZChatbot {
 	}
 
 	/**
-	 * @return array|bool
-	 */
-	public static function getBannedWords() {
-		$dbr = wfGetDB( DB_REPLICA );
-		$res = $dbr->select(
-			[ 'settings' => 'kzchatbot_settings' ],
-			[ 'kzcbs_name', 'kzcbs_value' ],
-			[ 'settings.kzcbs_name' => 'banned_words' ],
-			__METHOD__,
-		);
-		$row = $res->fetchRow();
-		$bannedWords = !empty( $row ) ? json_decode( $row['kzcbs_value'] ) : [];
-		return $bannedWords;
-	}
-
-	/**
 	 * @return array
 	 */
 	public static function getGeneralSettingsNames() {
@@ -219,58 +203,6 @@ class KZChatbot {
 		return $dbw->insert(
 			'kzchatbot_settings',
 			$insertRows,
-			__METHOD__
-		);
-	}
-
-	/**
-	 * @param string $newWord
-	 * @return \IResultWrapper
-	 */
-	public static function saveBannedWord( $newWord ) {
-		$bannedWords = self::getBannedWords();
-		$bannedWords[] = $newWord;
-		$dbw = wfGetDB( DB_PRIMARY );
-
-		// Clear prior value.
-		$dbw->delete(
-			'kzchatbot_settings',
-			[ 'kzcbs_name' => 'banned_words' ]
-		);
-
-		// Insert updated data.
-		return $dbw->insert(
-			'kzchatbot_settings',
-			[
-				'kzcbs_name' => 'banned_words',
-				'kzcbs_value' => json_encode( $bannedWords ),
-			],
-			__METHOD__
-		);
-	}
-
-	/**
-	 * @param int $wordIndex
-	 * @return \IResultWrapper
-	 */
-	public static function deleteBannedWord( $wordIndex ) {
-		$bannedWords = self::getBannedWords();
-		array_splice( $bannedWords, $wordIndex, 1 );
-		$dbw = wfGetDB( DB_PRIMARY );
-
-		// Clear prior value.
-		$dbw->delete(
-			'kzchatbot_settings',
-			[ 'kzcbs_name' => 'banned_words' ]
-		);
-
-		// Insert updated data.
-		return $dbw->insert(
-			'kzchatbot_settings',
-			[
-				'kzcbs_name' => 'banned_words',
-				'kzcbs_value' => json_encode( $bannedWords ),
-			],
 			__METHOD__
 		);
 	}

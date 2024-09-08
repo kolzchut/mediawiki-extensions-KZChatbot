@@ -103,7 +103,7 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 		);
 
 		// Build table of existing banned words/patterns.
-		$bannedWords = KZChatbot::getBannedWords();
+		$bannedWords = BannedWord::getAll();
 		if ( !empty( $bannedWords ) ) {
 			$output->addModuleStyles( 'jquery.tablesorter.styles' );
 			$output->addModules( 'jquery.tablesorter' );
@@ -114,6 +114,7 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 				)
 				. Html::openElement( 'thead' ) . Html::openElement( 'tr' )
 				. Html::element( 'th', [], $this->msg( 'kzchatbot-banned-words-label-banned-word' )->text() )
+				. Html::element( 'th', [], $this->msg( 'kzchatbot-banned-words-label-banned-word-desc' )->text() )
 				. Html::element( 'th' )
 				. Html::closeElement( 'tr' ) . Html::closeElement( 'thead' )
 				. Html::openElement( 'tbody' )
@@ -121,10 +122,11 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 			$deleteLabel = $this->msg( 'kzchatbot-banned-words-op-delete' )->text();
 			for ( $i = 0; $i < count( $bannedWords ); $i++ ) {
 				$word = $bannedWords[$i];
-				$deleteUrl = $output->getTitle()->getLocalURL( [ 'delete' => $i ] );
+				$deleteUrl = $output->getTitle()->getLocalURL( [ 'delete' => $word->getId() ] );
 				$output->addHTML(
 					Html::openElement( 'tr' )
-					. Html::element( 'td', [], $word )
+					. Html::element( 'td', [], $word->getPattern() )
+					. Html::element( 'td', [], $word->getDescription() )
 					. Html::rawElement( 'td', [],
 							Html::element( 'a', [ 'href' => $deleteUrl ], $deleteLabel )
 					)
@@ -164,11 +166,15 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 		$form = [
 			'kzcNewBannedWord' => [
 				'type' => 'text',
-				'cssclass' => 'ksl-new-banned-word',
 				'label-message' => 'kzchatbot-banned-words-label-add-banned-word',
 				'help-message' => 'kzchatbot-banned-words-help-add-banned-word',
 				'required' => true,
 			],
+			'kzcBannedWordDescription' => [
+				'type' => 'text',
+				'label-message' => 'kzchatbot-banned-words-label-banned-word-desc',
+				'help-message' => 'kzchatbot-banned-words-help-banned-word-desc'
+			]
 		];
 		return $form;
 	}
@@ -180,45 +186,53 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 	 */
 	public function handleBannedWordSave( $postData ) {
 		// Sanitize user input.
-		$newWord = $postData['kzcNewBannedWord'];
-		if ( empty( $newWord ) ) {
+		$pattern = $postData['kzcNewBannedWord'];
+		if ( empty( $pattern ) ) {
 			return 'kzchatbot-banned-words-error-empty-string';
 		}
-		if ( $newWord[0] === '/' && !self::validateRegexPattern( $newWord ) ) {
+		if ( $pattern[0] === '/' && !self::validateRegexPattern( $pattern ) ) {
 			return 'kzchatbot-banned-words-error-invalid-regex';
 		}
 
+		$newWordDesc = $postData['kzcBannedWordDescription'];
+
+		$word = BannedWord::createNew( $pattern, $newWordDesc );
+
 		// Save word/pattern.
-		KZChatbot::saveBannedWord( $newWord );
+		$result = $word->save();
 
-		// Set session data for the success message
-		$this->getRequest()->getSession()->set( 'kzBannedWordSaved', $newWord );
+		if ( $word->save() ) {
+			// Set session data for the success message
+			$this->getRequest()->getSession()->set( 'kzBannedWordSaved', $pattern );
+			// Return to form.
+			$url = $this->getPageTitle()->getFullUrlForRedirect();
+			$this->getOutput()->redirect( $url );
+			return true;
+		}
 
-		// Return to form.
-		$url = $this->getPageTitle()->getFullUrlForRedirect();
-		$this->getOutput()->redirect( $url );
-		return true;
+		return false;
 	}
 
 	/**
-	 * Handle new banned word deletion
-	 * @param int $wordIndex Index of the word to be deleted
+	 * Handle banned word deletion
+	 * @param int $id ID of the word to be deleted
 	 * @return string|bool Return true on success, error message on failure
+	 * @throws \MWException
 	 */
-	public function handleBannedWordDelete( $wordIndex ) {
-		// First get the text of the word/pattern.
-		$bannedWords = KZChatbot::getBannedWords();
-		$doomedWord = $bannedWords[ $wordIndex ];
-		if ( empty( $doomedWord ) ) {
-			// This shouldn't happen.
-			return false;
+	public function handleBannedWordDelete( $id ) {
+		$doomedWord = new BannedWord( $id );
+		if ( !$doomedWord->exists() ) {
+			throw new \MWException( "No banned word with id $id  was found" );
 		}
 
-		// Delete word/pattern.
-		KZChatbot::deleteBannedWord( $wordIndex );
+		$result = $doomedWord->delete();
+		if ( !$result ) {
+			// @todo i18n
+			return 'Failed to delete banned word with id ' . $id;
+		}
 
 		// Set session data for the success message
-		$this->getRequest()->getSession()->set( 'kzBannedWordDeleted', $doomedWord );
+		$this->getRequest()->getSession()->set( 'kzBannedWordDeleted', $doomedWord->getPattern() );
 
 		// Return to form.
 		$url = $this->getPageTitle()->getFullUrlForRedirect();

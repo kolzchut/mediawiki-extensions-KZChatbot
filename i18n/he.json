@@ -37,6 +37,8 @@
 	"kzchatbot-banned-words-op-delete": "מחיקה",
 	"kzchatbot-banned-words-label-add-banned-word": "הוסף מילה או דפוס אסור חדש",
 	"kzchatbot-banned-words-help-add-banned-word": "כדי להזין 'regular expression' לעטוף אותו בתווי '/'.",
+	"kzchatbot-banned-words-label-banned-word-desc": "תיאור",
+	"kzchatbot-banned-words-help-banned-word-desc": "חשוב להוסיף תיאור מילולי לביטויי RegEx",
 	"kzchatbot-banned-word-submit": "שמור",
 	"kzchatbot-banned-words-error-empty-string": "לא ניתן לשמור מחרוזת ריקה",
 	"kzchatbot-banned-words-error-invalid-regex": "הביטוי הרגולרי (RegEx) אינו תקין.",

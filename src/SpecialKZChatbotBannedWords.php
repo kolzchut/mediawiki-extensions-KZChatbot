@@ -38,13 +38,13 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 		$output->addModules( 'ext.KZChatbot.form' );
 
 		// Delete operation?
-		$queryParams = $this->getRequest()->getQueryValues();
-		$editId = isset($queryParams['edit']) && is_numeric($queryParams['edit']) ? intval($queryParams['edit']) : null;
+		$params = $this->getRequest()->getQueryValues();
+		$editId = isset( $params['edit'] ) && is_numeric( $params['edit'] ) ? intval( $params['edit'] ) : null;
 
-		if ( isset( $queryParams['delete'] ) && is_numeric( $queryParams['delete'] )
-			&& $queryParams['delete'] == intval( $queryParams['delete'] )
+		if ( isset( $params['delete'] ) && is_numeric( $params['delete'] )
+			&& $params['delete'] == intval( $params['delete'] )
 		) {
-			$this->handleBannedWordDelete( $queryParams['delete'] );
+			$this->handleBannedWordDelete( $params['delete'] );
 			return;
 		}
 
@@ -158,7 +158,7 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 		$output->setPageTitle( $this->msg( 'kzchatbot-banned-words-title' ) );
 		$legendMsg = $editId ? 'kzchatbot-banned-words-form-edit-word' : 'kzchatbot-banned-words-form-new-word';
 
-		$htmlForm = HTMLForm::factory( 'ooui', $this->getBannedWordForm($editId), $this->getContext() );
+		$htmlForm = HTMLForm::factory( 'ooui', $this->getBannedWordForm( $editId ), $this->getContext() );
 		$htmlForm->setId( 'KZChatbotBannedWordForm' )
 			->setFormIdentifier( 'KZChatbotBannedWordForm' )
 			->setSubmitName( "kzcSubmit" )
@@ -166,7 +166,7 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 			->setSubmitCallback( [ $this, 'handleBannedWordSave' ] )
 			->setWrapperLegendMsg( $legendMsg );
 
-		if ($editId) {
+		if ( $editId ) {
 			$htmlForm->setCancelTarget( $this->getPageTitle() )->showCancel();
 		}
 
@@ -175,9 +175,10 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 
 	/**
 	 * Define new banned word form structure
+	 * @param int|null $editId
 	 * @return array
 	 */
-	private function getBannedWordForm($editId = null) {
+	private function getBannedWordForm( ?int $editId = null ): array {
 		$form = [
 			'kzcNewBannedWord' => [
 				'type' => 'text',
@@ -201,8 +202,8 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 			]
 		];
 
-		if ($editId) {
-			$word = new BannedWord($editId);
+		if ( $editId ) {
+			$word = new BannedWord( $editId );
 			$form['kzcNewBannedWord']['default'] = $word->getPattern();
 			$form['kzcBannedWordDescription']['default'] = $word->getDescription();
 			$form['kzcBannedWordReplyMessage']['default'] = $word->getReplyMessage();
@@ -229,7 +230,7 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 		$replyMessage = $postData['kzcBannedWordReplyMessage'];
 		$editId = $postData['kzcBannedWordID'] ?? null;
 
-		$word = new BannedWord($editId, $pattern, $newWordDesc, $replyMessage);
+		$word = new BannedWord( $editId, $pattern, $newWordDesc, $replyMessage );
 
 		// Save word/pattern.
 		$result = $word->save();

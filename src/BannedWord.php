@@ -16,9 +16,11 @@ class BannedWord {
 	 * @param int|null $id
 	 * @param string|null $pattern
 	 * @param string|null $description
+	 * @param string|null $reply_message
 	 */
-
-	public function __construct(?int $id = null, ?string $pattern = null, ?string $description = null, ?string $reply_message = null) {
+	public function __construct(
+		?int $id = null, ?string $pattern = null, ?string $description = null, ?string $reply_message = null
+	) {
 		$this->id = $id;
 		$this->pattern = $pattern;
 		$this->description = $description;
@@ -31,8 +33,8 @@ class BannedWord {
 	 * @param string|null $reply_message
 	 * @return self
 	 */
-	public static function createNew(string $pattern, ?string $description, ?string $reply_message): self {
-		return new self(null, $pattern, $description, $reply_message);
+	public static function createNew( string $pattern, ?string $description, ?string $reply_message ): self {
+		return new self( null, $pattern, $description, $reply_message );
 	}
 
 	/**
@@ -45,7 +47,7 @@ class BannedWord {
 
 		$res = $dbr->select(
 		   'kzchatbot_bannedwords',
-			['kzcbb_id', 'kzcbb_pattern', 'kzcbb_description', 'kzcbb_reply_message'],
+			[ 'kzcbb_id', 'kzcbb_pattern', 'kzcbb_description', 'kzcbb_reply_message' ],
 		   $conds
 		);
 
@@ -71,7 +73,9 @@ class BannedWord {
 	 * @return BannedWord
 	 */
 	public static function newFromRow( array $row ): BannedWord {
-		return new self($row['kzcbb_id'], $row['kzcbb_pattern'], $row['kzcbb_description'], $row['kzcbb_reply_message']);
+		return new self(
+			$row['kzcbb_id'], $row['kzcbb_pattern'], $row['kzcbb_description'], $row['kzcbb_reply_message']
+		);
 	}
 
 	/**
@@ -178,14 +182,21 @@ class BannedWord {
 		return $this->description;
 	}
 
+	/**
+	 * @return string|null
+	 */
 	public function getReplyMessage(): ?string {
-		if (!$this->reply_message) {
+		if ( !$this->reply_message ) {
 			$this->loadData();
 		}
 		return $this->reply_message;
 	}
 
-	public function setReplyMessage(string $reply_message): void {
+	/**
+	 * @param string $reply_message
+	 * @return void
+	 */
+	public function setReplyMessage( string $reply_message ): void {
 		$this->reply_message = $reply_message;
 	}
 

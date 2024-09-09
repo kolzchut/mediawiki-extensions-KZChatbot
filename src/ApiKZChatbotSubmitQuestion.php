@@ -40,7 +40,8 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 			if ( strpos( $this->question, $word->getPattern() ) !== false ||
 				preg_match( $word->getPattern() . 'u', $this->question )
 			) {
-				throw new HttpException( Slugs::getSlug( 'banned_word_found' ), 403 );
+				$message = $word->getReplyMessage() ?: Slugs::getSlug( 'banned_word_found' );
+				throw new HttpException( $message, 403 );
 			}
 		}
 		return $this->generateAnswer();

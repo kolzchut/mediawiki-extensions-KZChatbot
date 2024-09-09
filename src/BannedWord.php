@@ -10,25 +10,29 @@ class BannedWord {
 	private ?string $pattern;
 	private ?string $description;
 	private bool $isLoaded = false;
+	private ?string $reply_message;
 
 	/**
 	 * @param int|null $id
 	 * @param string|null $pattern
 	 * @param string|null $description
 	 */
-	public function __construct( ?int $id = null, ?string $pattern = null, ?string $description = null ) {
+
+	public function __construct(?int $id = null, ?string $pattern = null, ?string $description = null, ?string $reply_message = null) {
 		$this->id = $id;
 		$this->pattern = $pattern;
 		$this->description = $description;
+		$this->reply_message = $reply_message;
 	}
 
 	/**
 	 * @param string $pattern
 	 * @param string|null $description
+	 * @param string|null $reply_message
 	 * @return self
 	 */
-	public static function createNew( string $pattern, ?string $description ): self {
-		return new self( null, $pattern, $description );
+	public static function createNew(string $pattern, ?string $description, ?string $reply_message): self {
+		return new self(null, $pattern, $description, $reply_message);
 	}
 
 	/**
@@ -41,8 +45,8 @@ class BannedWord {
 
 		$res = $dbr->select(
 		   'kzchatbot_bannedwords',
-			[ 'kzcbb_id', 'kzcbb_pattern', 'kzcbb_description' ],
-			$conds
+			['kzcbb_id', 'kzcbb_pattern', 'kzcbb_description', 'kzcbb_reply_message'],
+		   $conds
 		);
 
 		$bannedWords = [];
@@ -67,7 +71,7 @@ class BannedWord {
 	 * @return BannedWord
 	 */
 	public static function newFromRow( array $row ): BannedWord {
-		return new self( $row['kzcbb_id'], $row['kzcbb_pattern'], $row['kzcbb_description'] );
+		return new self($row['kzcbb_id'], $row['kzcbb_pattern'], $row['kzcbb_description'], $row['kzcbb_reply_message']);
 	}
 
 	/**
@@ -99,6 +103,7 @@ class BannedWord {
 
 			$this->pattern = $row['kzcbb_pattern'];
 			$this->description = $row['kzcbb_description'];
+			$this->reply_message = $row['kzcbb_reply_message'];
 			$this->isLoaded = true;
 		}
 	}
@@ -173,6 +178,17 @@ class BannedWord {
 		return $this->description;
 	}
 
+	public function getReplyMessage(): ?string {
+		if (!$this->reply_message) {
+			$this->loadData();
+		}
+		return $this->reply_message;
+	}
+
+	public function setReplyMessage(string $reply_message): void {
+		$this->reply_message = $reply_message;
+	}
+
 	/**
 	 * @return bool
 	 */
@@ -181,7 +197,8 @@ class BannedWord {
 
 		$recordContent = [
 			'kzcbb_pattern' => $this->getPattern(),
-			'kzcbb_description' => $this->getDescription()
+			'kzcbb_description' => $this->getDescription(),
+			'kzcbb_reply_message' => $this->getReplyMessage()
 		];
 
 		// Update or save new

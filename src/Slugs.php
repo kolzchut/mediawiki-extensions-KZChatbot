@@ -29,6 +29,8 @@ class Slugs {
 			'chat_icon' => 'כל שאלה',
 			'chat_tip_link' => 'טיפים לניסוח שאלה טובה',
 			'close_chat_icon' => 'סגירה',
+			'open_chat_icon' => 'פתיחת הצ\'אטבוט',
+			'chat_description' => 'הצ\'אטבוט של כל זכות',
 			'dislike_follow_up_question' => 'תודה! נשמח לדעת למה',
 			'dislike_followup_q_first' => 'המידע לא נכון',
 			'dislike_followup_q_second' => 'התשובה לא קשורה לשאלה',
@@ -51,7 +53,10 @@ class Slugs {
 			'questions_daily_limit' => 'לא ניתן לשאול שאלות נוספות היום',
 			'question_character_limit' => 'מקסימום $1 תווים',
 			'banned_word_found' => 'אנא נסחו מחדש את השאלה',
-			'general_error' => 'אירעה שגיאה במערכת. אנא נסו שנית מאוחר יותר.'
+			'general_error' => 'אירעה שגיאה במערכת. אנא נסו שנית מאוחר יותר.',
+			'send_button' => 'שליחה',
+
+
 		];
         // phpcs:enable Generic.Files.LineLength.TooLong
 	}

@@ -228,7 +228,7 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 
 		$newWordDesc = $postData['kzcBannedWordDescription'];
 		$replyMessage = $postData['kzcBannedWordReplyMessage'];
-		$editId = $postData['kzcBannedWordID'] ?? null;
+		$editId = (int)$postData['kzcBannedWordID'] ?? null;
 
 		$word = new BannedWord( $editId, $pattern, $newWordDesc, $replyMessage );
 

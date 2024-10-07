@@ -61,6 +61,14 @@ class ApiKZChatbotRateAnswer extends Handler {
 				400
 			);
 		}
+
+		$answerClassification = $validatedBody['answerClassification'];
+		if ( $answerClassification && !self::isValidAnswerClassification( $answerClassification ) ) {
+			throw new LocalizedHttpException(
+				new MessageValue( 'apierror-badparameter', [ 'answerClassification' ] ),
+				400
+			);
+		}
 	}
 
 	/**
@@ -99,6 +107,20 @@ class ApiKZChatbotRateAnswer extends Handler {
 			]
 		] );
 		return $result->getStatusCode();
+	}
+
+	/**
+	 * @param string $answerClassification
+	 * @return bool
+	 */
+	private static function isValidAnswerClassification( $answerClassification ) {
+		$validAnswerClassifications = [
+			Slugs::getSlug( 'dislike_followup_q_first' ),
+			Slugs::getSlug( 'dislike_followup_q_second' ),
+			Slugs::getSlug( 'dislike_followup_q_third' ),
+		];
+
+		return in_array( $answerClassification, $validAnswerClassifications );
 	}
 
 }

@@ -105,9 +105,9 @@ class BannedWord {
 				throw new RuntimeException( "Word with id {$this->id} not found" );
 			}
 
-			$this->pattern = $row['kzcbb_pattern'];
-			$this->description = $row['kzcbb_description'];
-			$this->reply_message = $row['kzcbb_reply_message'];
+			$this->pattern = $this->pattern ?? $row['kzcbb_pattern'];
+			$this->description = $this->description ?? $row['kzcbb_description'];
+			$this->reply_message = $this->reply_message ?? $row['kzcbb_reply_message'];
 			$this->isLoaded = true;
 		}
 	}

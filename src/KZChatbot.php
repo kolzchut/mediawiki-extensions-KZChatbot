@@ -63,7 +63,10 @@ class KZChatbot {
 			$activeUsersCount = $dbw->select(
 				[ 'kzchatbot_users' ],
 				[ 'COUNT(*) as count' ],
-				[ 'kzcbu_last_active <= ' . wfTimestamp( TS_MW, time() - ( $activeUsersLimitDays * 24 * 60 * 60 ) ) ],
+				[
+					'kzcbu_is_shown' => 1,
+					'kzcbu_last_active <= ' . wfTimestamp( TS_MW, time() - ( $activeUsersLimitDays * 24 * 60 * 60 ) )
+				],
 				__METHOD__,
 			)->fetchRow();
 			$isShown = empty( $activeUsersCount['count'] ) ? 1 : ( $activeUsersLimit < $activeUsersCount['count'] );

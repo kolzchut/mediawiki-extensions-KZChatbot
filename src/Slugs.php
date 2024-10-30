@@ -41,6 +41,7 @@ class Slugs {
 			'feedback_free_text_disclaimer' => 'אין לשתף פרטים מזהים או מידע רגיש',
 			'new_question_button' => 'שאלה חדשה',
 			'new_question_filed' => 'שאלה חדשה',
+			'new_question_hint' => 'הצ\'אט לא זוכר תשובות לשאלות קודמות. צריך לשאול מחדש.',
 			'question_disclaimer' => 'אין לשתף פרטים מזהים או מידע רגיש',
 			'question_field' => 'מה רצית לדעת',
 			'ranking_request' => 'האם התשובה עזרה לך?',

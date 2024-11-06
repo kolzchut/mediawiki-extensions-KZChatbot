@@ -1,5 +1,5 @@
 // Check cookie
-const scriptVersion = 16,
+const scriptVersion = 17,
 	cookieName = 'kzchatbot-uuid',
 	cookie = mw.cookie.get( cookieName ),
 	uuid = ( cookie !== null ) ? cookie : '',

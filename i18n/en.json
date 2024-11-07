@@ -62,5 +62,40 @@
 	"kzchatbot-slugs-status-save-success": "Successfully saved slug '$1'.",
 	"kzchatbot-slugs-status-delete-success": "Successfully removed slug '$1'.",
 	"right-manage-kolzchut-chatbot": "Manage the chatbot settings",
-	"action-manage-kolzchut-chatbot": "manage the chatbot settings"
+	"action-manage-kolzchut-chatbot": "manage the chatbot settings",
+
+	"kzchatbot-rag-settings": "Kol-Zchut Chatbot LLM Settings",
+	"kzchatbot-rag-settings-section-general": "General Settings",
+	"kzchatbot-rag-settings-section-model": "Model Configuration",
+	"kzchatbot-rag-settings-section-prompts": "Prompt Settings",
+	"kzchatbot-rag-settings-section-restrictions": "Restrictions",
+
+	"kzchatbot-rag-settings-label-model": "Select Model",
+	"kzchatbot-rag-settings-help-model": "Choose the AI model to use for processing",
+
+	"kzchatbot-rag-settings-label-num-of-pages": "Number of Pages",
+	"kzchatbot-rag-settings-help-num-of-pages": "Select the number of pages for the model to process",
+
+	"kzchatbot-rag-settings-label-temperature": "Temperature",
+	"kzchatbot-rag-settings-help-temperature": "Set the temperature value for model response randomness",
+
+	"kzchatbot-rag-settings-label-system-prompt": "System Prompt",
+	"kzchatbot-rag-settings-help-system-prompt": "Enter the system-level instructions for the AI model",
+
+	"kzchatbot-rag-settings-label-user-prompt": "User Prompt",
+	"kzchatbot-rag-settings-help-user-prompt": "Enter the user-level instructions for the AI model",
+
+	"kzchatbot-rag-settings-label-banned-fields": "Banned Fields",
+	"kzchatbot-rag-settings-help-banned-fields": "Enter fields to be filtered, separated by commas",
+	"kzchatbot-rag-settings-error-banned-fields-format": "Invalid format for banned fields.",
+
+	"right-kzchatbot-rag-admin": "Manage the RAG backend settings",
+	"action-kzchatbot-rag-admin": "manage the RAG backend settings",
+
+	"kzchatbot-rag-settings-error": "Error",
+	"kzchatbot-rag-settings-error-api-unreachable": "The LLM API is unreachable. Please check the URL and try again.",
+	"kzchatbot-rag-settings-error-save": "Error saving settings.",
+	"kzchatbot-rag-settings-save-success": "Settings updated successfully.",
+	"kzchatbot-rag-settings-error-invalid-response": "Invalid response from the API."
+
 }

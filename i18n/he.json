@@ -20,11 +20,11 @@
 	"kzchatbot-settings-label-active-users-limit": "מקסימום משתמשים פעילים",
 	"kzchatbot-settings-help-active-users-limit": "מעבר למספר זה לא ייתווספו משתמשים חדשים",
 	"kzchatbot-settings-label-active-users-limit-days": "מקסימום ימים ללא פעילות",
-	"kzchatbot-settings-help-active-users-limit-days": "מעבר לכך המשתמש לא ייחשב יותר כמשתמש צ'טבוט פעיל",
+	"kzchatbot-settings-help-active-users-limit-days": "לצורך מניין מספר המשתמשים הפעילים",
 	"kzchatbot-settings-label-questions-daily-limit": "מקסימום שאלות ביום",
 	"kzchatbot-settings-label-cookie-expiry-days": "מספר הימים עד שעוגיית המשתמש תפוג",
 	"kzchatbot-settings-help-cookie-expiry-days": "מספר הימים מאז פעילותו האחרונה של משתמש שלאחריו העוגיה תפוג",
-	"kzchatbot-settings-label-request-limit": "מקסימום הבקשות בשעה למזהה חדש (UUID) מאותו IP",
+	"kzchatbot-settings-label-uuid-request-limit": "מקסימום הבקשות בשעה למזהה חדש (UUID) מאותו IP",
 	"kzchatbot-settings-help-uuid-request-limit": "על מנת למנוע חלקית ממשתמש למחוק את העוגיה שלו ולעקוף את המגבלות",
 	"kzchatbot-settings-label-question-character-limit": "מקסימום תווים בשאלה",
 	"kzchatbot-settings-label-feedback-character-limit": "מקסימום תווים במשוב",
@@ -62,5 +62,39 @@
 	"kzchatbot-slugs-status-save-success": "סלאג '$1' נשמר בהצלחה",
 	"kzchatbot-slugs-status-delete-success": "סלאג '$1' נמחק בהצלחה",
 	"right-manage-kolzchut-chatbot": "ניהול הגדרות הצ'טבוט",
-	"action-manage-kolzchut-chatbot": "לנהל את הגדרות הצ'טבוט"
+	"action-manage-kolzchut-chatbot": "לנהל את הגדרות הצ'טבוט",
+
+	"kzchatbot-rag-settings": "הגדרות LLM לצ'טבוט כל זכות",
+	"kzchatbot-rag-settings-section-general": "הגדרות כלליות",
+	"kzchatbot-rag-settings-section-model": "תצורת מודל",
+	"kzchatbot-rag-settings-section-prompts": "הגדרות פרומפט",
+	"kzchatbot-rag-settings-section-restrictions": "הגבלות",
+
+	"kzchatbot-rag-settings-label-model": "בחר מודל",
+	"kzchatbot-rag-settings-help-model": "בחר את מודל הבינה המלאכותית לשימוש בעיבוד",
+
+	"kzchatbot-rag-settings-label-num-of-pages": "מספר עמודים",
+	"kzchatbot-rag-settings-help-num-of-pages": "בחר את מספר העמודים שהמודל יעבד",
+
+	"kzchatbot-rag-settings-label-temperature": "טמפרטורה",
+	"kzchatbot-rag-settings-help-temperature": "הגדר את ערך הטמפרטורה לאקראיות תגובות המודל",
+
+	"kzchatbot-rag-settings-label-system-prompt": "פרומפט מערכת",
+	"kzchatbot-rag-settings-help-system-prompt": "הזן את ההוראות ברמת המערכת עבור מודל הבינה המלאכותית",
+
+	"kzchatbot-rag-settings-label-user-prompt": "פרומפט משתמש",
+	"kzchatbot-rag-settings-help-user-prompt": "הזן את ההוראות ברמת המשתמש עבור מודל הבינה המלאכותית",
+
+	"kzchatbot-rag-settings-label-banned-fields": "שדות חסומים",
+	"kzchatbot-rag-settings-help-banned-fields": "הזן שדות לסינון, מופרדים בפסיקים",
+
+	"right-kzchatbot-rag-admin": "ניהול הגדרות שרת ה-RAG",
+	"action-kzchatbot-rag-admin": "לנהל את הגדרות שרת ה-RAG",
+
+	"kzchatbot-rag-settings-error": "שגיאה",
+	"kzchatbot-rag-settings-error-api-unreachable": "ממשק ה-LLM אינו זמין. נא לבדוק את כתובת ה-URL ולנסות שוב.",
+
+	"kzchatbot-rag-settings-error-save": "שגיאה בשמירת ההגדרות.",
+	"kzchatbot-rag-settings-save-success": "ההגדרות נשמרו בהצלחה.",
+	"kzchatbot-rag-settings-error-invalid-response": "תגובה לא תקינה מה-API."
 }

@@ -2,12 +2,13 @@
 
 ## Purpose
 
-This extension provides an end-user interface for interacting with the Kol-Zchut chatbot,
-via user-entered questions and user feedback on the answers given, from a modal within the
-Mediawiki user interface. Although the users' questions and feedback are ultimately
-processed by a separate service, this extension provides considerable configuration,
-user and usage tracking, and access and usage controls with a management interface in
-Mediawiki for administration by permitted wiki admins of the chatbot user experience.
+This extension provides an end-user interface for interacting with the Kol-Zchut chatbot.
+It also serves as middleware between the chatbot and the RAG API.
+
+It provides configuration options for the usage of the chatbot and the RAG backend.
+
+Warning: there is no authentication between the chatbot and the RAG API. The RAG API should be protected by other means,
+such as IP whitelisting or a internal network.
 
 ## Installation
 
@@ -22,20 +23,25 @@ Mediawiki for administration by permitted wiki admins of the chatbot user experi
 3. If there was any change in the React code, increase by one the version number in
    `resources/ext.KZChatbot.launcher/kzChatbotLauncher.js`.
 
+
 ## Configuration
+`$wgKZChatbotLlmApiUrl`: (required) the base URL for the LLM API used by the chatbot.
 
-Optionally add `$wgKZChatbot...` to `LocalSettings.php` @TODO
+## Special pages
+| Special Page                   | Description                                                      |
+|--------------------------------|------------------------------------------------------------------|
+| `Special:KZChatbotSettings`    | Admins can configure the general settings for the chatbot.       |
+| `Special:KZChatbotBannedWords` | Admins can configure the banned words for the chatbot.           |
+| `Special:KZChatbotSlugs`       | Admins can configure the interface texts for the chatbot.        |
+| `Special:KZChatbotRagSettings` | Admins can configure the RAG backend's settings for the chatbot. |
 
-```php
-$wgKZChatbot... = [
-	// @TODO
-];
-```
+## Permissions
+| Permission                | Description                                                                           |
+|---------------------------|---------------------------------------------------------------------------------------|
+| `manage-kolzchut-chatbot` | allows users to manage the general settings the chatbot, except for the RAG settings. |
+| `kzchatbot-rag-settings`  | allows users to manage the RAG backend's settings for the chatbot.                    |
 
-## Access Permissions
-
-Access to the management interface is governed by the `manage-kolzchut-chatbot` permission.
-
+Example:
 ```php
 $wgGroupPermissions['sysop']['manage-kolzchut-chatbot'] = true;
 ```

@@ -27,7 +27,8 @@
 	"SpecialPages": {
 		"KZChatbotSettings": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSettings",
 		"KZChatbotSlugs": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSlugs",
-		"KZChatbotBannedWords": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotBannedWords"
+		"KZChatbotBannedWords": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotBannedWords",
+		"KZChatbotRagSettings": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotRagSettings"
 	},
 	"HookHandlers": {
 		"KZChatbotHooks": {

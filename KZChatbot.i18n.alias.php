@@ -4,13 +4,16 @@ $specialPageAliases = [];
 
 /** English (English) */
 $specialPageAliases['en'] = [
-  'KZChatbotSettings' => [ 'KZChatbotSettings', 'Manage Kol-Zchut Chatbot General Settings' ],
-  'KZChatbotSlugs' => [ 'KZChatbotSlugs', 'Manage Slugs for Kol-Zchut Chatbot' ],
-  'KZChatbotBannedWords' => [ 'KZChatbotBannedWords', 'Manage Kol-Zchut Chatbot Banned Words List' ],
+	'KZChatbotSettings' => [ 'KZChatbotSettings', 'Chatbot_Settings' ],
+	'KZChatbotSlugs' => [ 'KZChatbotSlugs', 'Chatbot_Texts' ],
+	'KZChatbotBannedWords' => [ 'KZChatbotBannedWords', 'Chatbot_Banned_Words' ],
+	'KZChatbotRagSettings' => [ 'KZChatbotRagSettings', 'Chatbot_RAG_Settings' ]
 ];
 
 $specialPageAliases['he'] = [
-  'KZChatbotSettings' => [ 'הגדרות_הבוט' ],
-  'KZChatbotSlugs' => [ 'קטעי_טקסט_לבוט' ],
-  'KZChatbotBannedWords' => [ 'רשימת_מילים_אסורות_לבוט' ],
+	'KZChatbotSettings' => [ 'הגדרות_צ\'טבוט' ],
+	'KZChatbotSlugs' => [ 'קטעי_טקסט_לצ\'טבוט' ],
+	'KZChatbotBannedWords' => [ 'רשימת_מילים_אסורות_לצ\'טבוט' ],
+	'KZChatbotRagSettings' => [ 'הגדרות_RAG_לצ\'טבוט' ]
+
 ];

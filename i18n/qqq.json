@@ -2,5 +2,28 @@
 	"@metadata": {
 		"authors": [ "Joel R. ([https://www.kolzchut.org.il Kol-Zchut])" ]
 	},
-	"kolsherutlinks-desc": "{{desc|name=KZChatbot|url=https://github.com/kolzchut/mediawiki-extensions-KZChatbot}}"
+	"kolsherutlinks-desc": "{{desc|name=KZChatbot|url=https://github.com/kolzchut/mediawiki-extensions-KZChatbot}}",
+
+	"kzchatbot-rag-settings-section-general": "Header for the general settings section in the LLM configuration interface",
+	"kzchatbot-rag-settings-section-model": "Header for the AI model configuration section in the LLM settings",
+	"kzchatbot-rag-settings-section-prompts": "Header for the section containing prompt configuration settings",
+	"kzchatbot-rag-settings-section-restrictions": "Header for the section containing restriction and filtering settings",
+
+	"kzchatbot-rag-settings-label-model": "Label for the dropdown menu where users select an AI model. Models include options like GPT-3.5 and GPT-4",
+	"kzchatbot-rag-settings-help-model": "Help text explaining the model selection dropdown. Describes that this setting determines which AI model will process the content",
+
+	"kzchatbot-rag-settings-label-num-of-pages": "Label for the numeric input field where users specify how many pages to process",
+	"kzchatbot-rag-settings-help-num-of-pages": "Help text explaining the page number selector. Describes that this setting limits how many pages the AI will process at once",
+
+	"kzchatbot-rag-settings-label-temperature": "Label for the temperature setting dropdown. Temperature affects AI response randomness",
+	"kzchatbot-rag-settings-help-temperature": "Help text explaining the temperature setting. Describes how temperature affects the randomness/creativity of AI responses (0.1-0.9)",
+
+	"kzchatbot-rag-settings-label-system-prompt": "Label for the system prompt text input field. System prompts set base behavior",
+	"kzchatbot-rag-settings-help-system-prompt": "Help text explaining the system prompt field. Describes that system prompts are instructions that define the AI's base behavior and capabilities",
+
+	"kzchatbot-rag-settings-label-user-prompt": "Label for the user prompt text input field. User prompts guide specific responses",
+	"kzchatbot-rag-settings-help-user-prompt": "Help text explaining the user prompt field. Describes that user prompts are instructions for specific tasks or response patterns",
+
+	"kzchatbot-rag-settings-label-banned-fields": "Label for the text input where users can specify fields to be filtered out",
+	"kzchatbot-rag-settings-help-banned-fields": "Help text explaining the banned fields input. Describes that users should enter comma-separated field names to be excluded from processing"
 }

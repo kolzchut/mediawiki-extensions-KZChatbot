@@ -34,12 +34,14 @@ such as IP whitelisting or a internal network.
 | `Special:KZChatbotBannedWords` | Admins can configure the banned words for the chatbot.           |
 | `Special:KZChatbotSlugs`       | Admins can configure the interface texts for the chatbot.        |
 | `Special:KZChatbotRagSettings` | Admins can configure the RAG backend's settings for the chatbot. |
+| `Special:KZChatbotRagTesting`  | Admins can ask questions directly and fiddle with LLM parameters |
 
 ## Permissions
 | Permission                | Description                                                                           |
 |---------------------------|---------------------------------------------------------------------------------------|
 | `manage-kolzchut-chatbot` | allows users to manage the general settings the chatbot, except for the RAG settings. |
-| `kzchatbot-rag-settings`  | allows users to manage the RAG backend's settings for the chatbot.                    |
+| `kzchatbot-rag-admin`     | allows users to manage the RAG backend's settings for the chatbot.                    |
+| `kzchatbot-testing`       | allows access to the testing special page and API                                     |
 
 Example:
 ```php

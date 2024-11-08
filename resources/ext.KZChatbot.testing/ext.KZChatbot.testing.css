@@ -1,0 +1,45 @@
+.kz-chatbot-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    gap: 20px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    height: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.kz-chatbot-sidebar {
+    background: #007bff;
+    padding: 20px;
+    color: #fff;
+    border-radius: 8px;
+}
+
+.kz-chatbot-content {
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 8px;
+}
+
+.kz-chatbot-results {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    overflow-y: auto;
+}
+
+.kz-chatbot-link {
+    color: #e66810;
+    text-decoration: none;
+    font-weight: bold;
+    border-bottom: 2px solid #ff6600;
+}
+
+@media (max-width: 768px) {
+    .kz-chatbot-wrapper {
+        grid-template-columns: 1fr;
+    }
+}

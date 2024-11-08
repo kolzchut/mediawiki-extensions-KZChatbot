@@ -22,13 +22,16 @@
 		"KZChatbot": "GlobalVarConfig::newInstance"
 	},
 	"AvailableRights": [
-		"manage-kolzchut-chatbot"
+		"manage-kolzchut-chatbot",
+		"kzchatbot-testing",
+		"kzchatbot-rag-admin"
 	],
 	"SpecialPages": {
 		"KZChatbotSettings": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSettings",
 		"KZChatbotSlugs": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSlugs",
 		"KZChatbotBannedWords": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotBannedWords",
-		"KZChatbotRagSettings": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotRagSettings"
+		"KZChatbotRagSettings": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotRagSettings",
+		"KZChatbotTesting": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotTesting"
 	},
 	"HookHandlers": {
 		"KZChatbotHooks": {
@@ -62,6 +65,46 @@
 			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.bot",
 			"scripts": "index.js",
 			"styles": "index.css"
+		},
+		"ext.KZChatbot.testing.styles": {
+			"styles": [
+				"resources/ext.KZChatbot.testing.styles/styles.css"
+			]
+		},
+		"ext.KZChatbot.testing.batch": {
+			"es6": true,
+			"scripts": "batch.js",
+			"styles": "batch.less",
+			"localBasePath": "resources/ext.KZChatbot.testing.batch",
+			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.testing.batch",
+			"dependencies": [
+				"mediawiki.api",
+				"mediawiki.ui.button"
+			],
+			"messages": [
+				"kzchatbot-testing-batch-progress-status",
+				"kzchatbot-testing-batch-progress-cancelled",
+				"kzchatbot-testing-batch-result-error",
+				"kzchatbot-testing-batch-result-success",
+				"kzchatbot-testing-batch-result-separator",
+				"kzchatbot-testing-batch-download-filename",
+				"kzchatbot-testing-batch-csv-header-query",
+				"kzchatbot-testing-batch-csv-header-response",
+				"kzchatbot-testing-batch-csv-header-model",
+				"kzchatbot-testing-batch-csv-header-time",
+				"kzchatbot-testing-batch-csv-header-tokens",
+				"kzchatbot-testing-batch-csv-header-error",
+				"kzchatbot-testing-batch-progress-error",
+				"kzchatbot-testing-batch-network-error",
+				"kzchatbot-testing-batch-unknown-error",
+				"kzchatbot-testing-batch-cancel"
+			]
+		}
+	},
+	"APIModules": {
+		"kzchatbotsearch": {
+			"class": "MediaWiki\\Extension\\KZChatbot\\Api\\ApiKZChatbotSearch",
+			"services": []
 		}
 	},
 	"RestRoutes": [

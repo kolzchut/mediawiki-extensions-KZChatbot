@@ -1,0 +1,20 @@
+<h2>{{batchTitle}}</h2>
+<p>{{batchDescription}}</p>
+
+<textarea id="batch-input" rows="5" class="kz-chatbot-batch-input" placeholder="{{inputPlaceholder}}"></textarea>
+
+<div class="kz-chatbot-batch-controls">
+    <button id="batch-process" class="mw-ui-button mw-ui-progressive">
+        {{processButtonText}}
+    </button>
+    <button id="batch-cancel" class="mw-ui-button mw-ui-destructive" style="display: none;">
+        {{cancelButtonText}}
+    </button>
+    <span id="batch-progress" class="kz-chatbot-batch-progress"></span>
+</div>
+
+<textarea id="batch-output" rows="5" class="kz-chatbot-batch-output" readonly></textarea>
+
+<button id="batch-download" class="mw-ui-button mw-ui-progressive" style="display: none;">
+    {{downloadButtonText}}
+</button>

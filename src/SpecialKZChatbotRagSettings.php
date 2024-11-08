@@ -178,28 +178,44 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 	 * @return Status
 	 */
 	public function onSubmit( array $data ): Status {
-		$apiUrl = rtrim( $this->config->get( 'KZChatbotLlmApiUrl' ), '/' );
-
+		// I tried to make the POST request with MW's HttpRequestFactory, but it didn't work, so I resorted to curl
 		try {
-			$response = $this->httpFactory->post(
-				"$apiUrl/set_config",
-				[
-					'postData' => json_encode( [
-						'model' => $data['model'],
-						'num_of_pages' => $data['numOfPages'],
-						'temperature' => (float)$data['temperature'],
-						'system_prompt' => $data['systemPrompt'],
-						'user_prompt' => $data['userPrompt'],
-						'banned_fields' => $data['bannedFields'] ?? '',
-					] ),
-					'timeout' => 30,
-					'headers' => [
-						'Content-Type' => 'application/json',
-					],
-				]
-			);
+			$apiUrl = rtrim( $this->config->get( 'KZChatbotLlmApiUrl' ), '/' );
 
-			if ( $response !== null ) {
+			$data = [
+				'model' => $data['model'],
+				'num_of_pages' => $data['numOfPages'],
+				'temperature' => $data['temperature'],
+				'system_prompt' => $data['systemPrompt'],
+				'user_prompt' => $data['userPrompt'],
+				'banned_fields' => $data['bannedFields'] ?? '',
+			];
+
+			$ch = curl_init( "$apiUrl/set_config" );
+
+			curl_setopt_array( $ch, [
+				CURLOPT_POST => true,
+				CURLOPT_POSTFIELDS => json_encode( $data ),
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_TIMEOUT => 30,
+				CURLOPT_HTTPHEADER => [
+					'Content-Type: application/json',
+					'Accept: application/json'
+				]
+			] );
+
+			$response = curl_exec( $ch );
+			$httpCode = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
+
+			if ( curl_errno( $ch ) ) {
+				wfLogWarning( 'Curl error: ' . curl_error( $ch ) );
+				curl_close( $ch );
+				return Status::newFatal( 'kzchatbot-rag-settings-error-api-unreachable' );
+			}
+
+			curl_close( $ch );
+
+			if ( $response !== false ) {
 				$result = json_decode( $response, true );
 				if ( $result === null && json_last_error() !== JSON_ERROR_NONE ) {
 					return Status::newFatal( 'kzchatbot-rag-settings-error-invalid-response' );

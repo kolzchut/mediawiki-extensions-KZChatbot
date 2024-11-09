@@ -100,16 +100,9 @@
 
 	"kzchatbot-testing": "צ'טבוט בדיקות",
 	"kzchatbot-testing-title": "ממשק בדיקות צ'טבוט",
-	"kzchatbot-testing-legend": "חיפוש בצ'טבוט",
-	"kzchatbot-testing-header": "הקלידו את השאלה שלכם למטה",
-	"kzchatbot-testing-query-label": "שאילתת חיפוש",
-	"kzchatbot-testing-query-placeholder": "הקלידו את השאילתה שלכם כאן...",
 	"kzchatbot-testing-document-ids": "מזהי מסמכים",
 	"kzchatbot-testing-retrieval-time": "זמן אחזור",
 	"kzchatbot-testing-tokens": "כמות טוקנים",
-	"kzchatbot-testing-error-api-unreachable": "לא ניתן להגיע ל-API של הצ'טבוט",
-	"kzchatbot-testing-error-invalid-response": "תגובה לא תקינה מה-API של הצ'טבוט",
-	"kzchatbot-testing-error-search": "אירעה שגיאה בזמן ביצוע החיפוש",
 
 	"apihelp-kzchatbotsearch-summary": "ביצוע שאילתת חיפוש בצ'אט-בוט",
 	"apihelp-kzchatbotsearch-param-query": "שאילתת החיפוש לעיבוד",
@@ -120,7 +113,8 @@
 
 	"kzchatbot-testing-batch-title": "עיבוד אצווה",
 	"kzchatbot-testing-batch-cancel": "ביטול עיבוד",
-	"kzchatbot-testing-batch-description": "הזינו שאילתה אחת בכל שורה. התוצאות יעובדו ברצף.",
+	"kzchatbot-testing-batch-input-label": "הזינו שאילתה אחת בכל שורה. התוצאות יעובדו ברצף.",
+	"kzchatbot-testing-batch-output-label": "תוצאות עיבוד",
 	"kzchatbot-testing-batch-placeholder": "הזינו את השאילתות שלכם כאן\nשאילתה אחת בכל שורה\nלדוגמה:\nמהו מדיה-ויקי?\nכיצד עורכים דפים?",
 	"kzchatbot-testing-batch-process": "עיבוד שאילתות",
 	"kzchatbot-testing-batch-download": "הורדת תוצאות (CSV)",

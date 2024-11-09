@@ -12,6 +12,7 @@
 		this.cancelButton = document.querySelector( '#batch-cancel' );
 		this.progressIndicator = document.querySelector( '#batch-progress' );
 		this.downloadButton = document.querySelector( '#batch-download' );
+		this.outputWrapper = document.querySelector( '#batch-output-wrapper' );
 		this.results = [];
 		this.isCancelled = false;
 
@@ -34,6 +35,9 @@
 		this.processButton.disabled = true;
 		this.cancelButton.style.display = 'inline-block';
 		this.downloadButton.style.display = 'none';
+
+		// Show output area when processing starts
+		this.outputWrapper.style.display = 'block';
 
 		// Process queries sequentially using Promise chain
 		return queries.reduce( ( promise, query, i ) => promise.then( () => {

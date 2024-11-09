@@ -26,7 +26,7 @@
 	};
 
 	BatchProcessor.prototype.processQueries = function () {
-		const queries = this.textArea.value.split( '\n' ).filter( ( q ) => q.trim() );
+		const queries = this.parseCSVLine( this.textArea.value );
 		this.results = [];
 		this.progressIndicator.textContent = mw.msg( 'kzchatbot-testing-batch-progress-status', 0, queries.length );
 		this.isCancelled = false;
@@ -187,6 +187,55 @@
 			return '"' + str.replace( /"/g, '""' ) + '"';
 		}
 		return str;
+	};
+
+	BatchProcessor.prototype.parseCSVLine = function ( text ) {
+		const queries = [];
+		let currentQuery = '';
+		let isInQuotes = false;
+		let i = 0;
+
+		while ( i < text.length ) {
+			const char = text[ i ];
+
+			if ( char === '"' ) {
+				if ( isInQuotes && i + 1 < text.length && text[ i + 1 ] === '"' ) {
+					// Handle escaped quotes ("") within quoted string
+					currentQuery += '"';
+					i += 2;
+					continue;
+				}
+				isInQuotes = !isInQuotes;
+			} else if ( char === '\n' && !isInQuotes ) {
+				// End of unquoted line
+				if ( currentQuery.trim() ) {
+					// Strip surrounding quotes if present
+					const trimmed = currentQuery.trim();
+					queries.push(
+						trimmed.startsWith( '"' ) && trimmed.endsWith( '"' ) ?
+							trimmed.slice( 1, -1 ).trim() :
+							trimmed
+					);
+				}
+				currentQuery = '';
+			} else {
+				currentQuery += char;
+			}
+			i++;
+		}
+
+		// Add the last query if there is one
+		if ( currentQuery.trim() ) {
+			// Strip surrounding quotes if present
+			const trimmed = currentQuery.trim();
+			queries.push(
+				trimmed.startsWith( '"' ) && trimmed.endsWith( '"' ) ?
+					trimmed.slice( 1, -1 ).trim() :
+					trimmed
+			);
+		}
+
+		return queries;
 	};
 
 	// Initialize when document is ready

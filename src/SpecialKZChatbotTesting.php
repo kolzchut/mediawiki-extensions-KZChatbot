@@ -28,7 +28,18 @@ class SpecialKZChatbotTesting extends SpecialPage {
 			'processButtonText' => $this->msg( 'kzchatbot-testing-batch-process' )->text(),
 			'cancelButtonText' => $this->msg( 'kzchatbot-testing-batch-cancel' )->text(),
 			'downloadButtonText' => $this->msg( 'kzchatbot-testing-batch-download' )->text(),
-			'outputLabel' => $this->msg( 'kzchatbot-testing-batch-output-label' )->text()
+			'outputLabel' => $this->msg( 'kzchatbot-testing-batch-output-label' )->text(),
+			'totalQueriesLabel' => $this->msg( 'kzchatbot-testing-batch-total-queries' )->text(),
+			'numberColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-number' )->text(),
+			'queryColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-query' )->text(),
+			'responseColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-response' )->text(),
+			'modelColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-model' )->text(),
+			'timeColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-time' )->text(),
+			'tokensColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-tokens' )->text(),
+			'inputHint' => $this->msg( 'kzchatbot-testing-batch-input-hint' )->text(),
+			'deleteQueryLabel' => $this->msg( 'kzchatbot-testing-batch-delete-query' )->text(),
+			'addQueryLabel' => $this->msg( 'kzchatbot-testing-batch-add-query' )->text(),
+			'initialQuery' => $this->msg( 'kzchatbot-testing-batch-initial-query' )->text(),
 		];
 
 		$this->getOutput()->addHTML(

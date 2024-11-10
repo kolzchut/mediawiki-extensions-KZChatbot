@@ -79,7 +79,10 @@
 			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.testing.batch",
 			"dependencies": [
 				"mediawiki.api",
-				"mediawiki.ui.button"
+				"mediawiki.ui.button",
+				"oojs-ui-core",
+				"oojs-ui-windows",
+				"jquery.spinner"
 			],
 			"messages": [
 				"kzchatbot-testing-batch-progress-status",
@@ -88,16 +91,21 @@
 				"kzchatbot-testing-batch-result-success",
 				"kzchatbot-testing-batch-result-separator",
 				"kzchatbot-testing-batch-download-filename",
-				"kzchatbot-testing-batch-csv-header-query",
-				"kzchatbot-testing-batch-csv-header-response",
-				"kzchatbot-testing-batch-csv-header-model",
-				"kzchatbot-testing-batch-csv-header-time",
-				"kzchatbot-testing-batch-csv-header-tokens",
-				"kzchatbot-testing-batch-csv-header-error",
+				"kzchatbot-testing-batch-header-query",
+				"kzchatbot-testing-batch-header-response",
+				"kzchatbot-testing-batch-header-model",
+				"kzchatbot-testing-batch-header-time",
+				"kzchatbot-testing-batch-header-tokens",
+				"kzchatbot-testing-batch-header-error",
 				"kzchatbot-testing-batch-progress-error",
 				"kzchatbot-testing-batch-network-error",
 				"kzchatbot-testing-batch-unknown-error",
-				"kzchatbot-testing-batch-cancel"
+				"kzchatbot-testing-batch-cancel",
+				"kzchatbot-testing-batch-clear-all",
+				"kzchatbot-testing-batch-clear-all-confirm",
+				"kzchatbot-testing-batch-placeholder",
+				"kzchatbot-testing-batch-delete-query"
+
 			]
 		}
 	},

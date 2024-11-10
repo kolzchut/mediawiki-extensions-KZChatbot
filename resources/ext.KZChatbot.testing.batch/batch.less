@@ -2,3 +2,147 @@
 .kz-chatbot-batch-input {
 	width: 100%;
 }
+
+.kz-chatbot-batch {
+	#batch-process {
+		.mw-spinner {
+			display: inline-block;
+			margin-right: 0.5em;
+			vertical-align: middle;
+		}
+	}
+
+	.kz-chatbot-input-section {
+		margin-bottom: 1em;
+	}
+
+	// Add spacing between buttons
+	#add-query,
+	#clear-all {
+		margin-right: 0.5em;
+	}
+
+	.kz-chatbot-queries-table {
+		width: 100%;
+		margin: 1em 0;
+
+		th, td {
+			padding: 0.5em 1em;
+			border: 1px solid #c8ccd1;
+			vertical-align: middle;
+		}
+
+		th {
+			background-color: #eaecf0;
+			font-weight: bold;
+		}
+
+		tr:hover {
+			background-color: #f8f9fa;
+		}
+
+		.query-number {
+			width: 40px;
+			text-align: center;
+		}
+
+		.query-actions {
+			width: 40px;
+			text-align: center;
+			white-space: nowrap;
+		}
+
+		.query-cell {
+			min-height: 1.5em;
+			white-space: pre-wrap;
+			word-break: break-word;
+			outline: none;
+			padding: 0.3em;
+			border-radius: 2px;
+
+			&:empty:before {
+				content: attr(placeholder);
+				color: #72777d;
+			}
+
+			&:focus {
+				background-color: #fff;
+				box-shadow: inset 0 0 0 1px #36c;
+			}
+
+			&.processing {
+				background-color: #f8f9fa;
+				cursor: not-allowed;
+			}
+		}
+
+		.mw-spinner {
+			float: none;
+			margin: 1em auto;
+			opacity: 0.8;
+		}
+
+		.query-delete {
+			padding: 0.3em 0.6em;
+			border: 1px solid #dc3545;
+			border-radius: 2px;
+			background: none;
+			color: #dc3545;
+			cursor: pointer;
+			font-size: 14px;
+			transition: all 0.2s ease;
+
+			&:hover {
+				background-color: #dc3545;
+				color: #fff;
+			}
+		}
+	}
+
+	.batch-results-table-wrapper {
+		margin: 1em 0;
+		max-height: 500px;
+		overflow-y: auto;
+		border: 1px solid #c8ccd1;
+		border-radius: 2px;
+	}
+
+	.batch-results-table {
+		width: 100%;
+
+		th, td {
+			padding: 0.5em 1em;
+			border: 1px solid #c8ccd1;
+		}
+
+		th {
+			background-color: #eaecf0;
+			position: sticky;
+			top: 0;
+			z-index: 1;
+			box-shadow: 0 1px 0 #c8ccd1;
+		}
+
+		tr:nth-child(even) {
+			background-color: #f8f9fa;
+		}
+
+		tr:hover {
+			background-color: #eaf3ff;
+		}
+
+		.error-row {
+			background-color: #fee7e6;
+
+			&:hover {
+				background-color: #fdd6d6;
+			}
+		}
+	}
+
+	.batch-results-summary {
+		margin: 1em 0;
+		font-weight: bold;
+		color: #202122;
+	}
+}

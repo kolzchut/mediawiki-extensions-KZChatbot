@@ -1,21 +1,60 @@
-<label for="batch-input">{{inputLabel}}</label>
-<textarea id="batch-input" rows="5" class="kz-chatbot-batch-input" placeholder="{{inputPlaceholder}}"></textarea>
+<div class="kz-chatbot-batch">
+	<div class="kz-chatbot-input-section">
+		<label>{{inputLabel}}</label>
+		<table class="kz-chatbot-queries-table wikitable">
+			<thead>
+			<tr>
+				<th class="query-number">#</th>
+				<th>{{queryColumnHeader}}</th>
+				<th class="query-actions"></th>
+			</tr>
+			</thead>
+			<tbody id="queries-table-body">
+			<tr class="query-row">
+				<td class="query-number">1</td>
+				<td><div class="query-cell" contenteditable="true" placeholder="{{inputPlaceholder}}"></div></td>
+				<td class="query-actions">
+					<button class="query-delete mw-ui-button mw-ui-destructive" title="{{deleteQueryLabel}}">×</button>
+				</td>
+			</tr>
+			</tbody>
+		</table>
+		<button id="add-query" class="mw-ui-button">{{addQueryLabel}}</button>
+	</div>
 
-<div class="kz-chatbot-batch-controls">
-	<button id="batch-process" class="mw-ui-button mw-ui-progressive">
-		{{processButtonText}}
-	</button>
-	<button id="batch-cancel" class="mw-ui-button mw-ui-destructive" style="display: none;">
-		{{cancelButtonText}}
-	</button>
-	<span id="batch-progress" class="kz-chatbot-batch-progress"></span>
-</div>
+	<div class="kz-chatbot-batch-controls">
+		<button id="batch-process" class="mw-ui-button mw-ui-progressive">
+			{{processButtonText}}
+		</button>
+		<button id="batch-cancel" class="mw-ui-button mw-ui-destructive" style="display: none;">
+			{{cancelButtonText}}
+		</button>
+		<span id="batch-progress" class="kz-chatbot-batch-progress"></span>
+	</div>
 
-<div id="batch-output-wrapper" style="display: none">
-	<label for="batch-output">{{outputLabel}}</label>
-	<textarea id="batch-output" rows="5" class="kz-chatbot-batch-output" readonly></textarea>
+	<div id="batch-output-wrapper" style="display: none">
+		<div class="batch-results-summary">
+			{{totalQueriesLabel}}: <span id="query-count">0</span>
+		</div>
+		<div class="batch-results-table-wrapper">
+			<table class="batch-results-table wikitable">
+				<thead>
+				<tr>
+					<th>{{numberColumnHeader}}</th>
+					<th>{{queryColumnHeader}}</th>
+					<th>{{responseColumnHeader}}</th>
+					<th>{{modelColumnHeader}}</th>
+					<th>{{timeColumnHeader}}</th>
+					<th>{{tokensColumnHeader}}</th>
+				</tr>
+				</thead>
+				<tbody id="results-table-body">
+				</tbody>
+			</table>
+		</div>
 
-	<button id="batch-download" class="mw-ui-button mw-ui-progressive" style="display: none;">
-		{{downloadButtonText}}
-	</button>
+		<button id="batch-download" class="mw-ui-button mw-ui-progressive" style="display: none;">
+			{{downloadButtonText}}
+		</button>
+	</div>
 </div>

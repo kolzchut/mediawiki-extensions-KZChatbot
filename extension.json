@@ -93,6 +93,7 @@
 				"kzchatbot-testing-batch-download-filename",
 				"kzchatbot-testing-batch-header-query",
 				"kzchatbot-testing-batch-header-response",
+				"kzchatbot-testing-batch-header-documents",
 				"kzchatbot-testing-batch-header-model",
 				"kzchatbot-testing-batch-header-time",
 				"kzchatbot-testing-batch-header-tokens",

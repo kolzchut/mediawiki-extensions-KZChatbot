@@ -368,10 +368,19 @@ class BatchProcessor {
 			row.classList.add( 'error-row' );
 		}
 
+		// Create the sources cell content with numbered links
+		const sourcesHtml = result.docs ?
+			'<ol>' +
+			result.docs.map( ( doc ) => `<li><a href="${ this.escapeHtml( doc.url ) }" target="_blank">${ this.escapeHtml( doc.title ) }</a></li>`
+			).join( '' ) +
+			'</ol>' :
+			'';
+
 		row.innerHTML = `
 			<td>${ result.index }</td>
 			<td>${ this.escapeHtml( result.query ) }</td>
 			<td>${ this.escapeHtml( result.error || result.gpt_result ) }</td>
+			<td>${ sourcesHtml }</td>
 			<td>${ result.error ? '' : this.escapeHtml( result.metadata.gpt_model ) }</td>
 			<td>${ result.error ? '' : this.escapeHtml( result.metadata.gpt_time ) }</td>
 			<td>${ result.error ? '' : this.escapeHtml( result.metadata.tokens ) }</td>
@@ -398,6 +407,7 @@ class BatchProcessor {
 		const headers = [
 			mw.msg( 'kzchatbot-testing-batch-header-query' ),
 			mw.msg( 'kzchatbot-testing-batch-header-response' ),
+			mw.msg( 'kzchatbot-testing-batch-header-documents' ),
 			mw.msg( 'kzchatbot-testing-batch-header-model' ),
 			mw.msg( 'kzchatbot-testing-batch-header-time' ),
 			mw.msg( 'kzchatbot-testing-batch-header-tokens' ),
@@ -407,9 +417,16 @@ class BatchProcessor {
 		const rows = [ headers ];
 
 		for ( const result of this.results ) {
+			// Format sources as numbered list in plain text
+			const sources = result.docs ?
+				result.docs.map( ( doc, index ) => `${ index + 1 }. ${ doc.title } (${ doc.url })`
+				).join( '\n' ) :
+				'';
+
 			rows.push( [
 				result.query,
 				result.error || result.gpt_result,
+				sources, // Add sources column
 				result.error ? '' : result.metadata.gpt_model,
 				result.error ? '' : result.metadata.gpt_time,
 				result.error ? '' : result.metadata.tokens,

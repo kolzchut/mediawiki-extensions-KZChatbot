@@ -82,6 +82,11 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 		$currentConfig = $this->getCurrentConfig();
 
 		return [
+			'version' => [
+				'type' => 'info',
+				'label-message' => 'kzchatbot-rag-settings-label-version',
+				'default' => $currentConfig['version'] ?? '',
+			],
 			'model' => [
 				'type' => 'select',
 				'label-message' => 'kzchatbot-rag-settings-label-model',

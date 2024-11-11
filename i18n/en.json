@@ -70,6 +70,7 @@
 	"kzchatbot-rag-settings-section-prompts": "Prompt Settings",
 	"kzchatbot-rag-settings-section-restrictions": "Restrictions",
 
+	"kzchatbot-rag-settings-label-version": "Configuration Version",
 	"kzchatbot-rag-settings-label-model": "Select Model",
 	"kzchatbot-rag-settings-help-model": "Choose the AI model to use for processing",
 

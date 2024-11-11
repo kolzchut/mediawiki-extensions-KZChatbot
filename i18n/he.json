@@ -70,6 +70,7 @@
 	"kzchatbot-rag-settings-section-prompts": "הגדרות פרומפט",
 	"kzchatbot-rag-settings-section-restrictions": "הגבלות",
 
+	"kzchatbot-rag-settings-label-version": "גרסת הגדרות",
 	"kzchatbot-rag-settings-label-model": "בחר מודל",
 	"kzchatbot-rag-settings-help-model": "בחר את מודל הבינה המלאכותית לשימוש בעיבוד",
 

@@ -83,7 +83,8 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 
 		return [
 			'version' => [
-				'type' => 'info',
+				'type' => 'text',
+				'readonly' => true,
 				'label-message' => 'kzchatbot-rag-settings-label-version',
 				'default' => $currentConfig['version'] ?? '',
 			],

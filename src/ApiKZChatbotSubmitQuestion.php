@@ -118,8 +118,8 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		if ( $userData === null ) {
 			throw new HttpException( 'User not found', 404 );
 		}
-		$questionsPermitted = KZChatbot::getQuestionsPermitted( $uuid );
-		if ( $questionsPermitted <= 0 ) {
+
+		if ( KZChatbot::getQuestionsPermitted( $uuid ) <= 0 ) {
 			throw new HttpException( Slugs::getSlug( 'questions_daily_limit' ), 429 );
 		}
 	}

@@ -63,6 +63,9 @@
 	"kzchatbot-slugs-status-delete-success": "סלאג '$1' נמחק בהצלחה",
 	"right-manage-kolzchut-chatbot": "ניהול הגדרות הצ'טבוט",
 	"action-manage-kolzchut-chatbot": "לנהל את הגדרות הצ'טבוט",
+	"group-chatbot-admin": "מנהלי צ'טבוט",
+	"group-chatbot-admin-member": "{{GENDER:$1|מנהל צ'טבוט|מנהלת צ'טבוט}}",
+	"grouppage-chatbot-admin": "{{ns:project}}:מנהלי צ'טבוט",
 
 	"kzchatbot-rag-settings": "הגדרות LLM לצ'טבוט כל זכות",
 	"kzchatbot-rag-settings-section-general": "הגדרות כלליות",

@@ -27,6 +27,14 @@
 		"kzchatbot-rag-admin",
 		"kzchatbot-no-limits"
 	],
+	"GroupPermissions": {
+		"chatbot-admin": {
+			"manage-kolzchut-chatbot": true,
+			"kzchatbot-testing": true,
+			"kzchatbot-rag-admin": true,
+			"kzchatbot-no-limits": true
+		}
+	},
 	"SpecialPages": {
 		"KZChatbotSettings": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSettings",
 		"KZChatbotSlugs": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSlugs",

@@ -37,6 +37,8 @@ such as IP whitelisting or a internal network.
 | `Special:KZChatbotRagTesting`  | Admins can ask questions directly and fiddle with LLM parameters |
 
 ## Permissions
+The group `chatbot-admin` is automatically granted the following permissions:
+
 | Permission                | Description                                                                           |
 |---------------------------|---------------------------------------------------------------------------------------|
 | `manage-kolzchut-chatbot` | allows users to manage the general settings the chatbot, except for the RAG settings. |
@@ -44,7 +46,7 @@ such as IP whitelisting or a internal network.
 | `kzchatbot-testing`       | allows access to the testing special page and API                                     |
 | `kzchatbot-no-limits`	 | allows users to bypass the rate limits of the chatbot                                 |
 
-Example:
+If you want to grant any of them to another group, you can set it in `LocalSettings.php`:
 ```php
 $wgGroupPermissions['sysop']['manage-kolzchut-chatbot'] = true;
 ```

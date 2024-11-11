@@ -63,6 +63,9 @@
 	"kzchatbot-slugs-status-delete-success": "Successfully removed slug '$1'.",
 	"right-manage-kolzchut-chatbot": "Manage the chatbot settings",
 	"action-manage-kolzchut-chatbot": "manage the chatbot settings",
+	"group-chatbot-admin": "Chatbot admins",
+	"group-chatbot-admin-member": "{{GENDER:$1|Chatbot admin}}",
+	"grouppage-chatbot-admin": "{{ns:project}}:Chatbot admins",
 
 	"kzchatbot-rag-settings": "Kol-Zchut Chatbot RAG Settings",
 	"kzchatbot-rag-settings-section-general": "General Settings",

@@ -103,8 +103,9 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		] );
 	}
 
-	public function needsWriteAccess() {
-		return false;
+	/** @inheritDoc */
+	public function needsWriteAccess(): bool {
+		return true;
 	}
 
 	/**

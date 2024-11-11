@@ -70,7 +70,8 @@ class KZChatbot {
 				],
 				__METHOD__,
 			)->fetchRow();
-			$isShown = empty( $activeUsersCount['count'] ) ? 1 : ( $activeUsersLimit < $activeUsersCount['count'] );
+			$isShown = empty( $activeUsersCount['count'] ) ? 1
+				: ( (int)$activeUsersLimit > (int)$activeUsersCount['count'] );
 		}
 		// Build and insert new user record
 		$userData = [

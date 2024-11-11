@@ -24,7 +24,8 @@
 	"AvailableRights": [
 		"manage-kolzchut-chatbot",
 		"kzchatbot-testing",
-		"kzchatbot-rag-admin"
+		"kzchatbot-rag-admin",
+		"kzchatbot-no-limits"
 	],
 	"SpecialPages": {
 		"KZChatbotSettings": "MediaWiki\\Extension\\KZChatbot\\SpecialKZChatbotSettings",

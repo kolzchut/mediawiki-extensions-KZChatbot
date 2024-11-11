@@ -42,6 +42,7 @@ such as IP whitelisting or a internal network.
 | `manage-kolzchut-chatbot` | allows users to manage the general settings the chatbot, except for the RAG settings. |
 | `kzchatbot-rag-admin`     | allows users to manage the RAG backend's settings for the chatbot.                    |
 | `kzchatbot-testing`       | allows access to the testing special page and API                                     |
+| `kzchatbot-no-limits`	 | allows users to bypass the rate limits of the chatbot                                 |
 
 Example:
 ```php

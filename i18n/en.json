@@ -129,6 +129,8 @@
 	"kzchatbot-testing-batch-unknown-error": "An unknown error occurred",
 	"right-kzchatbot-testing": "Access the KZ Chatbot testing interface and API",
 	"action-kzchatbot-testing": "access the KZ Chatbot testing interface and API",
+	"right-kzchatbot-no-limits": "No limits when using the chatbot",
+	"action-kzchatbot-no-limits": "use the chatbot without any limits",
 
 	"kzchatbot-testing-batch-total-queries": "Total Queries",
 	"kzchatbot-testing-batch-header-number": "#",

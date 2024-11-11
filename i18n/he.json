@@ -130,6 +130,8 @@
 	"kzchatbot-testing-batch-unknown-error": "אירעה שגיאה לא ידועה",
 	"right-kzchatbot-testing": "גישה לממשק הבדיקות ול-API של צ'טבוט כל זכות",
 	"action-kzchatbot-testing": "לגשת לממשק הבדיקות ול-API של צ'טבוט כל זכות",
+	"right-kzchatbot-no-limits": "ללא הגבלות בשימוש בצ'טבוט",
+	"action-kzchatbot-no-limits": "להשתמש בצ'טבוט ללא הגבלות",
 
 	"kzchatbot-testing-batch-total-queries": "סך הכל שאילתות",
 	"kzchatbot-testing-batch-header-number": "#",

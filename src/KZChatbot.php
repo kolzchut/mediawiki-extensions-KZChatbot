@@ -3,6 +3,7 @@
 namespace MediaWiki\Extension\KZChatbot;
 
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\MediaWikiServices;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -140,6 +141,14 @@ class KZChatbot {
 	 * @return int
 	 */
 	public static function getQuestionsPermitted( $uuid ) {
+		$user = \RequestContext::getMain()->getUser();
+		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
+
+		// If the user has the bypass permission, they can always ask a question
+		if ( $permissionManager->userHasRight( $user, 'kzchatbot-no-limits' ) ) {
+			return 1;
+		}
+
 		$userData = self::getUserData( $uuid );
 		$settings = self::getGeneralSettings();
 		$dailyLimit = $settings['questions_daily_limit'] ?? 100;

@@ -20,12 +20,14 @@ if ( bypassToken ) {
 }
 
 $.get( endpoint, ( data ) => {
+	if ( !data || !data.uuid ) {
+		return;
+	}
 
 	// (Re-)save cookie
 	mw.cookie.set( cookieName, data.uuid, { expires: new Date( data.cookieExpiry ) } );
-
 	// Is chatbot shown to this user?
-	if ( data.chatbotIsShown == '1' ) {
+	if ( data.chatbotIsShown === true ) {
 		// Build config data for React app
 		const config = data,
 			savedSettings = mw.config.get( 'KZChatbotSettings' );

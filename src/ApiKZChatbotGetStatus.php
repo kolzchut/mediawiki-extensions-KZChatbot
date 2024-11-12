@@ -9,7 +9,7 @@ class ApiKZChatbotGetStatus extends Handler {
 
 	/**
 	 * Compile chatbot status info for the React app.
-	 * @return array
+	 * @return array|false
 	 */
 	public function execute() {
 		$fieldNames = array_flip( KZChatbot::mappingDbToJson() );
@@ -19,6 +19,9 @@ class ApiKZChatbotGetStatus extends Handler {
 		}
 		if ( empty( $userData ) ) {
 			$userData = KZChatbot::newUser();
+		}
+		if ( $userData === false ) {
+			return [ 'uuid' => false ];
 		}
 		$uuid = $userData[ $fieldNames['uuid'] ];
 		$settings = KZChatbot::getGeneralSettings();
@@ -39,7 +42,7 @@ class ApiKZChatbotGetStatus extends Handler {
 
 		return [
 			'uuid' => $uuid,
-			'chatbotIsShown' => $userData[$fieldNames['chatbotIsShown']],
+			'chatbotIsShown' => (bool)$userData[$fieldNames['chatbotIsShown']],
 			'questionsPermitted' => KZChatbot::getQuestionsPermitted( $uuid ),
 			'cookieExpiry' => $cookieExpiry,
 		];

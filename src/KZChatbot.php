@@ -56,6 +56,11 @@ class KZChatbot {
 			$activeUsersLimit = $settings['active_users_limit'] ?? 0;
 			$activeUsersLimitDays = $settings['active_users_limit_days'] ?? 30;
 
+			// If the rate or limit are at 0, don't create new UUIDs
+			if ( $newUsersChatbotRate === 0 || $activeUsersLimit === 0 ) {
+				return false;
+			}
+
 			// Show this user the chatbot?
 			$dbw = wfGetDB( DB_PRIMARY );
 			$currentAverage = $dbw->select(

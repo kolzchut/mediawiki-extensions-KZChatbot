@@ -51,7 +51,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'KZChatbot' );
 		$question = $this->question;
 		$uuid = $this->uuid;
-		KZChatbot::useQusetion( $uuid );
+		KZChatbot::useQuestion( $uuid );
 		$apiUrl = $config->get( 'KZChatbotLlmApiUrl' ) . '/search';
 		$client = new \GuzzleHttp\Client();
 		$result = $client->post( $apiUrl, [

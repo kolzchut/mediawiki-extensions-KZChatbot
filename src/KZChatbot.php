@@ -183,7 +183,7 @@ class KZChatbot {
 	 * @param string $uuid The UUID of the user.
 	 * @return void
 	 */
-	public static function useQusetion( $uuid ) {
+	public static function useQuestion( $uuid ) {
 		$userData = self::getUserData( $uuid );
 		// Check if the user already asked some questions today, or we should start from scratch
 		$userLastActiveTimestamp = wfTimestamp( TS_UNIX, $userData['kzcbu_last_active'] );

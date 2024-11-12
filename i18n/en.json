@@ -1,7 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
-			"Joel R. ([http://www.kolzchut.org.il Kol-Zchut])"
+			"Joel R. ([https://www.kolzchut.org.il Kol-Zchut])"
 		]
 	},
 	"kolzchut-chatbot-desc": "Modal end-user interface and admin controls for the Kol-Zchut answers chatbot.",

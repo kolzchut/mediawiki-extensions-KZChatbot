@@ -1,4 +1,3 @@
-// Check cookie
 const scriptVersion = 17,
 	cookieName = 'kzchatbot-uuid',
 	cookie = mw.cookie.get( cookieName ),
@@ -8,11 +7,19 @@ const scriptVersion = 17,
 	scriptPath = serverName + mw.config.get( 'wgScriptPath' ),
 	restPath = scriptPath + '/rest.php',
 	extensionCodePath = scriptPath + '/extensions/KZChatbot/resources/ext.KZChatbot.bot',
-	getConfigPath = '/kzchatbot/v0/status',
-	endpoint = restPath + getConfigPath;
+	getConfigPath = '/kzchatbot/v0/status';
 
-// Callout to config endpoint
-$.get( endpoint + '?uuid=' + uuid, ( data ) => {
+// Get bypass token from URL if present
+const urlParams = new URLSearchParams( window.location.search );
+const bypassToken = urlParams.get( 'kzchatbot_access' );
+
+// Build endpoint with all parameters
+let endpoint = restPath + getConfigPath + '?uuid=' + uuid;
+if ( bypassToken ) {
+	endpoint += '&kzchatbot_access=' + encodeURIComponent( bypassToken );
+}
+
+$.get( endpoint, ( data ) => {
 
 	// (Re-)save cookie
 	mw.cookie.set( cookieName, data.uuid, { expires: new Date( data.cookieExpiry ) } );

@@ -16,6 +16,11 @@
 		"KZChatbotLlmApiUrl": {
 			"description": "LLM API URL",
 			"value": null
+		},
+		"KZChatbotUserLimitBypassToken": {
+			"value": false,
+			"description": "Secret token that allows bypassing the active users limit when provided as a URL parameter. Set to false to disable the bypass feature.",
+			"public": false
 		}
 	},
 	"ConfigRegistry": {
@@ -121,8 +126,7 @@
 	},
 	"APIModules": {
 		"kzchatbotsearch": {
-			"class": "MediaWiki\\Extension\\KZChatbot\\Api\\ApiKZChatbotSearch",
-			"services": []
+			"class": "MediaWiki\\Extension\\KZChatbot\\Api\\ApiKZChatbotSearch"
 		}
 	},
 	"RestRoutes": [

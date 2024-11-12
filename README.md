@@ -26,6 +26,7 @@ such as IP whitelisting or a internal network.
 
 ## Configuration
 `$wgKZChatbotLlmApiUrl`: (required) the base URL for the LLM API used by the chatbot.
+`$wgKZChatbotLimitBypassToken`: false|string, see "Active Users Limit Bypass" below.
 
 ## Special pages
 | Special Page                   | Description                                                      |
@@ -35,6 +36,29 @@ such as IP whitelisting or a internal network.
 | `Special:KZChatbotSlugs`       | Admins can configure the interface texts for the chatbot.        |
 | `Special:KZChatbotRagSettings` | Admins can configure the RAG backend's settings for the chatbot. |
 | `Special:KZChatbotRagTesting`  | Admins can ask questions directly and fiddle with LLM parameters |
+
+## Rate limiting
+`Special:KZChatbotSettings` contains various rate limiting options for the chatbot.
+
+### Active Users Limit Bypass
+
+The extension includes a configurable bypass mechanism for the active users limit. When enabled, this allows creating new chatbot users even when the active users limit has been reached.
+
+To enable this feature:
+
+1. Set the bypass token in your `LocalSettings.php`:
+```php
+$wgKZChatbotLimitBypassToken = 'your_secret_token_here';
+```
+
+2. Use the special URL when creating new chatbot users:
+```
+https://your.wiki/any_page?kzchatbot_access=your_secret_token_here
+```
+
+To disable the bypass feature entirely, set `$wgKZChatbotLimitBypassToken = false`.
+
+Note: Keep your bypass token secure. The token should be treated as sensitive information since it can bypass rate limiting mechanisms.
 
 ## Permissions
 The group `chatbot-admin` is automatically granted the following permissions:

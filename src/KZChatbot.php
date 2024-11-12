@@ -46,33 +46,46 @@ class KZChatbot {
 	public static function newUser() {
 		$settings = self::getGeneralSettings();
 		$cookieExpiry = time() + ( $settings['cookie_expiry_days'] ?? 356 ) * 24 * 60 * 60;
-		$newUsersChatbotRate = $settings['new_users_chatbot_rate'] ?? 100;
-		$activeUsersLimit = $settings['active_users_limit'];
-		$activeUsersLimitDays = $settings['active_users_limit_days'] ?? 30;
-		// Show this user the chatbot?
-		$dbw = wfGetDB( DB_PRIMARY );
-		$currentAverage = $dbw->select(
-			[ 'kzchatbot_users' ],
-			[ 'AVG(kzcbu_is_shown) AS average' ],
-			[],
-			__METHOD__,
-		)->fetchRow();
-		$isShown = empty( $currentAverage['average'] ) ? ( $newUsersChatbotRate > 0 )
-			: ( $currentAverage['average'] <= ( $newUsersChatbotRate / 100 ) );
-		if ( $isShown && !empty( $activeUsersLimit ) ) {
-			// Need also to check that we haven't hit the absolute maximum on active users.
-			$activeUsersCount = $dbw->select(
+
+		// Quick bypass check before any DB operations
+		$isShown = UserLimitBypass::shouldBypass();
+
+		// Only do the complex checks if we're not bypassing
+		if ( !$isShown ) {
+			$newUsersChatbotRate = $settings['new_users_chatbot_rate'] ?? 100;
+			$activeUsersLimit = $settings['active_users_limit'];
+			$activeUsersLimitDays = $settings['active_users_limit_days'] ?? 30;
+
+			// Show this user the chatbot?
+			$dbw = wfGetDB( DB_PRIMARY );
+			$currentAverage = $dbw->select(
 				[ 'kzchatbot_users' ],
-				[ 'COUNT(*) as count' ],
-				[
-					'kzcbu_is_shown' => 1,
-					'kzcbu_last_active <= ' . wfTimestamp( TS_MW, time() - ( $activeUsersLimitDays * 24 * 60 * 60 ) )
-				],
+				[ 'AVG(kzcbu_is_shown) AS average' ],
+				[],
 				__METHOD__,
 			)->fetchRow();
-			$isShown = empty( $activeUsersCount['count'] ) ? 1
-				: ( (int)$activeUsersLimit > (int)$activeUsersCount['count'] );
+
+			$isShown = empty( $currentAverage['average'] ) ? ( $newUsersChatbotRate > 0 )
+				: ( $currentAverage['average'] <= ( $newUsersChatbotRate / 100 ) );
+
+			if ( $isShown && !empty( $activeUsersLimit ) ) {
+				// Need also to check that we haven't hit the absolute maximum on active users.
+				$activeUsersCount = $dbw->select(
+					[ 'kzchatbot_users' ],
+					[ 'COUNT(*) as count' ],
+					[
+						'kzcbu_is_shown' => 1,
+						'kzcbu_last_active <= ' . wfTimestamp(
+							TS_MW, time() - ( $activeUsersLimitDays * 24 * 60 * 60 )
+						)
+					],
+					__METHOD__,
+				)->fetchRow();
+				$isShown = empty( $activeUsersCount['count'] ) ? 1
+					: ( (int)$activeUsersLimit > (int)$activeUsersCount['count'] );
+			}
 		}
+
 		// Build and insert new user record
 		$userData = [
 			'kzcbu_uuid' => uniqid(),
@@ -82,6 +95,8 @@ class KZChatbot {
 			'kzcbu_last_active' => wfTimestamp( TS_MW ),
 			'kzcbu_questions_last_active_day' => 0,
 		];
+
+		$dbw = wfGetDB( DB_PRIMARY );
 		$dbw->insert( 'kzchatbot_users', $userData, __METHOD__ );
 		return $userData;
 	}

@@ -16,7 +16,6 @@ class ApiKZChatbotGetStatus extends Handler {
 		$uuid = $this->getValidatedParams()[ 'uuid' ];
 		if ( !empty( $uuid ) ) {
 			$userData = KZChatbot::getUserData( $uuid );
-			$uuid = $userData[ $fieldNames['uuid'] ];
 		}
 		if ( empty( $userData ) ) {
 			$userData = KZChatbot::newUser();
@@ -25,6 +24,19 @@ class ApiKZChatbotGetStatus extends Handler {
 		$settings = KZChatbot::getGeneralSettings();
 		$cookieExpiryDays = $settings['cookie_expiry_days'] ?? 365;
 		$cookieExpiry = date( DATE_RFC3339, time() + $cookieExpiryDays * 60 * 60 * 24 );
+
+		// If bypass token is present and chatbot isn't shown, update the DB
+		if ( !$userData[$fieldNames['chatbotIsShown']] && UserLimitBypass::shouldBypass() ) {
+			$dbw = wfGetDB( DB_PRIMARY );
+			$dbw->update(
+				'kzchatbot_users',
+				[ 'kzcbu_is_shown' => 1 ],
+				[ 'kzcbu_uuid' => $uuid ],
+				__METHOD__
+			);
+			$userData[$fieldNames['chatbotIsShown']] = true;
+		}
+
 		return [
 			'uuid' => $uuid,
 			'chatbotIsShown' => $userData[$fieldNames['chatbotIsShown']],
@@ -47,6 +59,6 @@ class ApiKZChatbotGetStatus extends Handler {
 	}
 
 	public function needsWriteAccess() {
-		return false;
+		return true;
 	}
 }

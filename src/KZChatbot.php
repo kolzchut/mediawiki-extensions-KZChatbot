@@ -52,8 +52,8 @@ class KZChatbot {
 
 		// Only do the complex checks if we're not bypassing
 		if ( !$isShown ) {
-			$newUsersChatbotRate = $settings['new_users_chatbot_rate'] ?? 100;
-			$activeUsersLimit = $settings['active_users_limit'];
+			$newUsersChatbotRate = $settings['new_users_chatbot_rate'] ?? 0;
+			$activeUsersLimit = $settings['active_users_limit'] ?? 0;
 			$activeUsersLimitDays = $settings['active_users_limit_days'] ?? 30;
 
 			// Show this user the chatbot?

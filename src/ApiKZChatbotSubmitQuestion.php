@@ -44,7 +44,12 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 				throw new HttpException( $message, 403 );
 			}
 		}
-		return $this->generateAnswer();
+		$answer = $this->generateAnswer();
+		if ( $answer['llmResult'] === null ) {
+			wfDebugLog( 'KZChatbot', 'ChatGPT API returned null - ' . print_r( $answer, true ) );
+			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
+		}
+		return $answer;
 	}
 
 	private function generateAnswer() {

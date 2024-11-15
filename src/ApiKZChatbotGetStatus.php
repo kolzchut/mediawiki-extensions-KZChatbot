@@ -9,7 +9,7 @@ class ApiKZChatbotGetStatus extends Handler {
 
 	/**
 	 * Compile chatbot status info for the React app.
-	 * @return array|false
+	 * @return array
 	 */
 	public function execute() {
 		$fieldNames = array_flip( KZChatbot::mappingDbToJson() );

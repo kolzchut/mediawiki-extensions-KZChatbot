@@ -5,6 +5,7 @@ namespace MediaWiki\Extension\KZChatbot;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use Psr\Log\LoggerInterface;
+use Random\RandomException;
 use RequestContext;
 
 /**
@@ -42,7 +43,7 @@ class KZChatbot {
 	}
 
 	/**
-	 * @return array|bool
+	 * @return array|false The new user data, or false if the user should not be shown the chatbot
 	 */
 	public static function newUser() {
 		$settings = self::getGeneralSettings();
@@ -57,26 +58,22 @@ class KZChatbot {
 			$activeUsersLimit = $settings['active_users_limit'] ?? 0;
 			$activeUsersLimitDays = $settings['active_users_limit_days'] ?? 30;
 
-			// If the rate or limit are at 0, don't create new UUIDs
-			if ( $newUsersChatbotRate === 0 || $activeUsersLimit === 0 ) {
+			try {
+				$isShown = ( random_int( 1, 100 ) <= $newUsersChatbotRate );
+			} catch ( RandomException $e ) {
+				$isShown = rand( 1, 100 ) <= $newUsersChatbotRate;
+			}
+
+			// If the user isn't selected, or we're not showing the bot to anyone, don't create a new UUIDs
+			// Consumers of this function should be aware of this and handle the false return value
+			if ( !$isShown || $newUsersChatbotRate === 0 || $activeUsersLimit === 0 ) {
 				return false;
 			}
 
-			// Show this user the chatbot?
-			$dbw = wfGetDB( DB_PRIMARY );
-			$currentAverage = $dbw->select(
-				[ 'kzchatbot_users' ],
-				[ 'AVG(kzcbu_is_shown) AS average' ],
-				[],
-				__METHOD__,
-			)->fetchRow();
-
-			$isShown = empty( $currentAverage['average'] ) ? ( $newUsersChatbotRate > 0 )
-				: ( $currentAverage['average'] <= ( $newUsersChatbotRate / 100 ) );
-
-			if ( $isShown && !empty( $activeUsersLimit ) ) {
-				// Need also to check that we haven't hit the absolute maximum on active users.
-				$activeUsersCount = $dbw->select(
+			// Now that the user was theoretically selected, check if we have available "seats" (max active users)
+			$dbr = wfGetDB( DB_REPLICA );
+			if ( !empty( $activeUsersLimit ) ) {
+				$activeUsersCount = $dbr->select(
 					[ 'kzchatbot_users' ],
 					[ 'COUNT(*) as count' ],
 					[
@@ -84,11 +81,10 @@ class KZChatbot {
 						'kzcbu_last_active <= ' . wfTimestamp(
 							TS_MW, time() - ( $activeUsersLimitDays * 24 * 60 * 60 )
 						)
-					],
-					__METHOD__,
+					]
 				)->fetchRow();
-				$isShown = empty( $activeUsersCount['count'] ) ? 1
-					: ( (int)$activeUsersLimit > (int)$activeUsersCount['count'] );
+				$isShown = empty( $activeUsersCount['count'] ) ||
+					(int)$activeUsersLimit > (int)$activeUsersCount['count'];
 			}
 		}
 

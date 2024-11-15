@@ -66,6 +66,7 @@
 			"dependencies": [ "mediawiki.notification.convertmessagebox" ]
 		},
 		"ext.KZChatbot.launcher": {
+			"es6": true,
 			"localBasePath": "resources/ext.KZChatbot.launcher",
 			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.launcher",
 			"scripts": [ "kzChatbotLauncher.js" ],

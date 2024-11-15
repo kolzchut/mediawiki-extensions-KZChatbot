@@ -5,6 +5,7 @@ namespace MediaWiki\Extension\KZChatbot;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use Psr\Log\LoggerInterface;
+use RequestContext;
 
 /**
  * @TODO general class description
@@ -96,7 +97,7 @@ class KZChatbot {
 			'kzcbu_uuid' => uniqid(),
 			'kzcbu_is_shown' => $isShown,
 			'kzcbu_cookie_expiry' => wfTimestamp( TS_MW, $cookieExpiry ),
-			'kzcbu_ip_address' => $_SERVER['SERVER_ADDR'],
+			'kzcbu_ip_address' => RequestContext::getMain()->getRequest()->getIP(),
 			'kzcbu_last_active' => wfTimestamp( TS_MW ),
 			'kzcbu_questions_last_active_day' => 0,
 		];

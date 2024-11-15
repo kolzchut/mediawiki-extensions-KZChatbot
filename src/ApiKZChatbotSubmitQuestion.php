@@ -6,6 +6,7 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Validator\JsonBodyValidator;
+use RequestContext;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ApiKZChatbotSubmitQuestion extends Handler {
@@ -46,7 +47,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		}
 		$answer = $this->generateAnswer();
 		if ( $answer['llmResult'] === null ) {
-			wfDebugLog( 'KZChatbot', 'ChatGPT API returned null - ' . print_r( $answer, true ) );
+			wfDebugLog( 'KZChatbot', 'ChatGPT API returned null. Question: ' . $this->question . "\nAnswer: " . print_r( $answer, true ) );
 			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
 		}
 		return $answer;
@@ -59,14 +60,19 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		KZChatbot::useQuestion( $uuid );
 		$apiUrl = $config->get( 'KZChatbotLlmApiUrl' ) . '/search';
 		$client = new \GuzzleHttp\Client();
-		$result = $client->post( $apiUrl, [
-			'headers' => [
-				'X-FORWARDED-FOR' => $_SERVER['REMOTE_ADDR'],
-			],
-			'json' => [
-				'query' => $question,
-			]
-		] );
+		try {
+			$result = $client->post( $apiUrl, [
+				'headers' => [
+					'X-FORWARDED-FOR' => RequestContext::getMain()->getRequest()->getIP(),
+				],
+				'json' => [
+					'query' => $question,
+				]
+			] );
+		} catch ( \GuzzleHttp\Exception\GuzzleException $e ) {
+			wfDebugLog( 'KZChatbot', 'ChatGPT API request failed (' . $e->getCode() . '): ' . $e->getMessage() );
+			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
+		}
 		$response = json_decode( $result->getBody()->getContents() );
 		$docs = array_map( static function ( $doc ) {
 			return [

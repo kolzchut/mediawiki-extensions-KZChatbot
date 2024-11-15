@@ -1,76 +1,131 @@
 # Kol-Zchut Chatbot (KZChatbot)
 
-## Purpose
+## Overview
 
-This extension provides an end-user interface for interacting with the Kol-Zchut chatbot.
-It also serves as middleware between the chatbot and the RAG API.
+KZChatbot is a MediaWiki extension that provides an end-user interface for interacting with the Kol-Zchut chatbot.
+It serves as middleware between the chatbot frontend and the RAG API backend (not yet open-sourced as of 2024-11-14).
 
-It provides configuration options for the usage of the chatbot and the RAG backend.
-
-Warning: there is no authentication between the chatbot and the RAG API. The RAG API should be protected by other means,
-such as IP whitelisting or a internal network.
+⚠️ **Security Note**: There is no built-in authentication between the chatbot and the RAG API.
+The RAG API should be protected through other means, such as IP whitelisting or internal network restrictions.
 
 ## Installation
 
+### Basic Installation
 1. Download the extension
-2. Add `wfLoadExtension( 'KZChatbot' );` to `LocalSettings.php` or your custom PHP config file.
-3. Run `php update.php` in MediaWiki's `maintenance` directory to update the database
-4. Add the `manage-kolzchut-chatbot` right to the desired group(s) in `$wgGroupPermissions`.
+2. Add `wfLoadExtension( 'KZChatbot' );` to `LocalSettings.php` or your custom PHP config file
+3. Run `php update.php` in MediaWiki's `maintenance` directory
+4. Add admins to the `chatbot-admin` group or add [permissions](#Permissions) to other groups
 
-### Developer installation
+### Developer Installation
 1. Download submodules (`kolzchut/react-app-KZChatbot.git` will be downloaded into `resources/ext.KZChatbot.react`)
-2. To rebuild the React code, run `npm run build`
-3. If there was any change in the React code, increase by one the version number in
-   `resources/ext.KZChatbot.launcher/kzChatbotLauncher.js`.
-
+2. Run `npm run build` to rebuild the React code
+3. After any changes to React code, increment the version number in `resources/ext.KZChatbot.launcher/kzChatbotLauncher.js`
 
 ## Configuration
-`$wgKZChatbotLlmApiUrl`: (required) the base URL for the LLM API used by the chatbot.
-`$wgKZChatbotLimitBypassToken`: false|string, see "Active Users Limit Bypass" below.
 
-## Special pages
-| Special Page                   | Description                                                      |
-|--------------------------------|------------------------------------------------------------------|
-| `Special:KZChatbotSettings`    | Admins can configure the general settings for the chatbot.       |
-| `Special:KZChatbotBannedWords` | Admins can configure the banned words for the chatbot.           |
-| `Special:KZChatbotSlugs`       | Admins can configure the interface texts for the chatbot.        |
-| `Special:KZChatbotRagSettings` | Admins can configure the RAG backend's settings for the chatbot. |
-| `Special:KZChatbotRagTesting`  | Admins can ask questions directly and fiddle with LLM parameters |
+### Required Settings
+- `$wgKZChatbotLlmApiUrl`: Base URL for the LLM API used by the chatbot
 
-## Rate limiting
-`Special:KZChatbotSettings` contains various rate limiting options for the chatbot.
+### Database Settings
+These settings can be configured through `Special:KZChatbotSettings`:
+
+#### User Access Settings
+| Setting | Values | Default | Description |
+|---------|--------|---------|-------------|
+| New Users Chatbot Rate | 0-100 | 0 | Percentage of new users who will be shown the chatbot |
+| Active Users Limit | Integer | 0 | Maximum number of concurrent active users |
+| Active Users Limit Days | Integer | 365 | Days without activity before a user becomes inactive |
+| Cookie Expiry Days | Integer | 365 | Client-side cookie expiration period |
+
+#### Usage Limits
+| Setting | Values | Default | Description |
+|---------|--------|---------|-------------|
+| Questions Daily Limit | Integer | - | Maximum questions per user per day |
+| Question Character Limit | Integer | - | Maximum characters per question |
+| Feedback Character Limit | Integer | - | Maximum characters in feedback text |
+| UUID Per-IP Request Limit | Integer | - | (NOT IMPLEMENTED) New UUID requests limit per IP |
+
+#### Interface Settings
+| Setting | Values | Default | Description |
+|---------|--------|---------|-------------|
+| Usage Help URL | URL | - | Link to usage documentation |
+| Terms of Service URL | URL | - | Link to terms of service |
+
+### RAG Settings
+These settings are stored in the RAG database and configured through `Special:KZChatbotRagTesting`:
+
+| Setting         | Values                             | Description                                                                                                            |
+|-----------------|------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| Model           | gpt-4o, gpt-4o-mini, gpt-3.5-turbo | LLM model selection                                                                                                    |
+| Number of Pages | Integer                            | Number of articles for RAG algorithm                                                                                   |
+| Temperature     | 0.1-0.9                            | LLM creativity level ([more info](https://platform.openai.com/docs/api-reference/chat/create#chat-create-temperature)) |
+| System Prompt   | String                             | Base LLM prompt                                                                                                        |
+| User Prompt     | String                             | Additional user-specific prompt                                                                                        |
+| Banned Fields   | -                                  | (Currently unused)                                                                                                     |
+
+## Access Control
+
+### User Selection Process
+The chatbot uses a controlled rollout system to manage user access:
+
+1. First Visit:
+	- New users arrive without a cookie
+	- System performs random selection based on configured rate
+	- Selected users receive a persistent UUID cookie and database entry
+	- Non-selected users receive a session-based rejection cookie
+
+2. Subsequent Visits:
+	- Users with rejection cookie: chatbot remains hidden
+	- Users with valid UUID: chatbot loads normally
+	- Users without any cookie: go through selection process again
 
 ### Active Users Limit Bypass
+You can enable a bypass mechanism for the active users limit:
 
-The extension includes a configurable bypass mechanism for the active users limit. When enabled, this allows creating new chatbot users even when the active users limit has been reached.
-
-To enable this feature:
-
-1. Set the bypass token in your `LocalSettings.php`:
+1. Configure in `LocalSettings.php`:
 ```php
 $wgKZChatbotLimitBypassToken = 'your_secret_token_here';
 ```
 
-2. Use the special URL when creating new chatbot users:
+2. Use the bypass URL:
 ```
-https://your.wiki/any_page?kzchatbot_access=your_secret_token_here
+https://example.com/wiki/any_page?kzchatbot_access=your_secret_token_here
 ```
 
-To disable the bypass feature entirely, set `$wgKZChatbotLimitBypassToken = false`.
+To disable bypassing, set `$wgKZChatbotLimitBypassToken = false`
 
-Note: Keep your bypass token secure. The token should be treated as sensitive information since it can bypass rate limiting mechanisms.
+⚠️ **Security Note**: Treat the bypass token as sensitive information.
 
-## Permissions
-The group `chatbot-admin` is automatically granted the following permissions:
+## Administrative Interface
 
-| Permission                | Description                                                                           |
-|---------------------------|---------------------------------------------------------------------------------------|
-| `manage-kolzchut-chatbot` | allows users to manage the general settings the chatbot, except for the RAG settings. |
-| `kzchatbot-rag-admin`     | allows users to manage the RAG backend's settings for the chatbot.                    |
-| `kzchatbot-testing`       | allows access to the testing special page and API                                     |
-| `kzchatbot-no-limits`	 | allows users to bypass the rate limits of the chatbot                                 |
+### Special Pages
+| Page                           | Description                                   |
+|--------------------------------|-----------------------------------------------|
+| `Special:KZChatbotSettings`    | General configuration settings                |
+| `Special:KZChatbotBannedWords` | Banned words management                       |
+| `Special:KZChatbotSlugs`       | Interface text configuration                  |
+| `Special:KZChatbotRagSettings` | RAG backend configuration                     |
+| `Special:KZChatbotRagTesting`  | Question testing and LLM parameter adjustment |
 
-If you want to grant any of them to another group, you can set it in `LocalSettings.php`:
+### Permissions
+The `chatbot-admin` group has these default permissions:
+
+| Permission                | Description                 |
+|---------------------------|-----------------------------|
+| `manage-kolzchut-chatbot` | Manage general settings     |
+| `kzchatbot-rag-admin`     | Manage RAG backend settings |
+| `kzchatbot-testing`       | Access testing page and API |
+| `kzchatbot-no-limits`     | Bypass rate limits          |
+
+To grant permissions to other groups, add to `LocalSettings.php`:
 ```php
 $wgGroupPermissions['sysop']['manage-kolzchut-chatbot'] = true;
 ```
+
+## Future Development
+- Prevent users from sending unlimited rating requests: right now it's possible to switch indefinitely between 
+  thumbs up and thumbs down, and each is sent and recorded by the RAG server. We need to decide on a limit, and save
+  requests temporarily in Redis or similar to handle it
+- Clean up isShown in database, as only shown users are saved
+- What is kzchatbot_users.kzcbu_ranking_eligible_answer_id?
+- Implement UUID request limit functionality

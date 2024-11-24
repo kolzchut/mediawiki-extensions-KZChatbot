@@ -19,6 +19,7 @@
 	"kzchatbot-settings-help-new-users-chatbot-rate": "Percentage of new users that will see the chatbot",
 	"kzchatbot-settings-label-active-users-limit": "Maximum Active Users",
 	"kzchatbot-settings-help-active-users-limit": "Maximum number of active users past which none will be selected for chatbot access",
+	"kzchatbot-settings-label-current-active-users": "Current Active Users",
 	"kzchatbot-settings-label-active-users-limit-days": "Active Users Limit Days",
 	"kzchatbot-settings-help-active-users-limit-days": "Maximum number of days since last activity during which a user is considered active for purposes of the Active Users Limit",
 	"kzchatbot-settings-label-questions-daily-limit": "Questions Daily Limit",

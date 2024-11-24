@@ -47,7 +47,7 @@ class KZChatbot {
 	 */
 	public static function newUser() {
 		$settings = self::getGeneralSettings();
-		$cookieExpiry = time() + ( $settings['cookie_expiry_days'] ?? 356 ) * 24 * 60 * 60;
+		$cookieExpiry = time() + ( $settings['cookie_expiry_days'] ?? 365 ) * 24 * 60 * 60;
 
 		// Quick bypass check before any DB operations
 		$isShown = UserLimitBypass::shouldBypass();
@@ -55,8 +55,7 @@ class KZChatbot {
 		// Only do the complex checks if we're not bypassing
 		if ( !$isShown ) {
 			$newUsersChatbotRate = $settings['new_users_chatbot_rate'] ?? 0;
-			$activeUsersLimit = $settings['active_users_limit'] ?? 0;
-			$activeUsersLimitDays = $settings['active_users_limit_days'] ?? 30;
+			$activeUsersLimit = (int)$settings['active_users_limit'] ?? 0;
 
 			try {
 				$isShown = ( random_int( 1, 100 ) <= $newUsersChatbotRate );
@@ -71,20 +70,9 @@ class KZChatbot {
 			}
 
 			// Now that the user was theoretically selected, check if we have available "seats" (max active users)
-			$dbr = wfGetDB( DB_REPLICA );
 			if ( !empty( $activeUsersLimit ) ) {
-				$activeUsersCount = $dbr->select(
-					[ 'kzchatbot_users' ],
-					[ 'COUNT(*) as count' ],
-					[
-						'kzcbu_is_shown' => 1,
-						'kzcbu_last_active <= ' . wfTimestamp(
-							TS_MW, time() - ( $activeUsersLimitDays * 24 * 60 * 60 )
-						)
-					]
-				)->fetchRow();
-				$isShown = empty( $activeUsersCount['count'] ) ||
-					(int)$activeUsersLimit > (int)$activeUsersCount['count'];
+				$activeUsersCount = self::getCurrentActiveUsersCount();
+				$isShown = $activeUsersLimit > $activeUsersCount;
 			}
 		}
 
@@ -235,6 +223,26 @@ class KZChatbot {
 			$insertRows,
 			__METHOD__
 		);
+	}
+
+	/**
+	 * Gets the current active users count
+	 * @return int
+	 */
+	public static function getCurrentActiveUsersCount(): int {
+		$dbr = wfGetDB( DB_REPLICA );
+		$activeUsersLimitDays = self::getGeneralSettings()['active_users_limit_days'] ?? 30;
+		$activeUsersCount = $dbr->select(
+			[ 'kzchatbot_users' ],
+			[ 'COUNT(*) as count' ],
+			[
+				'kzcbu_is_shown' => 1,
+				'kzcbu_last_active >= ' . wfTimestamp(
+					TS_MW, time() - ( $activeUsersLimitDays * 24 * 60 * 60 )
+				)
+			]
+		)->fetchRow();
+		return $activeUsersCount['count'] ?? 0;
 	}
 
 }

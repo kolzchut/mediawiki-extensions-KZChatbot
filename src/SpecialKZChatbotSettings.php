@@ -138,6 +138,12 @@ class SpecialKZChatbotSettings extends SpecialPage {
 				'required' => true,
 				'min' => 0,
 			],
+			'kzcCurrentActiveUsers' => [
+				'type' => 'info',
+				'label-message' => 'kzchatbot-settings-label-current-active-users',
+				'section' => 'kzchatbot-settings-section-throttle',
+				'default' => (string)KZChatbot::getCurrentActiveUsersCount(),
+			],
 			'kzcActiveUsersLimitDays' => [
 				'type' => 'int',
 				'label-message' => 'kzchatbot-settings-label-active-users-limit-days',
@@ -196,7 +202,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 		$settings = KZChatbot::getGeneralSettings();
 		$formNameToDbName = $this->getFormNameToDbNameMapping();
 		foreach ( $form as $inputName => &$attribs ) {
-			$valueName = $formNameToDbName[ $inputName ];
+			$valueName = $formNameToDbName[ $inputName ] ?? null;
 			if ( isset( $settings[$valueName] ) ) {
 				$attribs['default'] = $settings[$valueName];
 			} elseif ( $attribs['type'] === 'int' ) {

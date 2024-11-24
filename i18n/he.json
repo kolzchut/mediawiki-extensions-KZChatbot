@@ -19,6 +19,7 @@
 	"kzchatbot-settings-help-new-users-chatbot-rate": "אחוז עוגיות הצ'טבוט החדשות שייבחרו לראות את הצ'טבוט",
 	"kzchatbot-settings-label-active-users-limit": "מקסימום משתמשים פעילים",
 	"kzchatbot-settings-help-active-users-limit": "מעבר למספר זה לא ייתווספו משתמשים חדשים",
+	"kzchatbot-settings-label-current-active-users": "משתמשים פעילים נוכחיים",
 	"kzchatbot-settings-label-active-users-limit-days": "מקסימום ימים ללא פעילות",
 	"kzchatbot-settings-help-active-users-limit-days": "לצורך מניין מספר המשתמשים הפעילים",
 	"kzchatbot-settings-label-questions-daily-limit": "מקסימום שאלות ביום",

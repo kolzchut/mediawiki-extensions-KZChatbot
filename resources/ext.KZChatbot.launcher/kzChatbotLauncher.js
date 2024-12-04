@@ -26,10 +26,11 @@ const initializeChatbot = () => {
 	const urlParams = new URLSearchParams( window.location.search );
 	const bypassToken = urlParams.get( 'kzchatbot_access' );
 
-	// b/c - migrate 'false' cookies to 'none' with one-day expiration
-	if ( uuid === 'false' && bypassToken === null ) {
-		setExclusionCookie();
-		return;
+	// 2024-12-04 for b/c, we delete the session cookie (identified by the value 'false') for users
+	// excluded in an older version of the code, so they get a second chance.
+	// This can be removed in a few months.
+	if ( uuid === 'false' ) {
+		mw.cookie.set( cookieName, null );
 	}
 
 	// Don't proceed if the user has been marked as excluded. This saves on repeated calls

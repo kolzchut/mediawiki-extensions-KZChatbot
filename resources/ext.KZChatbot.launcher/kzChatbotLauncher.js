@@ -4,6 +4,17 @@ const initializeChatbot = () => {
 	const cookie = mw.cookie.get( cookieName );
 	const uuid = cookie !== null ? cookie : '';
 
+	const setExclusionCookie = () => {
+		// Now + 1 day
+		const expiryDate = new Date();
+		expiryDate.setDate( expiryDate.getDate() + 1 );
+
+		mw.cookie.set( cookieName, 'none', {
+			expires: expiryDate,
+			sameSite: 'Strict'
+		} );
+	};
+
 	// Build config endpoint. MW sometimes messes up http/s, so we match the current protocol
 	const serverName = mw.config.get( 'wgServer' ).replace( /^(https?:)?\/\//, `${ location.protocol }//` );
 	const scriptPath = `${ serverName }${ mw.config.get( 'wgScriptPath' ) }`;
@@ -15,8 +26,14 @@ const initializeChatbot = () => {
 	const urlParams = new URLSearchParams( window.location.search );
 	const bypassToken = urlParams.get( 'kzchatbot_access' );
 
-	// If the cookie exists and its value is false, the user wasn't selected
+	// b/c - migrate 'false' cookies to 'none' with one-day expiration
 	if ( uuid === 'false' && bypassToken === null ) {
+		setExclusionCookie();
+		return;
+	}
+
+	// Don't proceed if the user has been marked as excluded. This saves on repeated calls
+	if ( uuid === 'none' && bypassToken === null ) {
 		return;
 	}
 
@@ -34,19 +51,17 @@ const initializeChatbot = () => {
 			return;
 		}
 
-		// If the user wasn't selected, we save a session cookie with an empty UUID,
-		// so we won't have to do this on every page load
+		// If the user wasn't selected previously , set a temporary cookie with 'none'
 		if ( data.uuid === false ) {
-			mw.cookie.set( cookieName, 'false', {
-				expires: 0
-			} );
+			setExclusionCookie();
 			return;
 		}
 
 		if ( data.uuid !== uuid ) {
-			// (Re-)save cookie
+			// (Re-)save cookie with the expiration from the server
 			mw.cookie.set( cookieName, data.uuid, {
-				expires: new Date( data.cookieExpiry )
+				expires: new Date( data.cookieExpiry ),
+				sameSite: 'Strict'
 			} );
 		}
 

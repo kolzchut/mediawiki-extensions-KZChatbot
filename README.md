@@ -30,26 +30,26 @@ The RAG API should be protected through other means, such as IP whitelisting or 
 These settings can be configured through `Special:KZChatbotSettings`:
 
 #### User Access Settings
-| Setting | Values | Default | Description |
-|---------|--------|---------|-------------|
-| New Users Chatbot Rate | 0-100 | 0 | Percentage of new users who will be shown the chatbot |
-| Active Users Limit | Integer | 0 | Maximum number of concurrent active users |
-| Active Users Limit Days | Integer | 365 | Days without activity before a user becomes inactive |
-| Cookie Expiry Days | Integer | 365 | Client-side cookie expiration period |
+| Setting                 | Values  | Default | Description                                           |
+|-------------------------|---------|---------|-------------------------------------------------------|
+| New Users Chatbot Rate  | 0-100   | 0       | Percentage of new users who will be shown the chatbot |
+| Active Users Limit      | Integer | 0       | Maximum number of concurrent active users             |
+| Active Users Limit Days | Integer | 365     | Days without activity before a user becomes inactive  |
+| Cookie Expiry Days      | Integer | 365     | Client-side cookie expiration period                  |
 
 #### Usage Limits
-| Setting | Values | Default | Description |
-|---------|--------|---------|-------------|
-| Questions Daily Limit | Integer | - | Maximum questions per user per day |
-| Question Character Limit | Integer | - | Maximum characters per question |
-| Feedback Character Limit | Integer | - | Maximum characters in feedback text |
-| UUID Per-IP Request Limit | Integer | - | (NOT IMPLEMENTED) New UUID requests limit per IP |
+| Setting                   | Values  | Default | Description                                      |
+|---------------------------|---------|---------|--------------------------------------------------|
+| Questions Daily Limit     | Integer | -       | Maximum questions per user per day               |
+| Question Character Limit  | Integer | -       | Maximum characters per question                  |
+| Feedback Character Limit  | Integer | -       | Maximum characters in feedback text              |
+| UUID Per-IP Request Limit | Integer | -       | (NOT IMPLEMENTED) New UUID requests limit per IP |
 
 #### Interface Settings
-| Setting | Values | Default | Description |
-|---------|--------|---------|-------------|
-| Usage Help URL | URL | - | Link to usage documentation |
-| Terms of Service URL | URL | - | Link to terms of service |
+| Setting              | Values | Default | Description                 |
+|----------------------|--------|---------|-----------------------------|
+| Usage Help URL       | URL    | -       | Link to usage documentation |
+| Terms of Service URL | URL    | -       | Link to terms of service    |
 
 ### RAG Settings
 These settings are stored in the RAG database and configured through `Special:KZChatbotRagTesting`:
@@ -83,14 +83,13 @@ The chatbot uses a controlled rollout system to manage user access:
 You can enable a bypass mechanism for the active users limit:
 
 1. Configure in `LocalSettings.php`:
-```php
-$wgKZChatbotLimitBypassToken = 'your_secret_token_here';
-```
-
+   ```php
+   $wgKZChatbotLimitBypassToken = 'your_secret_token_here';
+   ```
 2. Use the bypass URL:
-```
-https://example.com/wiki/any_page?kzchatbot_access=your_secret_token_here
-```
+   ```
+   https://example.com/wiki/any_page?kzchatbot_access=your_secret_token_here
+   ```
 
 To disable bypassing, set `$wgKZChatbotLimitBypassToken = false`
 
@@ -112,14 +111,21 @@ The `chatbot-admin` group has these default permissions:
 
 | Permission                | Description                 |
 |---------------------------|-----------------------------|
-| `manage-kolzchut-chatbot` | Manage general settings     |
-| `kzchatbot-rag-admin`     | Manage RAG backend settings |
+| `kzchatbot-edit-settings` | Manage general settings     |
+| `kzchatbot-edit-rag-settings`     | Manage RAG backend settings |
 | `kzchatbot-testing`       | Access testing page and API |
 | `kzchatbot-no-limits`     | Bypass rate limits          |
 
+The `chatbot-settings-viewer` group has these default permissions:
+
+| Permission                | Description                 |
+|---------------------------|-----------------------------|
+| `kzchatbot-view-settings` | View the general settings   |
+| `kzchatbot-view-rag-settings` | View the RAG settings   |
+
 To grant permissions to other groups, add to `LocalSettings.php`:
 ```php
-$wgGroupPermissions['sysop']['manage-kolzchut-chatbot'] = true;
+$wgGroupPermissions['sysop']['kzchatbot-edit-settings'] = true;
 ```
 
 ## Future Development

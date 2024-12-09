@@ -17,7 +17,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	 * @inheritDoc
 	 */
 	public function __construct() {
-		parent::__construct( 'KZChatbotSlugs', 'manage-kolzchut-chatbot' );
+		parent::__construct( 'KZChatbotSlugs', 'kzchatbot-edit-settings' );
 	}
 
 	/**

@@ -6,11 +6,20 @@ use Config;
 use ErrorPageError;
 use Exception;
 use FormSpecialPage;
+use HTMLForm;
 use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\MediaWikiServices;
+use PermissionsError;
 use Status;
 
 class SpecialKZChatbotRagSettings extends FormSpecialPage {
+
+	/** @var bool */
+	private bool $isAllowedEdit;
+
+	/** @var bool */
+	private bool $isAllowedView;
+
 	/**
 	 * @var Config
 	 */
@@ -46,9 +55,30 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 	];
 
 	public function __construct() {
-		parent::__construct( 'KZChatbotRagSettings', 'kzchatbot-rag-admin' );
+		parent::__construct( 'KZChatbotRagSettings' );
 		$this->config = MediaWikiServices::getInstance()->getMainConfig();
 		$this->httpFactory = MediaWikiServices::getInstance()->getHttpRequestFactory();
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function execute( $par ) {
+		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
+		$this->isAllowedView = $permissionManager->userHasRight( $this->getUser(), 'kzchatbot-view-rag-settings' );
+		$this->isAllowedEdit = $permissionManager->userHasRight( $this->getUser(), 'kzchatbot-edit-rag-settings' );
+
+		// Check if user can at least view
+		if ( !$this->isAllowedView && !$this->isAllowedEdit ) {
+			throw new PermissionsError( 'kzchatbot-view-rag-settings' );
+		}
+
+		// Show view-only notice if user can't edit
+		if ( !$this->isAllowedEdit ) {
+			$this->getOutput()->addWikiMsg( 'kzchatbot-rag-settings-view-only' );
+		}
+
+		parent::execute( $par );
 	}
 
 	/**
@@ -80,8 +110,7 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 	 */
 	protected function getFormFields(): array {
 		$currentConfig = $this->getCurrentConfig();
-
-		return [
+		$fields = [
 			'version' => [
 				'type' => 'text',
 				'readonly' => true,
@@ -142,6 +171,15 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 				'validation-callback' => [ $this, 'validateBannedFields' ],
 			],
 		];
+
+		// If user only has view permission, make all fields disabled
+		if ( !$this->isAllowedEdit ) {
+			foreach ( $fields as &$field ) {
+				$field['disabled'] = true;
+			}
+		}
+
+		return $fields;
 	}
 
 	/**
@@ -179,11 +217,27 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 		return [];
 	}
 
+	/** @inheritDoc */
+	protected function alterForm( HTMLForm $form ) {
+		if ( !$this->isAllowedEdit ) {
+			// Disable everything we can
+			$form->setAction( null )->suppressDefaultSubmit()->setSubmitCallback( static function () {
+			} );
+		}
+	}
+
 	/**
 	 * @param array $data
 	 * @return Status
+	 * @throws PermissionsError
 	 */
 	public function onSubmit( array $data ): Status {
+		// Safeguard - only process if user has edit permission
+		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
+		if ( !$permissionManager->userHasRight( $this->getUser(), 'kzchatbot-edit-rag-settings' ) ) {
+			throw new PermissionsError( 'kzchatbot-edit-rag-settings' );
+		}
+
 		// I tried to make the POST request with MW's HttpRequestFactory, but it didn't work, so I resorted to curl
 		try {
 			$apiUrl = rtrim( $this->config->get( 'KZChatbotLlmApiUrl' ), '/' );

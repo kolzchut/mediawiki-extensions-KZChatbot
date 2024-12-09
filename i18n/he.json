@@ -4,8 +4,8 @@
 			"Joel R. ([https://www.kolzchut.org.il Kol-Zchut])"
 		]
 	},
-	"kolzchut-chatbot-desc": "ממשק ניהול וממשק מודאל המספק למשתמש הקצה גישה לצ'טבוט כל זכות",
-	"kolzchut-chatbot-name": "צ'טבוט כל זכות",
+	"kzchatbot-desc": "ממשק ניהול וממשק מודאל המספק למשתמש הקצה גישה לצ'טבוט כל זכות",
+	"kzchatbot-name": "צ'טבוט כל זכות",
 	"kzchatbot-toplink-general-settings": "ניהול הגדרות כלליות »",
 	"kzchatbot-toplink-banned-words": "ניהול מילים ודפוסים אסורים »",
 	"kzchatbot-toplink-slugs": "ניהול סלאגים »",
@@ -62,13 +62,24 @@
 	"kzchatbot-slugs-error-alphanumeric-only": "שם הסלאג צריך להיות מורכב רק תווים אלפאנומרים וקווים תחתונים.",
 	"kzchatbot-slugs-status-save-success": "סלאג '$1' נשמר בהצלחה",
 	"kzchatbot-slugs-status-delete-success": "סלאג '$1' נמחק בהצלחה",
-	"right-manage-kolzchut-chatbot": "ניהול הגדרות הצ'טבוט",
-	"action-manage-kolzchut-chatbot": "לנהל את הגדרות הצ'טבוט",
+	"right-kzchatbot-edit-settings": "ניהול הגדרות הצ'טבוט",
+	"action-kzchatbot-edit-settings": "לנהל את הגדרות הצ'טבוט",
 	"group-chatbot-admin": "מנהלי צ'טבוט",
 	"group-chatbot-admin-member": "{{GENDER:$1|מנהל צ'טבוט|מנהלת צ'טבוט}}",
 	"grouppage-chatbot-admin": "{{ns:project}}:מנהלי צ'טבוט",
 
+	"right-kzchatbot-view-settings": "צפייה בהגדרות הכלליות של צ'טבוט כל זכות",
+	"right-kzchatbot-view-rag-settings": "צפייה בהגדרות ה-RAG של צ'טבוט כל זכות",
+	"action-kzchatbot-view-settings": "לצפות בהגדרות הכלליות של צ'טבוט כל זכות",
+	"action-kzchatbot-view-rag-settings": "לצפות בהגדרות ה-RAG של צ'טבוט כל זכות",
+	"kzchatbot-settings-view-only": "יש לך הרשאת צפייה בלבד בהגדרות אלה. צור קשר עם מנהל המערכת כדי לבצע שינויים.",
+	"kzchatbot-rag-settings-view-only": "יש לך הרשאת צפייה בלבד בהגדרות ה-RAG. צור קשר עם מנהל המערכת כדי לבצע שינויים.",
+	"group-chatbot-settings-viewer": "צופים בהגדרות צ'טבוט",
+	"group-chatbot-settings-viewer-member": "{{GENDER:$1|צופה בהגדרות צ'טבוט}}",
+	"grouppage-chatbot-setttings-viewer": "{{ns:project}}:צופים בהגדרות צ'טבוט",
+
 	"kzchatbot-rag-settings": "הגדרות LLM לצ'טבוט כל זכות",
+	"kzchatbot-rag-settings-readonly-error": "אין לך הרשאה לשנות הגדרות אלו.",
 	"kzchatbot-rag-settings-section-general": "הגדרות כלליות",
 	"kzchatbot-rag-settings-section-model": "תצורת מודל",
 	"kzchatbot-rag-settings-section-prompts": "הגדרות פרומפט",
@@ -93,8 +104,8 @@
 	"kzchatbot-rag-settings-label-banned-fields": "שדות חסומים",
 	"kzchatbot-rag-settings-help-banned-fields": "הזן שדות לסינון, מופרדים בפסיקים",
 
-	"right-kzchatbot-rag-admin": "ניהול הגדרות שרת ה-RAG",
-	"action-kzchatbot-rag-admin": "לנהל את הגדרות שרת ה-RAG",
+	"right-kzchatbot-edit-rag-settings": "ניהול הגדרות שרת ה-RAG",
+	"action-kzchatbot-edit-rag-settings": "לנהל את הגדרות שרת ה-RAG",
 
 	"kzchatbot-rag-settings-error": "שגיאה",
 	"kzchatbot-rag-settings-error-api-unreachable": "ממשק ה-RAG אינו זמין. נא לבדוק את כתובת ה-URL ולנסות שוב.",

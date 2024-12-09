@@ -18,14 +18,14 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 	 * @inheritDoc
 	 */
 	public function __construct() {
-		parent::__construct( 'KZChatbotBannedWords', 'manage-kolzchut-chatbot' );
+		parent::__construct( 'KZChatbotBannedWords', 'kzchatbot-edit-settings' );
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 	public function getDescription() {
-		return $this->msg( 'kolzchut-chatbot-desc' )->text();
+		return $this->msg( 'kzchatbot-desc' )->text();
 	}
 
 	/**

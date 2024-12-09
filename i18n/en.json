@@ -4,8 +4,8 @@
 			"Joel R. ([https://www.kolzchut.org.il Kol-Zchut])"
 		]
 	},
-	"kolzchut-chatbot-desc": "Modal end-user interface and admin controls for the Kol-Zchut answers chatbot.",
-	"kolzchut-chatbot-name": "Kol-Zchut Chatbot",
+	"kzchatbot-desc": "Modal end-user interface and admin controls for the Kol-Zchut answers chatbot.",
+	"kzchatbot-name": "Kol-Zchut Chatbot",
 	"kzchatbot-toplink-general-settings": "Manage General Settings »",
 	"kzchatbot-toplink-banned-words": "Manage Banned Words and Patterns »",
 	"kzchatbot-toplink-slugs": "Manage Slugs »",
@@ -62,11 +62,23 @@
 	"kzchatbot-slugs-error-alphanumeric-only": "Slug should consist of alphanumeric characters and underscores only.",
 	"kzchatbot-slugs-status-save-success": "Successfully saved slug '$1'.",
 	"kzchatbot-slugs-status-delete-success": "Successfully removed slug '$1'.",
-	"right-manage-kolzchut-chatbot": "Manage the chatbot settings",
-	"action-manage-kolzchut-chatbot": "manage the chatbot settings",
+	"right-kzchatbot-edit-settings": "Manage the chatbot settings",
+	"action-kzchatbot-edit-settings": "manage the chatbot settings",
 	"group-chatbot-admin": "Chatbot admins",
 	"group-chatbot-admin-member": "{{GENDER:$1|Chatbot admin}}",
 	"grouppage-chatbot-admin": "{{ns:project}}:Chatbot admins",
+
+
+	"right-kzchatbot-view-settings": "View Kol-Zchut chatbot general settings",
+	"right-kzchatbot-view-rag-settings": "View Kol-Zchut chatbot RAG settings",
+	"action-kzchatbot-view-settings": "view Kol-Zchut chatbot general settings",
+	"action-kzchatbot-view-rag-settings": "view Kol-Zchut chatbot RAG settings",
+	"kzchatbot-settings-view-only": "You have view-only access to these settings. Contact an administrator to make changes.",
+	"kzchatbot-rag-settings-view-only": "You have view-only access to the RAG settings. Contact an administrator to make changes.",
+	"group-chatbot-settings-viewer": "Chatbot settings viewers",
+	"group-chatbot-settings-viewer-member": "{{GENDER:$1|Chatbot settings viewer}}",
+	"grouppage-chatbot-setttings-viewer": "{{ns:project}}:Chatbot settings viewers",
+
 
 	"kzchatbot-rag-settings": "Kol-Zchut Chatbot RAG Settings",
 	"kzchatbot-rag-settings-section-general": "General Settings",
@@ -94,8 +106,8 @@
 	"kzchatbot-rag-settings-help-banned-fields": "Enter fields to be filtered, separated by commas",
 	"kzchatbot-rag-settings-error-banned-fields-format": "Invalid format for banned fields.",
 
-	"right-kzchatbot-rag-admin": "Manage the RAG backend settings",
-	"action-kzchatbot-rag-admin": "manage the RAG backend settings",
+	"right-kzchatbot-edit-rag-settings": "Manage the RAG backend settings",
+	"action-kzchatbot-edit-rag-settings": "manage the RAG backend settings",
 
 	"kzchatbot-rag-settings-error": "Error",
 	"kzchatbot-rag-settings-error-api-unreachable": "The RAG API is unreachable. Please check the URL and try again.",

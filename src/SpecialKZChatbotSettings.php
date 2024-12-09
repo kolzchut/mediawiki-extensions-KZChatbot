@@ -4,6 +4,8 @@ namespace MediaWiki\Extension\KZChatbot;
 
 use Html;
 use HTMLForm;
+use MediaWiki\MediaWikiServices;
+use PermissionsError;
 use SpecialPage;
 
 /**
@@ -13,27 +15,48 @@ use SpecialPage;
  */
 class SpecialKZChatbotSettings extends SpecialPage {
 
+	/** @var bool */
+	private bool $isAllowedEdit;
+
+	/** @var bool */
+	private bool $isAllowedView;
+
 	/**
 	 * @inheritDoc
 	 */
 	public function __construct() {
-		parent::__construct( 'KZChatbotSettings', 'manage-kolzchut-chatbot' );
+		parent::__construct( 'KZChatbotSettings' );
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 	public function getDescription() {
-		return $this->msg( 'kolzchut-chatbot-desc' )->text();
+		return $this->msg( 'kzchatbot-desc' )->text();
 	}
 
 	/**
 	 * Special page: General configuration settings for the Kol-Zchut chatbot.
 	 * @param string|null $par Parameters passed to the page
+	 * @throws PermissionsError
 	 */
 	public function execute( $par ) {
+		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
+		$this->isAllowedView = $permissionManager->userHasRight( $this->getUser(), 'kzchatbot-view-settings' );
+		$this->isAllowedEdit = $permissionManager->userHasRight( $this->getUser(), 'kzchatbot-edit-settings' );
+
+		// Check if user can at least view
+		if ( !$this->isAllowedView && !$this->isAllowedEdit ) {
+			throw new PermissionsError( 'kzchatbot-view-settings' );
+		}
+
 		parent::execute( $par );
 		$output = $this->getOutput();
+
+		// Show view-only notice if user can't manage
+		if ( !$this->isAllowedEdit ) {
+			$output->addWikiMsg( 'kzchatbot-settings-view-only' );
+		}
 
 		// Successful save? If so, show status message.
 		$session = $this->getRequest()->getSession();
@@ -89,11 +112,18 @@ class SpecialKZChatbotSettings extends SpecialPage {
 		$output->setPageTitle( $this->msg( 'kzchatbot-settings-title' ) );
 		$htmlForm = HTMLForm::factory( 'ooui', $this->getSettingsForm(), $this->getContext() );
 		$htmlForm->setId( 'KZChatbotSettingsForm' )
-			->setFormIdentifier( 'KZChatbotSettingsForm' )
-			->setSubmitName( "kzcSubmit" )
-			->setSubmitTextMsg( 'kzchatbot-settings-submit' )
-			->setSubmitCallback( [ $this, 'handleSettingsSave' ] )
-			->show();
+			->setFormIdentifier( 'KZChatbotSettingsForm' );
+
+		// If user only has view permission, make form read-only
+		if ( $this->isAllowedEdit ) {
+			$htmlForm->setSubmitName( "kzcSubmit" )
+				->setSubmitTextMsg( 'kzchatbot-settings-submit' )
+				->setSubmitCallback( [ $this, 'handleSettingsSave' ] );
+		} else {
+			$htmlForm->setAction( null )->suppressDefaultSubmit();
+		}
+
+		$htmlForm->show();
 	}
 
 	/**
@@ -207,6 +237,10 @@ class SpecialKZChatbotSettings extends SpecialPage {
 				$attribs['default'] = $settings[$valueName];
 			} elseif ( $attribs['type'] === 'int' ) {
 				$attribs['default'] = 0;
+			}
+
+			if ( !$this->isAllowedEdit ) {
+				$attribs['disabled'] = true;
 			}
 		}
 

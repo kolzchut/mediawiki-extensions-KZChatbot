@@ -27,17 +27,23 @@
 		"KZChatbot": "GlobalVarConfig::newInstance"
 	},
 	"AvailableRights": [
-		"manage-kolzchut-chatbot",
+		"kzchatbot-edit-settings",
 		"kzchatbot-testing",
-		"kzchatbot-rag-admin",
-		"kzchatbot-no-limits"
+		"kzchatbot-edit-rag-settings",
+		"kzchatbot-no-limits",
+		"kzchatbot-view-settings",
+		"kzchatbot-view-rag-settings"
 	],
 	"GroupPermissions": {
 		"chatbot-admin": {
-			"manage-kolzchut-chatbot": true,
+			"kzchatbot-edit-settings": true,
+			"kzchatbot-edit-rag-settings": true,
 			"kzchatbot-testing": true,
-			"kzchatbot-rag-admin": true,
 			"kzchatbot-no-limits": true
+		},
+		"chatbot-settings-viewer": {
+			"kzchatbot-view-settings": true,
+			"kzchatbot-view-rag-settings": true
 		}
 	},
 	"SpecialPages": {

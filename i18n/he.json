@@ -113,6 +113,7 @@
 	"kzchatbot-rag-settings-error-save": "שגיאה בשמירת ההגדרות.",
 	"kzchatbot-rag-settings-save-success": "ההגדרות נשמרו בהצלחה.",
 	"kzchatbot-rag-settings-error-invalid-response": "תגובה לא תקינה מה-API.",
+	"kzchatbot-rag-settings-error-no-change": "לא בוצעו שינויים בהגדרות.",
 
 	"kzchatbot-testing": "צ'טבוט בדיקות",
 	"kzchatbot-testing-title": "ממשק בדיקות צ'טבוט",

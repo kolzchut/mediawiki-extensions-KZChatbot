@@ -114,6 +114,7 @@
 	"kzchatbot-rag-settings-error-save": "Error saving settings.",
 	"kzchatbot-rag-settings-save-success": "Settings updated successfully.",
 	"kzchatbot-rag-settings-error-invalid-response": "Invalid response from the API.",
+	"kzchatbot-rag-settings-error-no-change": "No changes were made.",
 
 	"kzchatbot-testing": "KZ Chatbot Testing",
 	"kzchatbot-testing-title": "KZ Chatbot Testing Interface",

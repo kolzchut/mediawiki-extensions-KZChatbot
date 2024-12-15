@@ -51,6 +51,11 @@ class Hooks implements
 			'kzchatbot_bannedwords',
 			__DIR__ . '/../sql/table_kzchatbot_bannedwords.sql'
 		);
+		$updater->dropExtensionField(
+			'kzchatbot_users',
+			'kzcbu_is_shown',
+			__DIR__ . '/../sql/patch_drop_kzchatbot_users_kzcbu_is_shown_2024-12-15.sql'
+		);
 	}
 
 	/**

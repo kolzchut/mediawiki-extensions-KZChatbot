@@ -34,7 +34,6 @@ class KZChatbot {
 		return [
 			'kzcbu_uuid' => 'uuid',
 			'kzcbu_ip_address' => 'ip',
-			'kzcbu_is_shown' => 'chatbotIsShown',
 			'kzcbu_cookie_expiry' => 'cookieExpiry',
 			'kzcbu_last_active' => 'lastActive',
 			'kzcbu_questions_last_active_day' => 'questionsLastActiveDay',
@@ -72,14 +71,15 @@ class KZChatbot {
 			// Now that the user was theoretically selected, check if we have available "seats" (max active users)
 			if ( !empty( $activeUsersLimit ) ) {
 				$activeUsersCount = self::getCurrentActiveUsersCount();
-				$isShown = $activeUsersLimit > $activeUsersCount;
+				if ( $activeUsersLimit <= $activeUsersCount ) {
+					return false;
+				}
 			}
 		}
 
-		// Build and insert new user record
+		// All the checks passed, insert new user record
 		$userData = [
 			'kzcbu_uuid' => uniqid(),
-			'kzcbu_is_shown' => $isShown,
 			'kzcbu_cookie_expiry' => wfTimestamp( TS_MW, $cookieExpiry ),
 			'kzcbu_ip_address' => RequestContext::getMain()->getRequest()->getIP(),
 			'kzcbu_last_active' => wfTimestamp( TS_MW ),
@@ -99,14 +99,11 @@ class KZChatbot {
 		$dbr = wfGetDB( DB_REPLICA );
 		$res = $dbr->select(
 			[ 'kzchatbot_users' ],
-			[
-				'kzcbu_uuid', 'kzcbu_ip_address', 'kzcbu_is_shown', 'kzcbu_cookie_expiry', 'kzcbu_last_active',
-				'kzcbu_questions_last_active_day', 'kzcbu_ranking_eligible_answer_id'
-			],
+			'*',
 			[ 'kzcbu_uuid' => $uuid ],
 			__METHOD__,
 		);
-		return $res->fetchRow();
+		return $res ? $res->fetchRow() : false;
 	}
 
 	/**
@@ -236,7 +233,6 @@ class KZChatbot {
 			[ 'kzchatbot_users' ],
 			[ 'COUNT(*) as count' ],
 			[
-				'kzcbu_is_shown' => 1,
 				'kzcbu_last_active >= ' . wfTimestamp(
 					TS_MW, time() - ( $activeUsersLimitDays * 24 * 60 * 60 )
 				)

@@ -72,7 +72,7 @@ The chatbot uses a controlled rollout system to manage user access:
 	- New users arrive without a cookie
 	- System performs random selection based on configured rate
 	- Selected users receive a persistent UUID cookie and database entry
-	- Non-selected users receive a session-based rejection cookie
+	- Non-selected users receive a 1-day rejection cookie
 
 2. Subsequent Visits:
 	- Users with rejection cookie: chatbot remains hidden

@@ -120,6 +120,11 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
 			],
+			'referrer' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'integer',
+				ParamValidator::PARAM_REQUIRED => true
+			],
 		] );
 	}
 

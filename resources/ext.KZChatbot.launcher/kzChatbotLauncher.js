@@ -1,5 +1,5 @@
 const initializeChatbot = () => {
-	const scriptVersion = 20;
+	const scriptVersion = 21;
 	const cookieName = 'kzchatbot-uuid';
 	const cookie = mw.cookie.get( cookieName );
 	const uuid = cookie !== null ? cookie : '';
@@ -72,6 +72,7 @@ const initializeChatbot = () => {
 			const savedSettings = mw.config.get( 'KZChatbotSettings' );
 			window.KZChatbotConfig = Object.assign( {}, data, {
 				slugs: mw.config.get( 'KZChatbotSlugs' ),
+				referrer: mw.config.get( 'wgArticleId' ),
 				restPath
 			}, savedSettings );
 			document.body.insertAdjacentHTML(

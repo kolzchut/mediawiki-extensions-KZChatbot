@@ -22,6 +22,11 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	private $question;
 
 	/**
+	 * @var string currently the referring page
+	 */
+	private $referrer;
+
+	/**
 	 * Pass user question to ChatGPT API, checking first that user hasn't exceeded daily limit.
 	 * Return answer from ChatGPT API.
 	 * @return array
@@ -31,6 +36,8 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		$this->uuid = $body['uuid'];
 		$this->validateUser();
 		$this->question = $body['text'];
+		$this->referrer = $body['referrer'];
+
 		$questionCharacterLimit = KZChatbot::getGeneralSettings()['question_character_limit'];
 		if ( mb_strlen( $this->question ) > $questionCharacterLimit ) {
 			throw new HttpException( Slugs::getSlug( 'question_character_limit' ), 413 );
@@ -67,6 +74,8 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 				],
 				'json' => [
 					'query' => $question,
+					'asked_from' => $this->referrer
+
 				]
 			] );
 		} catch ( \GuzzleHttp\Exception\GuzzleException $e ) {

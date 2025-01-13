@@ -22,7 +22,9 @@ class ApiKZChatbotSearch extends ApiBase {
 			$ch = curl_init( "$apiUrl/search" );
 
 			$postData = json_encode( [
-				'query' => $query
+				'query' => $query,
+				// asked_from is now mandatory
+				'asked_from' => 'testing interface'
 			] );
 
 			curl_setopt_array( $ch, [

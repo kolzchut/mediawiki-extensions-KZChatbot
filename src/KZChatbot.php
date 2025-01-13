@@ -78,10 +78,13 @@ class KZChatbot {
 		}
 
 		// All the checks passed, insert new user record
+		$ipAddress = RequestContext::getMain()->getRequest()->getIP();
+		$binaryIP = inet_pton( $ipAddress );
+
 		$userData = [
 			'kzcbu_uuid' => uniqid(),
 			'kzcbu_cookie_expiry' => wfTimestamp( TS_MW, $cookieExpiry ),
-			'kzcbu_ip_address' => RequestContext::getMain()->getRequest()->getIP(),
+			'kzcbu_ip_address' => $binaryIP,
 			'kzcbu_last_active' => wfTimestamp( TS_MW ),
 			'kzcbu_questions_last_active_day' => 0,
 		];
@@ -103,7 +106,13 @@ class KZChatbot {
 			[ 'kzcbu_uuid' => $uuid ],
 			__METHOD__,
 		);
-		return $res ? $res->fetchRow() : false;
+		if ( $res ) {
+			$res = $res->fetchRow();
+			$res['kzcbu_ip_address'] = inet_ntop( $res['kzcbu_ip_address'] );
+			return $res;
+		}
+
+		return false;
 	}
 
 	/**

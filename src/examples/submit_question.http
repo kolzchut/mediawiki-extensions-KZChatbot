@@ -4,5 +4,5 @@ Content-Type: application/json
 {
     "text": "האם מגיע לי לקבל כסף עבור ראש השנה? לא עבדתי אבל הבנתי שכן אמורים לשלם על זה",
     "uuid": "66b5037bb76e1",
-    "asked_from": 16089
+    "referrer": 16089
 }

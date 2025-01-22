@@ -376,11 +376,16 @@ class BatchProcessor {
 			'</ol>' :
 			'';
 
+		// Get links identifier value from mw.config
+		const linksIdentifier = mw.config.get( 'wgKZChatbotLinksIdentifier' );
+		const additionalLinks = result[ linksIdentifier ] || '';
+
 		row.innerHTML = `
 			<td>${ result.index }</td>
 			<td>${ this.escapeHtml( result.query ) }</td>
 			<td>${ this.escapeHtml( result.error || result.gpt_result ) }</td>
 			<td>${ sourcesHtml }</td>
+			<td>${ this.escapeHtml( additionalLinks ) }</td>
 			<td>${ result.error ? '' : this.escapeHtml( result.metadata.gpt_model ) }</td>
 			<td>${ result.error ? '' : this.escapeHtml( result.metadata.gpt_time ) }</td>
 			<td>${ result.error ? '' : this.escapeHtml( result.metadata.tokens ) }</td>
@@ -404,10 +409,14 @@ class BatchProcessor {
 	}
 
 	generateCSV() {
+		// This is actually set in the mustach template, not in a hook or anything
+		const linksIdentifier = mw.config.get( 'wgKZChatbotLinksIdentifier' );
+
 		const headers = [
 			mw.msg( 'kzchatbot-testing-batch-header-query' ),
 			mw.msg( 'kzchatbot-testing-batch-header-response' ),
 			mw.msg( 'kzchatbot-testing-batch-header-documents' ),
+			linksIdentifier,
 			mw.msg( 'kzchatbot-testing-batch-header-model' ),
 			mw.msg( 'kzchatbot-testing-batch-header-time' ),
 			mw.msg( 'kzchatbot-testing-batch-header-tokens' ),
@@ -423,10 +432,13 @@ class BatchProcessor {
 				).join( '\n' ) :
 				'';
 
+			const additionalLinks = result[ linksIdentifier ] || '';
+
 			rows.push( [
 				result.query,
 				result.error || result.gpt_result,
 				sources, // Add sources column
+				additionalLinks,
 				result.error ? '' : result.metadata.gpt_model,
 				result.error ? '' : result.metadata.gpt_time,
 				result.error ? '' : result.metadata.tokens,

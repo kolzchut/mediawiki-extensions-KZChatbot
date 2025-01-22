@@ -182,6 +182,12 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 				'default' => $this->currentConfig['user_prompt'],
 				'required' => true,
 			],
+			'links_identifier' => [
+				'type' => 'text',
+				'label-message' => 'kzchatbot-rag-settings-label-links-identifier',
+				'help-message' => 'kzchatbot-rag-settings-help-links-identifier',
+				'default' => $this->currentConfig['links_identifier'] ?? '',
+			],
 			'banned_fields' => [
 				'type' => 'text',
 				'label-message' => 'kzchatbot-rag-settings-label-banned-fields',

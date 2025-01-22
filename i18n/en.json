@@ -102,6 +102,9 @@
 	"kzchatbot-rag-settings-label-user-prompt": "User Prompt",
 	"kzchatbot-rag-settings-help-user-prompt": "Enter the user-level instructions for the AI model",
 
+	"kzchatbot-rag-settings-label-links-identifie": "Additional Links Identifier",
+	"kzchatbot-rag-settings-help-links-identifier": "Enter the identifier for additional links in the response, according to the prompt",
+
 	"kzchatbot-rag-settings-label-banned-fields": "Banned Fields",
 	"kzchatbot-rag-settings-help-banned-fields": "Enter fields to be filtered, separated by commas",
 	"kzchatbot-rag-settings-error-banned-fields-format": "Invalid format for banned fields.",

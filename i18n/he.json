@@ -101,6 +101,9 @@
 	"kzchatbot-rag-settings-label-user-prompt": "פרומפט משתמש",
 	"kzchatbot-rag-settings-help-user-prompt": "הזן את ההוראות ברמת המשתמש עבור מודל הבינה המלאכותית",
 
+	"kzchatbot-rag-settings-label-links-identifie": "מזהה קישורים נוספים",
+	"kzchatbot-rag-settings-help-links-identifier": "הזן את המזהה של הקישורים הנוספים שיש להם קשר לשאילתות",
+
 	"kzchatbot-rag-settings-label-banned-fields": "שדות חסומים",
 	"kzchatbot-rag-settings-help-banned-fields": "הזן שדות לסינון, מופרדים בפסיקים",
 

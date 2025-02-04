@@ -74,7 +74,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 				],
 				'json' => [
 					'query' => $question,
-					'asked_from' => $this->referrer
+					'asked_from' => strval( $this->referrer )
 
 				]
 			] );

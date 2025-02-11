@@ -30,12 +30,12 @@ The RAG API should be protected through other means, such as IP whitelisting or 
 These settings can be configured through `Special:KZChatbotSettings`:
 
 #### User Access Settings
-| Setting                 | Values  | Default | Description                                           |
-|-------------------------|---------|---------|-------------------------------------------------------|
-| New Users Chatbot Rate  | 0-100   | 0       | Percentage of new users who will be shown the chatbot |
-| Active Users Limit      | Integer | 0       | Maximum number of concurrent active users             |
-| Active Users Limit Days | Integer | 365     | Days without activity before a user becomes inactive  |
-| Cookie Expiry Days      | Integer | 365     | Client-side cookie expiration period                  |
+| Setting                 | Values  | Default | Description                                                |
+|-------------------------|---------|---------|------------------------------------------------------------|
+| New Users Chatbot Rate  | 0-100   | 0       | Percentage of new users who will be shown the chatbot      |
+| Active Users Limit      | Integer | 0       | Maximum number of concurrent active users. 0 for no limit. |
+| Active Users Limit Days | Integer | 365     | Days without activity before a user becomes inactive       |
+| Cookie Expiry Days      | Integer | 365     | Client-side cookie expiration period                       |
 
 #### Usage Limits
 | Setting                   | Values  | Default | Description                                      |
@@ -54,14 +54,16 @@ These settings can be configured through `Special:KZChatbotSettings`:
 ### RAG Settings
 These settings are stored in the RAG database and configured through `Special:KZChatbotRagTesting`:
 
-| Setting         | Values                             | Description                                                                                                            |
-|-----------------|------------------------------------|------------------------------------------------------------------------------------------------------------------------|
-| Model           | gpt-4o, gpt-4o-mini, gpt-3.5-turbo | LLM model selection                                                                                                    |
-| Number of Pages | Integer                            | Number of articles for RAG algorithm                                                                                   |
-| Temperature     | 0.1-0.9                            | LLM creativity level ([more info](https://platform.openai.com/docs/api-reference/chat/create#chat-create-temperature)) |
-| System Prompt   | String                             | Base LLM prompt                                                                                                        |
-| User Prompt     | String                             | Additional user-specific prompt                                                                                        |
-| Banned Fields   | -                                  | (Currently unused)                                                                                                     |
+| Setting         | Values                             | Description                          |
+|-----------------|------------------------------------|--------------------------------------|
+| Model           | gpt-4o, gpt-4o-mini, gpt-3.5-turbo | LLM model selection                  |
+| Number of Pages | Integer                            | Number of articles for RAG algorithm |
+| Temperature     | 0.1-0.9                            | LLM creativity level ([more info])   |
+| System Prompt   | String                             | Base LLM prompt                      |
+| User Prompt     | String                             | Additional user-specific prompt      |
+| Banned Fields   | -                                  | (Currently unused)                   |
+
+[more info]: https://platform.openai.com/docs/api-reference/chat/create#chat-create-temperature
 
 ## Access Control
 
@@ -109,12 +111,12 @@ To disable bypassing, set `$wgKZChatbotLimitBypassToken = false`
 ### Permissions
 The `chatbot-admin` group has these default permissions:
 
-| Permission                | Description                 |
-|---------------------------|-----------------------------|
-| `kzchatbot-edit-settings` | Manage general settings     |
-| `kzchatbot-edit-rag-settings`     | Manage RAG backend settings |
-| `kzchatbot-testing`       | Access testing page and API |
-| `kzchatbot-no-limits`     | Bypass rate limits          |
+| Permission                    | Description                 |
+|-------------------------------|-----------------------------|
+| `kzchatbot-edit-settings`     | Manage general settings     |
+| `kzchatbot-edit-rag-settings` | Manage RAG backend settings |
+| `kzchatbot-testing`           | Access testing page and API |
+| `kzchatbot-no-limits`         | Bypass rate limits          |
 
 The `chatbot-settings-viewer` group has these default permissions:
 
@@ -132,6 +134,6 @@ $wgGroupPermissions['sysop']['kzchatbot-edit-settings'] = true;
 - Prevent users from sending unlimited rating requests: right now it's possible to switch indefinitely between 
   thumbs up and thumbs down, and each is sent and recorded by the RAG server. We need to decide on a limit, and save
   requests temporarily in Redis or similar to handle it
-- Clean up isShown in database, as only shown users are saved
+- Consider caching in memory the count of active users to avoid querying the database on every request
 - What is kzchatbot_users.kzcbu_ranking_eligible_answer_id?
 - Implement UUID request limit functionality

@@ -54,7 +54,7 @@ class KZChatbot {
 		// Only do the complex checks if we're not bypassing
 		if ( !$isShown ) {
 			$newUsersChatbotRate = $settings['new_users_chatbot_rate'] ?? 0;
-			$activeUsersLimit = (int)$settings['active_users_limit'] ?? 0;
+			$activeUsersLimit = $settings['active_users_limit'] ?? null;
 
 			try {
 				$isShown = ( random_int( 1, 100 ) <= $newUsersChatbotRate );
@@ -62,16 +62,17 @@ class KZChatbot {
 				$isShown = rand( 1, 100 ) <= $newUsersChatbotRate;
 			}
 
-			// If the user isn't selected, or we're not showing the bot to anyone, don't create a new UUIDs
+			// If the user isn't selected, or we're not showing the bot to anyone (rate = 0), don't create new UUIDs
 			// Consumers of this function should be aware of this and handle the false return value
-			if ( !$isShown || $newUsersChatbotRate === 0 || $activeUsersLimit === 0 ) {
+			if ( !$isShown || $newUsersChatbotRate === 0 ) {
 				return false;
 			}
 
 			// Now that the user was theoretically selected, check if we have available "seats" (max active users)
-			if ( !empty( $activeUsersLimit ) ) {
+			// Check active users limit only if a limit is set (non-null, non-empty string)
+			if ( $activeUsersLimit !== null && $activeUsersLimit !== '' ) {
 				$activeUsersCount = self::getCurrentActiveUsersCount();
-				if ( $activeUsersLimit <= $activeUsersCount ) {
+				if ( (int)$activeUsersLimit <= $activeUsersCount ) {
 					return false;
 				}
 			}

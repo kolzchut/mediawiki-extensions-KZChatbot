@@ -165,7 +165,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 				'label-message' => 'kzchatbot-settings-label-active-users-limit',
 				'help-message' => 'kzchatbot-settings-help-active-users-limit',
 				'section' => 'kzchatbot-settings-section-throttle',
-				'required' => true,
+				'required' => false,
 				'min' => 0,
 			],
 			'kzcCurrentActiveUsers' => [

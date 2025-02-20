@@ -27,11 +27,6 @@ class ApiKZChatbotRateAnswer extends Handler {
 		}
 
 		return new JsonBodyValidator( [
-			'answerClassification' => [
-				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_REQUIRED => false,
-				ParamValidator::PARAM_TYPE => 'string',
-			],
 			'text' => [
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_REQUIRED => false,
@@ -58,14 +53,6 @@ class ApiKZChatbotRateAnswer extends Handler {
 		if ( $validatedBody && mb_strlen( $validatedBody['text'] ) > $feedbackCharacterLimit ) {
 			throw new LocalizedHttpException(
 				new MessageValue( 'apierror-maxchars', [ 'text', $feedbackCharacterLimit ] ),
-				400
-			);
-		}
-
-		$answerClassification = $validatedBody['answerClassification'];
-		if ( $answerClassification && !self::isValidAnswerClassification( $answerClassification ) ) {
-			throw new LocalizedHttpException(
-				new MessageValue( 'apierror-badparameter', [ 'answerClassification' ] ),
 				400
 			);
 		}
@@ -101,26 +88,11 @@ class ApiKZChatbotRateAnswer extends Handler {
 			],
 			'json' => [
 				'free_text' => $text,
-				'answer_classification' => $answerClassification,
 				'conversation_id' => $answerId,
 				'like' => $like,
 			]
 		] );
 		return $result->getStatusCode();
-	}
-
-	/**
-	 * @param string $answerClassification
-	 * @return bool
-	 */
-	private static function isValidAnswerClassification( $answerClassification ) {
-		$validAnswerClassifications = [
-			Slugs::getSlug( 'dislike_followup_q_first' ),
-			Slugs::getSlug( 'dislike_followup_q_second' ),
-			Slugs::getSlug( 'dislike_followup_q_third' ),
-		];
-
-		return in_array( $answerClassification, $validAnswerClassifications );
 	}
 
 }

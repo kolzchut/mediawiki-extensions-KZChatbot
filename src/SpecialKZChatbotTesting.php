@@ -18,6 +18,16 @@ class SpecialKZChatbotTesting extends SpecialPage {
 	public function execute( $subPage ) {
 		parent::execute( $subPage );
 
+		$configStatus = KZChatbot::getRagConfig();
+		if ( $configStatus->isOK() ) {
+			$config = $configStatus->getValue();
+			$jsVars = [];
+			foreach ( [ 'content_treshold', 'title_treshold', 'summary_treshold' ] as $threshold ) {
+				$jsVars[$threshold] = $config[$threshold];
+			}
+			$this->getOutput()->addJsConfigVars( 'wgKZChatbotThresholds', $jsVars );
+		}
+
 		$this->getOutput()->addModuleStyles( 'ext.KZChatbot.testing.styles' );
 		$this->getOutput()->addModules( 'ext.KZChatbot.testing.batch' );
 
@@ -34,6 +44,7 @@ class SpecialKZChatbotTesting extends SpecialPage {
 			'queryColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-query' )->text(),
 			'responseColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-response' )->text(),
 			'documentsColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-documents' )->text(),
+			'passedLinksColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-passed-links' )->text(),
 			'modelColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-model' )->text(),
 			'timeColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-time' )->text(),
 			'tokensColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-tokens' )->text(),

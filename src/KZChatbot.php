@@ -2,11 +2,13 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use Exception;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use Psr\Log\LoggerInterface;
 use Random\RandomException;
 use RequestContext;
+use StatusValue;
 
 /**
  * @TODO general class description
@@ -249,6 +251,46 @@ class KZChatbot {
 			]
 		)->fetchRow();
 		return $activeUsersCount['count'] ?? 0;
+	}
+
+	/**
+	 * Get the remote RAG server configuration
+	 *
+	 * @return StatusValue
+	 */
+	public static function getRagConfig(): StatusValue {
+		$services = MediaWikiServices::getInstance();
+		$mwConfig = $services->getMainConfig();
+		$httpFactory = $services->getHttpRequestFactory();
+
+		$apiUrl = rtrim( $mwConfig->get( 'KZChatbotLlmApiUrl' ), '/' );
+		$status = new StatusValue();
+
+		try {
+			$response = $httpFactory->get(
+				"$apiUrl/get_config",
+				[
+					'timeout' => 30,
+				]
+			);
+
+			if ( $response === null ) {
+				$status->fatal( 'kzchatbot-rag-settings-error-api-unreachable' );
+				return $status;
+			}
+
+			$data = json_decode( $response, true );
+			if ( !is_array( $data ) ) {
+				$status->fatal( 'kzchatbot-rag-settings-error' );
+				return $status;
+			}
+
+			$status->setResult( true, $data );
+			return $status;
+		} catch ( Exception $e ) {
+			$status->fatal( 'kzchatbot-rag-settings-error-api-unreachable' );
+			return $status;
+		}
 	}
 
 }

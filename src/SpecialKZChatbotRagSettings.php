@@ -72,7 +72,12 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 		}
 
 		// Fetch current config before displaying the form
-		$this->currentConfig = $this->getCurrentConfig();
+		$configStatus = KZChatbot::getRagConfig();
+		if ( !$configStatus->isOK() ) {
+			$errors = $configStatus->getErrors();
+			throw new ErrorPageError( 'kzchatbot-rag-settings-error', $errors ? $errors[0] : '' );
+		}
+		$this->currentConfig = $configStatus->getValue();
 
 		// Show view-only notice if user can't edit
 		if ( !$this->isAllowedEdit ) {
@@ -225,39 +230,6 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 	 */
 	private function hasConfigChanged( array $new ): bool {
 		return $this->currentConfig != $new;
-	}
-
-	/**
-	 * @return array Current configuration from API
-	 * @throws ErrorPageError
-	 */
-	private function getCurrentConfig(): array {
-		$apiUrl = rtrim( $this->config->get( 'KZChatbotLlmApiUrl' ), '/' );
-
-		try {
-			$response = $this->httpFactory->get(
-				"$apiUrl/get_config",
-				[
-					'timeout' => 30,
-				]
-			);
-
-			if ( $response === null ) {
-				throw new ErrorPageError(
-					'kzchatbot-rag-settings-error', 'kzchatbot-rag-settings-error-api-unreachable'
-				);
-			}
-
-			$data = json_decode( $response, true );
-			if ( is_array( $data ) ) {
-				return $data;
-			}
-		} catch ( Exception $e ) {
-			wfLogWarning( 'Failed to fetch RAG config: ' . $e->getMessage() );
-			throw new ErrorPageError( 'kzchatbot-rag-settings-error', 'kzchatbot-rag-settings-error-api-unreachable' );
-		}
-
-		return [];
 	}
 
 	/** @inheritDoc */

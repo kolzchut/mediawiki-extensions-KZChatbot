@@ -16,6 +16,7 @@ class BatchProcessor {
 		this.results = [];
 		this.currentRequest = null;
 		this.isCancelled = false;
+		this.thresholds = mw.config.get( 'wgKZChatbotThresholds' );
 
 		// Add clear all button after the add query button
 		this.clearAllButton = document.createElement( 'button' );
@@ -362,6 +363,32 @@ class BatchProcessor {
 		this.progressIndicator.textContent = mw.msg( 'kzchatbot-testing-batch-progress-status', current, total );
 	}
 
+	// Check if a document passes any threshold in the all_docs_and_scores data
+	checkDocumentPassesThreshold( docTitle, allDocsAndScores ) {
+		if ( !allDocsAndScores || !this.thresholds ) {
+			return false;
+		}
+
+		// Check each model's scores
+		const models = [ 'content', 'title', 'summary' ];
+
+		for ( const model of models ) {
+			if ( !allDocsAndScores[ model ] ) {
+				continue;
+			}
+
+			const thresholdKey = `${ model }_threshold`;
+			const threshold = this.thresholds[ thresholdKey ];
+
+			const docEntry = allDocsAndScores[ model ].find( ( entry ) => entry.doc === docTitle );
+			if ( docEntry && docEntry.score >= threshold ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	updateTableRow( result ) {
 		const row = document.createElement( 'tr' );
 		if ( result.error ) {
@@ -376,11 +403,27 @@ class BatchProcessor {
 			'</ol>' :
 			'';
 
+		// Create the passed links cell content
+		let passedLinksHtml = '';
+		if ( result.all_docs_and_scores && result.docs ) {
+			const passedLinks = result.docs.filter(
+				( doc ) => this.checkDocumentPassesThreshold( doc.title, result.all_docs_and_scores )
+			);
+
+			if ( passedLinks.length > 0 ) {
+				passedLinksHtml = '<ol>' +
+					passedLinks.map( ( doc ) => `<li><a href="${ this.escapeHtml( doc.url ) }" target="_blank">${ this.escapeHtml( doc.title ) }</a></li>`
+					).join( '' ) +
+					'</ol>';
+			}
+		}
+
 		row.innerHTML = `
 			<td>${ result.index }</td>
 			<td>${ this.escapeHtml( result.query ) }</td>
 			<td>${ this.escapeHtml( result.error || result.gpt_result ) }</td>
 			<td>${ sourcesHtml }</td>
+			<td>${ passedLinksHtml }</td>
 			<td>${ result.error ? '' : this.escapeHtml( result.metadata.gpt_model ) }</td>
 			<td>${ result.error ? '' : this.escapeHtml( result.metadata.gpt_time ) }</td>
 			<td>${ result.error ? '' : this.escapeHtml( result.metadata.tokens ) }</td>
@@ -408,6 +451,7 @@ class BatchProcessor {
 			mw.msg( 'kzchatbot-testing-batch-header-query' ),
 			mw.msg( 'kzchatbot-testing-batch-header-response' ),
 			mw.msg( 'kzchatbot-testing-batch-header-documents' ),
+			mw.msg( 'kzchatbot-testing-batch-header-passed-links' ),
 			mw.msg( 'kzchatbot-testing-batch-header-model' ),
 			mw.msg( 'kzchatbot-testing-batch-header-time' ),
 			mw.msg( 'kzchatbot-testing-batch-header-tokens' ),
@@ -423,10 +467,22 @@ class BatchProcessor {
 				).join( '\n' ) :
 				'';
 
+			// Format passed links as numbered list in plain text
+			let passedLinks = '';
+			if ( result.all_docs_and_scores && result.docs ) {
+				const passedDocsArray = result.docs.filter(
+					( doc ) => this.checkDocumentPassesThreshold( doc.title, result.all_docs_and_scores )
+				);
+
+				passedLinks = passedDocsArray.map( ( doc, index ) => `${ index + 1 }. ${ doc.title } (${ doc.url })`
+				).join( '\n' );
+			}
+
 			rows.push( [
 				result.query,
 				result.error || result.gpt_result,
-				sources, // Add sources column
+				sources,
+				passedLinks,
 				result.error ? '' : result.metadata.gpt_model,
 				result.error ? '' : result.metadata.gpt_time,
 				result.error ? '' : result.metadata.tokens,

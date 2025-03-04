@@ -18,6 +18,8 @@ class BatchProcessor {
 		this.isCancelled = false;
 		this.thresholds = mw.config.get( 'wgKZChatbotThresholds' );
 
+		console.log( 'Initial thresholds:', this.thresholds );
+
 		// Add clear all button after the add query button
 		this.clearAllButton = document.createElement( 'button' );
 		this.clearAllButton.id = 'clear-all';
@@ -335,6 +337,11 @@ class BatchProcessor {
 			if ( response.error ) {
 				throw new Error( response.error.info || mw.msg( 'kzchatbot-testing-batch-unknown-error' ) );
 			}
+
+			// Debug info
+			console.log( 'API Response:', response.kzchatbotsearch );
+			console.log( 'All docs and scores present:', !!response.kzchatbotsearch.all_docs_and_scores );
+
 			return response.kzchatbotsearch;
 		} ).catch( ( error ) => {
 			// Clear current request reference
@@ -366,26 +373,44 @@ class BatchProcessor {
 	// Check if a document passes any threshold in the all_docs_and_scores data
 	checkDocumentPassesThreshold( docTitle, allDocsAndScores ) {
 		if ( !allDocsAndScores || !this.thresholds ) {
+			console.log( `Skipping threshold check for "${ docTitle }": missing data or thresholds` );
 			return false;
 		}
 
 		// Check each model's scores
 		const models = [ 'content', 'title', 'summary' ];
 
+		console.log( `Checking thresholds for "${ docTitle }":` );
+		console.log( 'Current thresholds:', this.thresholds );
+
 		for ( const model of models ) {
 			if ( !allDocsAndScores[ model ] ) {
+				console.log( `- No data for model "${ model }"` );
 				continue;
 			}
 
-			const thresholdKey = `${ model }_threshold`;
-			const threshold = this.thresholds[ thresholdKey ];
+			const threshold = this.thresholds[ model ];
+
+			if ( !threshold ) {
+				console.log( `- No threshold defined for "${ model }"` );
+				continue;
+			}
 
 			const docEntry = allDocsAndScores[ model ].find( ( entry ) => entry.doc === docTitle );
-			if ( docEntry && docEntry.score >= threshold ) {
-				return true;
+
+			if ( docEntry ) {
+				console.log( `- ${ model }: score ${ docEntry.score } vs threshold ${ threshold }` );
+
+				if ( docEntry.score >= threshold ) {
+					console.log( `  ✓ PASSED threshold for "${ model }"` );
+					return true;
+				}
+			} else {
+				console.log( `- ${ model }: Document not found in this model` );
 			}
 		}
 
+		console.log( '✗ Did NOT pass any thresholds' );
 		return false;
 	}
 
@@ -403,12 +428,22 @@ class BatchProcessor {
 			'</ol>' :
 			'';
 
-		// Create the passed links cell content
+		// Create the passed links cell content with debugging info
 		let passedLinksHtml = '';
 		if ( result.all_docs_and_scores && result.docs ) {
+			console.log( 'Checking passed links for result:', result.query );
+
+			// Add debug info about all_docs_and_scores structure
+			console.log( 'all_docs_and_scores structure:', Object.keys( result.all_docs_and_scores ) );
+
 			const passedLinks = result.docs.filter(
-				( doc ) => this.checkDocumentPassesThreshold( doc.title, result.all_docs_and_scores )
+				( doc ) => {
+					console.log( `\nEvaluating document "${ doc.title }"` );
+					return this.checkDocumentPassesThreshold( doc.title, result.all_docs_and_scores );
+				}
 			);
+
+			console.log( `Found ${ passedLinks.length } passed links out of ${ result.docs.length } total docs` );
 
 			if ( passedLinks.length > 0 ) {
 				passedLinksHtml = '<ol>' +
@@ -416,6 +451,12 @@ class BatchProcessor {
 					).join( '' ) +
 					'</ol>';
 			}
+		} else {
+			console.log( 'Missing data for passed links check:', {
+				// eslint-disable-next-line camelcase
+				all_docs_and_scores: !!result.all_docs_and_scores,
+				docs: !!result.docs
+			} );
 		}
 
 		row.innerHTML = `

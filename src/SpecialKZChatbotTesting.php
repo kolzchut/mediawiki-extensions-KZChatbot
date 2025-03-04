@@ -22,8 +22,8 @@ class SpecialKZChatbotTesting extends SpecialPage {
 		if ( $configStatus->isOK() ) {
 			$config = $configStatus->getValue();
 			$jsVars = [];
-			foreach ( [ 'content_treshold', 'title_treshold', 'summary_treshold' ] as $threshold ) {
-				$jsVars[$threshold] = (float)$config[$threshold];
+			foreach ( [ 'content', 'title', 'summary' ] as $threshold ) {
+				$jsVars[$threshold] = (float)$config[$threshold . '_treshold'];
 			}
 			$this->getOutput()->addJsConfigVars( 'wgKZChatbotThresholds', $jsVars );
 		}

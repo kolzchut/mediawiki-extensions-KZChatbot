@@ -451,7 +451,7 @@ class BatchProcessor {
 			mw.msg( 'kzchatbot-testing-batch-header-query' ),
 			mw.msg( 'kzchatbot-testing-batch-header-response' ),
 			mw.msg( 'kzchatbot-testing-batch-header-documents' ),
-			mw.msg( 'kzchatbot-testing-batch-header-passed-links' ),
+			mw.msg( 'kzchatbot-testing-batch-header-passed-documents' ),
 			mw.msg( 'kzchatbot-testing-batch-header-model' ),
 			mw.msg( 'kzchatbot-testing-batch-header-time' ),
 			mw.msg( 'kzchatbot-testing-batch-header-tokens' ),

@@ -44,7 +44,7 @@ class SpecialKZChatbotTesting extends SpecialPage {
 			'queryColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-query' )->text(),
 			'responseColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-response' )->text(),
 			'documentsColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-documents' )->text(),
-			'passedLinksColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-passed-links' )->text(),
+			'passedLinksColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-passed-documents' )->text(),
 			'modelColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-model' )->text(),
 			'timeColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-time' )->text(),
 			'tokensColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-tokens' )->text(),

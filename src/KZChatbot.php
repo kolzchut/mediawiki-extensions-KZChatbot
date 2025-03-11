@@ -83,12 +83,23 @@ class KZChatbot {
 			}
 		}
 
-		// All the checks passed, insert new user record
-		$ipAddress = RequestContext::getMain()->getRequest()->getIP();
-		$binaryIP = inet_pton( $ipAddress );
+		try {
+			$ipAddress = RequestContext::getMain()->getRequest()->getIP();
+			$binaryIP = inet_pton( $ipAddress );
+		} catch ( MWException $e ) {
+			// Couldn't get an IP address, log and return false
+			self::getLogger()->error( $e->getMessage() );
+			return false;
+		}
+
+		// All the checks passed, generate a UUID and insert new user record
+		$globalIdGenerator = MediaWikiServices::getInstance()->getGlobalIdGenerator();
+
+		$formattedUuid = $globalIdGenerator->newUUIDv4();
+		$rawUuid = self::rawUuidFromFormatted( $formattedUuid );
 
 		$userData = [
-			'kzcbu_uuid' => uniqid(),
+			'kzcbu_uuid' => $rawUuid,
 			'kzcbu_cookie_expiry' => wfTimestamp( TS_MW, $cookieExpiry ),
 			'kzcbu_ip_address' => $binaryIP,
 			'kzcbu_last_active' => wfTimestamp( TS_MW ),
@@ -96,26 +107,41 @@ class KZChatbot {
 		];
 
 		$dbw = wfGetDB( DB_PRIMARY );
-		$dbw->insert( 'kzchatbot_users', $userData, __METHOD__ );
-		return $userData;
+		try {
+			$dbw->insert( 'kzchatbot_users', $userData, __METHOD__ );
+
+			$userData['kzcbu_uuid'] = $formattedUuid;
+			return $userData;
+		} catch ( DBQueryError $e ) {
+			self::getLogger()->error( 'Failed to insert new user: ' . $e->getMessage() );
+			return false;
+		}
 	}
 
 	/**
-	 * @param string $uuid
+	 * - Raw UUIDs (no hyphens) for database operations
+	 * - Formatted UUIDs (with hyphens) for client responses
+	 *
+	 * @param string $uuid The formatted or raw UUID
 	 * @return array|bool
 	 */
-	public static function getUserData( $uuid ) {
+	public static function getUserData( string $uuid ) {
+		$rawUuid = self::rawUuidFromFormatted( $uuid );
 		$dbr = wfGetDB( DB_REPLICA );
 		$res = $dbr->select(
 			[ 'kzchatbot_users' ],
 			'*',
-			[ 'kzcbu_uuid' => $uuid ],
+			[ 'kzcbu_uuid' => $rawUuid ],
 			__METHOD__,
 		);
 		if ( $res ) {
 			$res = $res->fetchRow();
-			$res['kzcbu_ip_address'] = inet_ntop( $res['kzcbu_ip_address'] );
-			return $res;
+			if ( $res ) {
+				// Convert IP address from binary
+				$res['kzcbu_ip_address'] = inet_ntop( $res['kzcbu_ip_address'] );
+				$res['kzcbu_uuid'] = self::formatRawUuid( $res['kzcbu_uuid'] );
+				return $res;
+			}
 		}
 
 		return false;
@@ -182,11 +208,18 @@ class KZChatbot {
 	/**
 	 * Increments the questions last active day for a specific user.
 	 *
-	 * @param string $uuid The UUID of the user.
+	 * @param string $uuid The UUID of the user (either formatted or raw).
 	 * @return void
 	 */
 	public static function useQuestion( string $uuid ) {
 		$userData = self::getUserData( $uuid );
+		if ( !$userData ) {
+			return;
+		}
+
+		// Convert the input UUID to raw format for DB update
+		$rawUuid = self::rawUuidFromFormatted( $uuid );
+
 		// Check if the user already asked some questions today, or we should start from scratch
 		$userLastActiveTimestamp = wfTimestamp( TS_UNIX, $userData['kzcbu_last_active'] );
 		$userLastActiveDay = date( 'z', $userLastActiveTimestamp );
@@ -203,7 +236,7 @@ class KZChatbot {
 				'kzcbu_questions_last_active_day' => $questionsLastActiveDay + 1,
 				'kzcbu_last_active' => wfTimestampNow(),
 			],
-			[ 'kzcbu_uuid' => $uuid ],
+			[ 'kzcbu_uuid' => $rawUuid ],
 			__METHOD__
 		);
 	}
@@ -296,4 +329,52 @@ class KZChatbot {
 		}
 	}
 
+	/**
+	 * Convert a raw UUID (32 hex chars without hyphens) to formatted UUID string
+	 * with hyphens in the standard 8-4-4-4-12 format.
+	 *
+	 * @param string $uuid The 32-character raw UUID
+	 * @return string The formatted UUID with hyphens
+	 */
+	public static function formatRawUuid( string $uuid ): string {
+		// If it's already in formatted form with hyphens, return as is
+		if ( preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid ) ) {
+			return $uuid;
+		}
+
+		if ( !preg_match( '/^[0-9a-f]{32}$/i', $uuid ) ) {
+			throw new InvalidArgumentException( 'Invalid raw UUID format. Expected 32 hex characters.' );
+		}
+
+		return sprintf(
+			'%s-%s-%s-%s-%s',
+			substr( $uuid, 0, 8 ),
+			substr( $uuid, 8, 4 ),
+			substr( $uuid, 12, 4 ),
+			substr( $uuid, 16, 4 ),
+			substr( $uuid, 20, 12 )
+		);
+	}
+
+	/**
+	 * Convert a formatted UUID with hyphens back to a raw 32-character UUID
+	 *
+	 * @param string $formattedUuid The UUID string with hyphens
+	 * @return string The raw UUID without hyphens
+	 */
+	public static function rawUuidFromFormatted( string $formattedUuid ): string {
+		// If it's already in raw format, return as is
+		if ( preg_match( '/^[0-9a-f]{32}$/i', $formattedUuid ) ) {
+			return $formattedUuid;
+		}
+
+		// Otherwise validate and convert from formatted
+		if ( !preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $formattedUuid ) ) {
+			throw new InvalidArgumentException(
+				'Invalid UUID format. Expected either 32 hex characters or format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+			);
+		}
+
+		return str_replace( '-', '', $formattedUuid );
+	}
 }

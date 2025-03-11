@@ -295,6 +295,11 @@ class KZChatbot {
 	 * @return string The formatted UUID with hyphens
 	 */
 	public static function formatRawUuid( string $uuid ): string {
+		// If it's a legacy ID, return as is
+		if ( self::isLegacyId( $uuid ) ) {
+			return $uuid;
+		}
+
 		// If it's already in formatted form with hyphens, return as is
 		if ( preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid ) ) {
 			return $uuid;
@@ -317,22 +322,39 @@ class KZChatbot {
 	/**
 	 * Convert a formatted UUID with hyphens back to a raw 32-character UUID
 	 *
-	 * @param string $formattedUuid The UUID string with hyphens
+	 * @param string $uuid The UUID string with hyphens
 	 * @return string The raw UUID without hyphens
 	 */
-	public static function rawUuidFromFormatted( string $formattedUuid ): string {
+	public static function rawUuidFromFormatted( string $uuid ): string {
+		// If it's a legacy ID, return as is
+		if ( self::isLegacyId( $uuid ) ) {
+			return $uuid;
+		}
+
 		// If it's already in raw format, return as is
-		if ( preg_match( '/^[0-9a-f]{32}$/i', $formattedUuid ) ) {
-			return $formattedUuid;
+		if ( preg_match( '/^[0-9a-f]{32}$/i', $uuid ) ) {
+			return $uuid;
 		}
 
 		// Otherwise validate and convert from formatted
-		if ( !preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $formattedUuid ) ) {
+		if ( !preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid ) ) {
 			throw new InvalidArgumentException(
 				'Invalid UUID format. Expected either 32 hex characters or format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
 			);
 		}
 
-		return str_replace( '-', '', $formattedUuid );
+		return str_replace( '-', '', $uuid );
 	}
+
+	/**
+	 * Check if ID is a legacy format (from uniqid)
+	 * @param string $id
+	 * @return bool
+	 */
+	private static function isLegacyId( string $id ): bool {
+		// uniqid() typically produces 13-23 character strings that aren't valid UUIDs
+		return !preg_match( '/^[0-9a-f]{32}$/i', $id ) &&
+			!preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id );
+	}
+
 }

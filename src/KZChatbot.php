@@ -20,7 +20,7 @@ class KZChatbot {
 	 * Utility to maintain static logger
 	 * @return LoggerInterface
 	 */
-	public static function getLogger() {
+	public static function getLogger(): LoggerInterface {
 		if ( empty( self::$logger ) ) {
 			self::$logger = LoggerFactory::getInstance( 'KZChatbot' );
 		}
@@ -30,7 +30,7 @@ class KZChatbot {
 	/**
 	 * @return array
 	 */
-	public static function mappingDbToJson() {
+	public static function mappingDbToJson(): array {
 		return [
 			'kzcbu_uuid' => 'uuid',
 			'kzcbu_ip_address' => 'ip',
@@ -99,7 +99,7 @@ class KZChatbot {
 	 * @param string $uuid
 	 * @return array|bool
 	 */
-	public static function getUserData( $uuid ) {
+	public static function getUserData( string $uuid ) {
 		$dbr = wfGetDB( DB_REPLICA );
 		$res = $dbr->select(
 			[ 'kzchatbot_users' ],
@@ -141,7 +141,7 @@ class KZChatbot {
 	/**
 	 * @return array
 	 */
-	public static function getGeneralSettingsNames() {
+	public static function getGeneralSettingsNames(): array {
 		return [
 			'new_users_chatbot_rate', 'active_users_limit', 'active_users_limit_days', 'questions_daily_limit',
 			'question_character_limit', 'feedback_character_limit', 'cookie_expiry_days', 'uuid_request_limit',
@@ -153,8 +153,8 @@ class KZChatbot {
 	 * @param string $uuid
 	 * @return int
 	 */
-	public static function getQuestionsPermitted( $uuid ) {
-		$user = \RequestContext::getMain()->getUser();
+	public static function getQuestionsPermitted( string $uuid ): int {
+		$user = RequestContext::getMain()->getUser();
 		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
 
 		// If the user has the bypass permission, they can always ask a question
@@ -180,7 +180,7 @@ class KZChatbot {
 	 * @param string $uuid The UUID of the user.
 	 * @return void
 	 */
-	public static function useQuestion( $uuid ) {
+	public static function useQuestion( string $uuid ) {
 		$userData = self::getUserData( $uuid );
 		// Check if the user already asked some questions today, or we should start from scratch
 		$userLastActiveTimestamp = wfTimestamp( TS_UNIX, $userData['kzcbu_last_active'] );
@@ -205,9 +205,9 @@ class KZChatbot {
 
 	/**
 	 * @param array $data
-	 * @return \IResultWrapper
+	 * @return bool
 	 */
-	public static function saveGeneralSettings( $data ) {
+	public static function saveGeneralSettings( array $data ): bool {
 		$dbw = wfGetDB( DB_PRIMARY );
 		$generalSettingsNames = self::getGeneralSettingsNames();
 
@@ -250,5 +250,4 @@ class KZChatbot {
 		)->fetchRow();
 		return $activeUsersCount['count'] ?? 0;
 	}
-
 }

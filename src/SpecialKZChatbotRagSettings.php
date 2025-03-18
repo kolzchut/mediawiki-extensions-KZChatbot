@@ -33,7 +33,10 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 	private const AVAILABLE_MODELS = [
 		'gpt-3.5-turbo' => 'gpt-3.5-turbo',
 		'gpt-4o-mini' => 'gpt-4o-mini',
-		'gpt-4o' => 'gpt-4o'
+		'gpt-4o' => 'gpt-4o',
+		'gpt-4.5-preview' => 'gpt-4.5-preview-2025-02-27',
+		'gpt-o1' => 'o1-2024-12-17',
+		'gpt-o3-mini' => 'o3-mini-2025-01-31'
 	];
 
 	/** Available temperature values */

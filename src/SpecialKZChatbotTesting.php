@@ -18,16 +18,6 @@ class SpecialKZChatbotTesting extends SpecialPage {
 	public function execute( $subPage ) {
 		parent::execute( $subPage );
 
-		$configStatus = KZChatbot::getRagConfig();
-		if ( $configStatus->isOK() ) {
-			$config = $configStatus->getValue();
-			$jsVars = [];
-			foreach ( [ 'content', 'title', 'summary' ] as $threshold ) {
-				$jsVars[$threshold] = (float)$config[$threshold . '_treshold'];
-			}
-			$this->getOutput()->addJsConfigVars( 'wgKZChatbotThresholds', $jsVars );
-		}
-
 		$this->getOutput()->addModuleStyles( 'ext.KZChatbot.testing.styles' );
 		$this->getOutput()->addModules( 'ext.KZChatbot.testing.batch' );
 

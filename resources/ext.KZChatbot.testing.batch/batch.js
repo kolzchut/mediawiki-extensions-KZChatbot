@@ -16,9 +16,6 @@ class BatchProcessor {
 		this.results = [];
 		this.currentRequest = null;
 		this.isCancelled = false;
-		this.thresholds = mw.config.get( 'wgKZChatbotThresholds' );
-
-		console.log( 'Initial thresholds:', this.thresholds );
 
 		// Add clear all button after the add query button
 		this.clearAllButton = document.createElement( 'button' );
@@ -338,10 +335,6 @@ class BatchProcessor {
 				throw new Error( response.error.info || mw.msg( 'kzchatbot-testing-batch-unknown-error' ) );
 			}
 
-			// Debug info
-			console.log( 'API Response:', response.kzchatbotsearch );
-			console.log( 'All docs and scores present:', !!response.kzchatbotsearch.all_docs_and_scores );
-
 			return response.kzchatbotsearch;
 		} ).catch( ( error ) => {
 			// Clear current request reference
@@ -370,94 +363,27 @@ class BatchProcessor {
 		this.progressIndicator.textContent = mw.msg( 'kzchatbot-testing-batch-progress-status', current, total );
 	}
 
-	// Check if a document passes any threshold in the all_docs_and_scores data
-	checkDocumentPassesThreshold( docTitle, allDocsAndScores ) {
-		if ( !allDocsAndScores || !this.thresholds ) {
-			console.log( `Skipping threshold check for "${ docTitle }": missing data or thresholds` );
-			return false;
-		}
-
-		// Check each model's scores
-		const models = [ 'content', 'title', 'summary' ];
-
-		console.log( `Checking thresholds for "${ docTitle }":` );
-		console.log( 'Current thresholds:', this.thresholds );
-
-		for ( const model of models ) {
-			if ( !allDocsAndScores[ model ] ) {
-				console.log( `- No data for model "${ model }"` );
-				continue;
-			}
-
-			const threshold = this.thresholds[ model ];
-
-			if ( !threshold ) {
-				console.log( `- No threshold defined for "${ model }"` );
-				continue;
-			}
-
-			const docEntry = allDocsAndScores[ model ].find( ( entry ) => entry.doc === docTitle );
-
-			if ( docEntry ) {
-				console.log( `- ${ model }: score ${ docEntry.score } vs threshold ${ threshold }` );
-
-				if ( docEntry.score >= threshold ) {
-					console.log( `  ✓ PASSED threshold for "${ model }"` );
-					return true;
-				}
-			} else {
-				console.log( `- ${ model }: Document not found in this model` );
-			}
-		}
-
-		console.log( '✗ Did NOT pass any thresholds' );
-		return false;
-	}
-
 	updateTableRow( result ) {
 		const row = document.createElement( 'tr' );
 		if ( result.error ) {
 			row.classList.add( 'error-row' );
 		}
 
-		// Create the sources cell content with numbered links
-		const sourcesHtml = result.docs ?
+		// Create the sources cell content with numbered links using docs_before_filter
+		const sourcesHtml = result.docs_before_filter ?
+			'<ol>' +
+			result.docs_before_filter.map( ( doc ) => `<li><a href="${ this.escapeHtml( doc.url ) }" target="_blank">${ this.escapeHtml( doc.title ) }</a></li>`
+			).join( '' ) +
+			'</ol>' :
+			'';
+
+		// Use docs for passed links (already filtered by the backend)
+		const passedLinksHtml = result.docs ?
 			'<ol>' +
 			result.docs.map( ( doc ) => `<li><a href="${ this.escapeHtml( doc.url ) }" target="_blank">${ this.escapeHtml( doc.title ) }</a></li>`
 			).join( '' ) +
 			'</ol>' :
 			'';
-
-		// Create the passed links cell content with debugging info
-		let passedLinksHtml = '';
-		if ( result.all_docs_and_scores && result.docs ) {
-			console.log( 'Checking passed links for result:', result.query );
-
-			// Add debug info about all_docs_and_scores structure
-			console.log( 'all_docs_and_scores structure:', Object.keys( result.all_docs_and_scores ) );
-
-			const passedLinks = result.docs.filter(
-				( doc ) => {
-					console.log( `\nEvaluating document "${ doc.title }"` );
-					return this.checkDocumentPassesThreshold( doc.title, result.all_docs_and_scores );
-				}
-			);
-
-			console.log( `Found ${ passedLinks.length } passed links out of ${ result.docs.length } total docs` );
-
-			if ( passedLinks.length > 0 ) {
-				passedLinksHtml = '<ol>' +
-					passedLinks.map( ( doc ) => `<li><a href="${ this.escapeHtml( doc.url ) }" target="_blank">${ this.escapeHtml( doc.title ) }</a></li>`
-					).join( '' ) +
-					'</ol>';
-			}
-		} else {
-			console.log( 'Missing data for passed links check:', {
-				// eslint-disable-next-line camelcase
-				all_docs_and_scores: !!result.all_docs_and_scores,
-				docs: !!result.docs
-			} );
-		}
 
 		row.innerHTML = `
 			<td>${ result.index }</td>
@@ -502,22 +428,17 @@ class BatchProcessor {
 		const rows = [ headers ];
 
 		for ( const result of this.results ) {
-			// Format sources as numbered list in plain text
-			const sources = result.docs ?
-				result.docs.map( ( doc, index ) => `${ index + 1 }. ${ doc.title } (${ doc.url })`
+			// Format all sources as numbered list in plain text
+			const sources = result.docs_before_filter ?
+				result.docs_before_filter.map( ( doc, index ) => `${ index + 1 }. ${ doc.title } (${ doc.url })`
 				).join( '\n' ) :
 				'';
 
 			// Format passed links as numbered list in plain text
-			let passedLinks = '';
-			if ( result.all_docs_and_scores && result.docs ) {
-				const passedDocsArray = result.docs.filter(
-					( doc ) => this.checkDocumentPassesThreshold( doc.title, result.all_docs_and_scores )
-				);
-
-				passedLinks = passedDocsArray.map( ( doc, index ) => `${ index + 1 }. ${ doc.title } (${ doc.url })`
-				).join( '\n' );
-			}
+			const passedLinks = result.docs ?
+				result.docs.map( ( doc, index ) => `${ index + 1 }. ${ doc.title } (${ doc.url })`
+				).join( '\n' ) :
+				'';
 
 			rows.push( [
 				result.query,

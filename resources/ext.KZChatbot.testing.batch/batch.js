@@ -391,9 +391,6 @@ class BatchProcessor {
 			<td>${ this.escapeHtml( result.error || result.gpt_result ) }</td>
 			<td>${ sourcesHtml }</td>
 			<td>${ passedLinksHtml }</td>
-			<td>${ result.error ? '' : this.escapeHtml( result.metadata.gpt_model ) }</td>
-			<td>${ result.error ? '' : this.escapeHtml( result.metadata.gpt_time ) }</td>
-			<td>${ result.error ? '' : this.escapeHtml( result.metadata.tokens ) }</td>
 		`;
 
 		this.resultsTableBody.appendChild( row );
@@ -419,9 +416,6 @@ class BatchProcessor {
 			mw.msg( 'kzchatbot-testing-batch-header-response' ),
 			mw.msg( 'kzchatbot-testing-batch-header-documents' ),
 			mw.msg( 'kzchatbot-testing-batch-header-passed-documents' ),
-			mw.msg( 'kzchatbot-testing-batch-header-model' ),
-			mw.msg( 'kzchatbot-testing-batch-header-time' ),
-			mw.msg( 'kzchatbot-testing-batch-header-tokens' ),
 			mw.msg( 'kzchatbot-testing-batch-header-error' )
 		];
 
@@ -445,9 +439,6 @@ class BatchProcessor {
 				result.error || result.gpt_result,
 				sources,
 				passedLinks,
-				result.error ? '' : result.metadata.gpt_model,
-				result.error ? '' : result.metadata.gpt_time,
-				result.error ? '' : result.metadata.tokens,
 				result.error || ''
 			].map( ( cell ) => this.escapeCSV( cell ) ) );
 		}

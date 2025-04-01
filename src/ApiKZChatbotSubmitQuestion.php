@@ -89,8 +89,10 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 				'url' => $doc->url,
 			];
 		}, $response->docs );
+
+		$answer = empty( $docs ) ? Slugs::getSlug( 'returning_links_empty' ) : $response->gpt_result;
 		return [
-			'llmResult' => $response->gpt_result,
+			'llmResult' => $answer,
 			'docs' => $docs,
 			'conversationId' => $response->conversation_id,
 		];

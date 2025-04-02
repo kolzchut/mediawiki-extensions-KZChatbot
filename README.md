@@ -3,7 +3,13 @@
 ## Overview
 
 KZChatbot is a MediaWiki extension that provides an end-user interface for interacting with the Kol-Zchut chatbot.
-It serves as middleware between the chatbot frontend and the RAG API backend (not yet open-sourced as of 2024-11-14).
+It serves as middleware between the chatbot frontend and the RAG API backend.
+
+Information on the RAG backend (MIT license) can be found here 
+- [In this Hebrew LinkedIn announcement](https://www.linkedin.com/feed/update/urn:li:activity:7295403255134666753/)
+- [Backend source code](https://github.com/NNLP-IL/Webiks-Hebrew-RAGbot)
+- [Backend demo/Admin UI source code](https://github.com/NNLP-IL/Webiks-Hebrew-RAGbot-Demo)
+- [Usage guide (in Hebrew)](https://drive.google.com/file/d/10nbRI_qA74z_sgB92tlvWh2ulTCwHBin/view)
 
 ⚠️ **Security Note**: There is no built-in authentication between the chatbot and the RAG API.
 The RAG API should be protected through other means, such as IP whitelisting or internal network restrictions.

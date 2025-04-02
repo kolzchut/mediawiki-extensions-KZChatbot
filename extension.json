@@ -24,6 +24,11 @@
 			"value": false,
 			"description": "Secret token that allows bypassing the active users limit when provided as a URL parameter. Set to false to disable the bypass feature.",
 			"public": false
+		},
+		"KZChatbotAutoOpenParam": {
+			"value": "autoOpenChatbot",
+			"description": "URL parameter that triggers the chatbot to open automatically. Set to an empty string to disable this feature.",
+			"public": true
 		}
 	},
 	"ConfigRegistry": {

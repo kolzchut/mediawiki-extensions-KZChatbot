@@ -1,5 +1,5 @@
 const initializeChatbot = () => {
-	const scriptVersion = 22;
+	const scriptVersion = 23;
 	const cookieName = 'kzchatbot-uuid';
 	const cookie = mw.cookie.get( cookieName );
 	const uuid = cookie !== null ? cookie : '';
@@ -21,10 +21,12 @@ const initializeChatbot = () => {
 	const restPath = `${ scriptPath }/rest.php`;
 	const extensionCodePath = `${ scriptPath }/extensions/KZChatbot/resources/ext.KZChatbot.bot`;
 	const getConfigPath = '/kzchatbot/v0/status';
+	const autoOpenParamName = String( mw.config.get( 'KZChatbotAutoOpenParam' ) );
 
 	// Get bypass token from URL if present
 	const urlParams = new URLSearchParams( window.location.search );
 	const bypassToken = urlParams.get( 'kzchatbot_access' );
+	const autoOpen = urlParams.has( autoOpenParamName );
 
 	// 2024-12-04 for b/c, we delete the session cookie (identified by the value 'false') for users
 	// excluded in an older version of the code, so they get a second chance.
@@ -73,7 +75,8 @@ const initializeChatbot = () => {
 			window.KZChatbotConfig = Object.assign( {}, data, {
 				slugs: mw.config.get( 'KZChatbotSlugs' ),
 				referrer: mw.config.get( 'wgArticleId' ),
-				restPath
+				restPath,
+				autoOpen
 			}, savedSettings );
 			document.body.insertAdjacentHTML(
 				'beforeend',
@@ -89,3 +92,4 @@ const initializeChatbot = () => {
 
 // Execute the initialization
 initializeChatbot();
+

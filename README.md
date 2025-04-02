@@ -29,6 +29,18 @@ The RAG API should be protected through other means, such as IP whitelisting or 
 
 ## Configuration
 
+### LocalSettings Settings
+These settings can be configured in `LocalSettings.php`.
+
+⚠️ `$wgKZChatbotLlmApiUrl` is required for the extension to function.
+
+| Setting                            | Default           | Description                                                                                                                             |
+|------------------------------------|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `$wgKZChatbotLlmApiUrl`            | null              | LLM API URL                                                                                                                             |
+| `$wgKZChatbotUserLimitBypassToken` | false             | Secret token that allows bypassing the active users limit when provided as a URL parameter. Set to false to disable the bypass feature. |
+| `$wgKZChatbotAutoOpenParam`        | "autoOpenChatbot" | URL parameter that triggers the chatbot to open automatically. Set to an empty string to disable this feature.                          |
+
+
 ### Required Settings
 - `$wgKZChatbotLlmApiUrl`: Base URL for the LLM API used by the chatbot
 
@@ -102,6 +114,13 @@ You can enable a bypass mechanism for the active users limit:
 To disable bypassing, set `$wgKZChatbotLimitBypassToken = false`
 
 ⚠️ **Security Note**: Treat the bypass token as sensitive information.
+
+### Auto-Open Chatbot
+You can trigger the chatbot to open automatically by adding the `autoOpenChatbot` parameter (the name can be configured) to the URL:
+```
+https://example.com/wiki/any_page?autoOpenChatbot
+```
+
 
 ## Administrative Interface
 

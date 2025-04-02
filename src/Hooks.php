@@ -86,6 +86,7 @@ class Hooks implements
 			'usageHelpUrl' => $chatbotSettings['usage_help_url'] ?? null,
 			'termsofServiceUrl' => $chatbotSettings['terms_of_service_url'] ?? null
 		];
+		$vars['KZChatbotAutoOpenParam'] = $config->get( 'KZChatbotAutoOpenParam' );
 	}
 
 }

@@ -154,7 +154,7 @@
 	"kzchatbot-testing-batch-header-query": "Query",
 	"kzchatbot-testing-batch-header-response": "Response",
 	"kzchatbot-testing-batch-header-documents": "Links",
-	"kzchatbot-testing-batch-header-passed-documents": "Passed Links",
+	"kzchatbot-testing-batch-header-filtered-documents": "Filtered Links",
 	"kzchatbot-testing-batch-header-error": "Error",
 	"kzchatbot-testing-batch-input-hint": "Enter your query here...",
 	"kzchatbot-testing-batch-delete-query": "Delete query",

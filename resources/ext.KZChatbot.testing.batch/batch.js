@@ -369,18 +369,28 @@ class BatchProcessor {
 			row.classList.add( 'error-row' );
 		}
 
-		// Create the sources cell content with numbered links using docs_before_filter
-		const sourcesHtml = result.docs_before_filter ?
+		// Use docs for passed links (already filtered by the backend)
+		const docsHtml = result.docs ?
 			'<ol>' +
-			result.docs_before_filter.map( ( doc ) => `<li><a href="${ this.escapeHtml( doc.url ) }" target="_blank">${ this.escapeHtml( doc.title ) }</a></li>`
+			result.docs.map( ( doc ) => `<li><a href="${ this.escapeHtml( doc.url ) }" target="_blank">${ this.escapeHtml( doc.title ) }</a></li>`
 			).join( '' ) +
 			'</ol>' :
 			'';
 
-		// Use docs for passed links (already filtered by the backend)
-		const passedLinksHtml = result.docs ?
+		// Create filtered documents - documents that were filtered out by the backend
+		let filteredDocs = [];
+		if ( result.docs && result.docs_before_filter ) {
+			// Find documents in docs_before_filter that aren't in docs
+			const docUrls = result.docs.map( ( doc ) => doc.url );
+			filteredDocs = result.docs_before_filter.filter(
+				( doc ) => docUrls.indexOf( doc.url ) === -1
+			);
+		}
+
+		// Generate HTML for filtered docs
+		const filteredDocsHtml = filteredDocs.length > 0 ?
 			'<ol>' +
-			result.docs.map( ( doc ) => `<li><a href="${ this.escapeHtml( doc.url ) }" target="_blank">${ this.escapeHtml( doc.title ) }</a></li>`
+			filteredDocs.map( ( doc ) => `<li><a href="${ this.escapeHtml( doc.url ) }" target="_blank">${ this.escapeHtml( doc.title ) }</a></li>`
 			).join( '' ) +
 			'</ol>' :
 			'';
@@ -389,8 +399,8 @@ class BatchProcessor {
 			<td>${ result.index }</td>
 			<td>${ this.escapeHtml( result.query ) }</td>
 			<td>${ this.escapeHtml( result.error || result.gpt_result ) }</td>
-			<td>${ sourcesHtml }</td>
-			<td>${ passedLinksHtml }</td>
+			<td>${ docsHtml }</td>
+			<td>${ filteredDocsHtml }</td>
 		`;
 
 		this.resultsTableBody.appendChild( row );
@@ -415,30 +425,38 @@ class BatchProcessor {
 			mw.msg( 'kzchatbot-testing-batch-header-query' ),
 			mw.msg( 'kzchatbot-testing-batch-header-response' ),
 			mw.msg( 'kzchatbot-testing-batch-header-documents' ),
-			mw.msg( 'kzchatbot-testing-batch-header-passed-documents' ),
+			mw.msg( 'kzchatbot-testing-batch-header-filtered-documents' ),
 			mw.msg( 'kzchatbot-testing-batch-header-error' )
 		];
 
 		const rows = [ headers ];
 
 		for ( const result of this.results ) {
-			// Format all sources as numbered list in plain text
-			const sources = result.docs_before_filter ?
-				result.docs_before_filter.map( ( doc, index ) => `${ index + 1 }. ${ doc.title } (${ doc.url })`
-				).join( '\n' ) :
-				'';
+			// Get the list of documents that were not filtered
+			const docs = result.docs || [];
 
-			// Format passed links as numbered list in plain text
-			const passedLinks = result.docs ?
-				result.docs.map( ( doc, index ) => `${ index + 1 }. ${ doc.title } (${ doc.url })`
-				).join( '\n' ) :
-				'';
+			// Format documents as numbered list in plain text
+			const docsText = docs.map( ( doc, index ) => `${ index + 1 }. ${ doc.title } (${ doc.url })`
+			).join( '\n' );
+
+			// Get filtered documents
+			let filteredDocs = [];
+			if ( result.docs && result.docs_before_filter ) {
+				const docUrls = result.docs.map( ( doc ) => doc.url );
+				filteredDocs = result.docs_before_filter.filter(
+					( doc ) => docUrls.indexOf( doc.url ) === -1
+				);
+			}
+
+			// Format filtered documents as numbered list in plain text
+			const filteredDocsText = filteredDocs.map( ( doc, index ) => `${ index + 1 }. ${ doc.title } (${ doc.url })`
+			).join( '\n' );
 
 			rows.push( [
 				result.query,
 				result.error || result.gpt_result,
-				sources,
-				passedLinks,
+				docsText,
+				filteredDocsText,
 				result.error || ''
 			].map( ( cell ) => this.escapeCSV( cell ) ) );
 		}

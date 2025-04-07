@@ -154,7 +154,7 @@
 	"kzchatbot-testing-batch-header-query": "שאילתה",
 	"kzchatbot-testing-batch-header-response": "תגובה",
 	"kzchatbot-testing-batch-header-documents": "קישורים",
-	"kzchatbot-testing-batch-header-passed-documents": "קישורים שלא סוננו",
+	"kzchatbot-testing-batch-header-filtered-documents": "קישורים שסוננו",
 	"kzchatbot-testing-batch-header-error": "שגיאה",
 	"kzchatbot-testing-batch-input-hint": "הכנס את השאילתה שלך כאן...",
 	"kzchatbot-testing-batch-delete-query": "מחק שאילתה",

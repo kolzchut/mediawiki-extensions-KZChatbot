@@ -422,6 +422,11 @@ class KZChatbot {
 	 * @return Status Status object with the model version or error
 	 */
 	public static function getModelsVersion(): Status {
-		return self::makeRagApiRequest( 'get_models_version' );
+		$status = self::makeRagApiRequest( 'get_models_version' );
+		if ( $status->isOK() ) {
+			$status->setResult( true, $status->getValue()[0] );
+		}
+
+		return $status;
 	}
 }

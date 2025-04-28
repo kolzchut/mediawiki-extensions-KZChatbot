@@ -27,13 +27,12 @@ class SpecialKZChatbotTesting extends SpecialPage {
 		$modelsError = '';
 
 		if ( $modelsVersionStatus->isOK() ) {
-			$modelsData = $modelsVersionStatus->getValue();
-			if ( isset( $modelsData['version'] ) ) {
-				$modelsVersion = $modelsData['version'];
-			}
+			$modelsVersion = $modelsVersionStatus->getValue();
 		} else {
 			$errors = $modelsVersionStatus->getErrors();
-			$modelsError = $errors ? $this->msg( $errors[0] )->text() : $this->msg( 'kzchatbot-testing-models-error-unknown' )->text();
+			$modelsError = $errors ?
+				$this->msg( $errors[0] )->text() :
+				$this->msg( 'kzchatbot-testing-models-error-unknown' )->text();
 		}
 
 		$templateData = [

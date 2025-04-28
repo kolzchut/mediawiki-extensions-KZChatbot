@@ -17,7 +17,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	private $uuid;
 
 	/**
-	 * @var string The question to be submitted to the ChatGPT API.
+	 * @var string The question to be submitted to the RAG backend.
 	 */
 	private $question;
 
@@ -27,8 +27,8 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	private $referrer;
 
 	/**
-	 * Pass user question to ChatGPT API, checking first that user hasn't exceeded daily limit.
-	 * Return answer from ChatGPT API.
+	 * Pass user question to RAG backend, checking first that user hasn't exceeded daily limit.
+	 * Return answer from RAG backend.
 	 * @return array
 	 */
 	public function execute() {
@@ -54,7 +54,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		}
 		$answer = $this->generateAnswer();
 		if ( $answer['llmResult'] === null ) {
-			wfDebugLog( 'KZChatbot', 'ChatGPT API returned null. Question: ' . $this->question . "\nAnswer: " . print_r( $answer, true ) );
+			wfDebugLog( 'KZChatbot', 'RAG backend returned null. Question: ' . $this->question . "\nAnswer: " . print_r( $answer, true ) );
 			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
 		}
 		return $answer;
@@ -79,7 +79,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 				]
 			] );
 		} catch ( \GuzzleHttp\Exception\GuzzleException $e ) {
-			wfDebugLog( 'KZChatbot', 'ChatGPT API request failed (' . $e->getCode() . '): ' . $e->getMessage() );
+			wfDebugLog( 'KZChatbot', 'RAG backend request failed (' . $e->getCode() . '): ' . $e->getMessage() );
 			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
 		}
 		$response = json_decode( $result->getBody()->getContents() );

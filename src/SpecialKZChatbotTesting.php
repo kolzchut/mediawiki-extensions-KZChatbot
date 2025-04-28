@@ -21,6 +21,21 @@ class SpecialKZChatbotTesting extends SpecialPage {
 		$this->getOutput()->addModuleStyles( 'ext.KZChatbot.testing.styles' );
 		$this->getOutput()->addModules( 'ext.KZChatbot.testing.batch' );
 
+		// Fetch model information from the RAG backend
+		$modelsVersionStatus = KZChatbot::getModelsVersion();
+		$modelsVersion = '';
+		$modelsError = '';
+
+		if ( $modelsVersionStatus->isOK() ) {
+			$modelsData = $modelsVersionStatus->getValue();
+			if ( isset( $modelsData['version'] ) ) {
+				$modelsVersion = $modelsData['version'];
+			}
+		} else {
+			$errors = $modelsVersionStatus->getErrors();
+			$modelsError = $errors ? $this->msg( $errors[0] )->text() : $this->msg( 'kzchatbot-testing-models-error-unknown' )->text();
+		}
+
 		$templateData = [
 			'batchTitle' => $this->msg( 'kzchatbot-testing-batch-title' )->text(),
 			'inputLabel' => $this->msg( 'kzchatbot-testing-batch-input-label' )->text(),
@@ -39,6 +54,10 @@ class SpecialKZChatbotTesting extends SpecialPage {
 			'deleteQueryLabel' => $this->msg( 'kzchatbot-testing-batch-delete-query' )->text(),
 			'addQueryLabel' => $this->msg( 'kzchatbot-testing-batch-add-query' )->text(),
 			'initialQuery' => $this->msg( 'kzchatbot-testing-batch-initial-query' )->text(),
+			'modelsVersionLabel' => $this->msg( 'kzchatbot-testing-models-version-label' )->text(),
+			'modelsVersion' => $modelsVersion,
+			'modelsError' => $modelsError,
+			'hasModelsError' => !empty( $modelsError ),
 		];
 
 		$this->getOutput()->addHTML(

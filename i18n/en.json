@@ -114,6 +114,7 @@
 	"kzchatbot-rag-settings-error-save": "Error saving settings.",
 	"kzchatbot-rag-settings-save-success": "Settings updated successfully.",
 	"kzchatbot-rag-settings-error-invalid-response": "Invalid response from the API.",
+	"kzchatbot-rag-settings-error-execution-failed": "RAG API request failed.",
 	"kzchatbot-rag-settings-error-no-change": "No changes were made.",
 
 	"kzchatbot-testing": "KZ Chatbot Testing",
@@ -121,6 +122,8 @@
 	"kzchatbot-testing-document-ids": "Document IDs",
 	"kzchatbot-testing-retrieval-time": "Retrieval Time",
 	"kzchatbot-testing-tokens": "Token Count",
+	"kzchatbot-testing-models-version-label": "Models Version",
+	"kzchatbot-testing-models-error-unknown": "Unable to retrieve model version information",
 	"apihelp-kzchatbotsearch-summary": "Perform a chatbot search query",
 	"apihelp-kzchatbotsearch-param-query": "The search query to process",
 	"apihelp-kzchatbotsearch-example-simple": "Perform a simple search query",

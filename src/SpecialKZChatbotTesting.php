@@ -21,6 +21,20 @@ class SpecialKZChatbotTesting extends SpecialPage {
 		$this->getOutput()->addModuleStyles( 'ext.KZChatbot.testing.styles' );
 		$this->getOutput()->addModules( 'ext.KZChatbot.testing.batch' );
 
+		// Fetch model information from the RAG backend
+		$modelsVersionStatus = KZChatbot::getModelsVersion();
+		$modelsVersion = '';
+		$modelsError = '';
+
+		if ( $modelsVersionStatus->isOK() ) {
+			$modelsVersion = $modelsVersionStatus->getValue();
+		} else {
+			$errors = $modelsVersionStatus->getErrors();
+			$modelsError = $errors ?
+				$this->msg( $errors[0] )->text() :
+				$this->msg( 'kzchatbot-testing-models-error-unknown' )->text();
+		}
+
 		$templateData = [
 			'batchTitle' => $this->msg( 'kzchatbot-testing-batch-title' )->text(),
 			'inputLabel' => $this->msg( 'kzchatbot-testing-batch-input-label' )->text(),
@@ -34,13 +48,15 @@ class SpecialKZChatbotTesting extends SpecialPage {
 			'queryColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-query' )->text(),
 			'responseColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-response' )->text(),
 			'documentsColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-documents' )->text(),
-			'modelColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-model' )->text(),
-			'timeColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-time' )->text(),
-			'tokensColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-tokens' )->text(),
+			'filteredDocsColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-filtered-documents' )->text(),
 			'inputHint' => $this->msg( 'kzchatbot-testing-batch-input-hint' )->text(),
 			'deleteQueryLabel' => $this->msg( 'kzchatbot-testing-batch-delete-query' )->text(),
 			'addQueryLabel' => $this->msg( 'kzchatbot-testing-batch-add-query' )->text(),
 			'initialQuery' => $this->msg( 'kzchatbot-testing-batch-initial-query' )->text(),
+			'modelsVersionLabel' => $this->msg( 'kzchatbot-testing-models-version-label' )->text(),
+			'modelsVersion' => $modelsVersion,
+			'modelsError' => $modelsError,
+			'hasModelsError' => !empty( $modelsError ),
 		];
 
 		$this->getOutput()->addHTML(

@@ -113,6 +113,7 @@
 	"kzchatbot-rag-settings-error-save": "שגיאה בשמירת ההגדרות.",
 	"kzchatbot-rag-settings-save-success": "ההגדרות נשמרו בהצלחה.",
 	"kzchatbot-rag-settings-error-invalid-response": "תגובה לא תקינה מה-API.",
+	"kzchatbot-rag-settings-error-execution-failed": "הקריאה ל-API של ה-RAG נכשלה.",
 	"kzchatbot-rag-settings-error-no-change": "לא בוצעו שינויים בהגדרות.",
 
 	"kzchatbot-testing": "צ'טבוט בדיקות",
@@ -120,6 +121,8 @@
 	"kzchatbot-testing-document-ids": "מזהי מסמכים",
 	"kzchatbot-testing-retrieval-time": "זמן אחזור",
 	"kzchatbot-testing-tokens": "כמות טוקנים",
+	"kzchatbot-testing-models-version-label": "גרסת המודלים",
+	"kzchatbot-testing-models-error-unknown": "לא ניתן לאחזר מידע על גרסת המודל",
 
 	"apihelp-kzchatbotsearch-summary": "ביצוע שאילתת חיפוש בצ'אט-בוט",
 	"apihelp-kzchatbotsearch-param-query": "שאילתת החיפוש לעיבוד",
@@ -154,9 +157,7 @@
 	"kzchatbot-testing-batch-header-query": "שאילתה",
 	"kzchatbot-testing-batch-header-response": "תגובה",
 	"kzchatbot-testing-batch-header-documents": "קישורים",
-	"kzchatbot-testing-batch-header-model": "מודל",
-	"kzchatbot-testing-batch-header-time": "זמן (שניות)",
-	"kzchatbot-testing-batch-header-tokens": "טוקנים",
+	"kzchatbot-testing-batch-header-filtered-documents": "קישורים שסוננו",
 	"kzchatbot-testing-batch-header-error": "שגיאה",
 	"kzchatbot-testing-batch-input-hint": "הכנס את השאילתה שלך כאן...",
 	"kzchatbot-testing-batch-delete-query": "מחק שאילתה",

@@ -1,4 +1,16 @@
 <div class="kz-chatbot-batch">
+	<div class="kz-chatbot-model-info">
+		<div class="kz-chatbot-model-version">
+			<span class="kz-chatbot-model-version-label">{{modelsVersionLabel}}:</span>
+			{{#hasModelsError}}
+				<span class="kz-chatbot-model-version-error">{{modelsError}}</span>
+			{{/hasModelsError}}
+			{{^hasModelsError}}
+				<span class="kz-chatbot-model-version-value">{{modelsVersion}}</span>
+			{{/hasModelsError}}
+		</div>
+	</div>
+
 	<div class="kz-chatbot-input-section">
 		<label>{{inputLabel}}</label>
 		<table class="kz-chatbot-queries-table wikitable">
@@ -44,9 +56,7 @@
 					<th>{{queryColumnHeader}}</th>
 					<th>{{responseColumnHeader}}</th>
 					<th>{{documentsColumnHeader}}</th>
-					<th>{{modelColumnHeader}}</th>
-					<th>{{timeColumnHeader}}</th>
-					<th>{{tokensColumnHeader}}</th>
+					<th>{{filteredDocsColumnHeader}}</th>
 				</tr>
 				</thead>
 				<tbody id="results-table-body">

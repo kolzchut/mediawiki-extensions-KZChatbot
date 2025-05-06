@@ -59,7 +59,7 @@ class ApiKZChatbotRateAnswer extends Handler {
 	}
 
 	/**
-	 * Pass user rating on specified chatbot answer to the ChatGPT API.
+	 * Pass user rating on specified chatbot answer to the RAG backend.
 	 * @return \MediaWiki\Rest\Response
 	 */
 	public function execute() {

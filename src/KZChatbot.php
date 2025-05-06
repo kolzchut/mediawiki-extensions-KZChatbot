@@ -9,6 +9,7 @@ use MWException;
 use Psr\Log\LoggerInterface;
 use Random\RandomException;
 use RequestContext;
+use Status;
 use Wikimedia\Rdbms\DBQueryError;
 
 /**
@@ -357,4 +358,75 @@ class KZChatbot {
 			!preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id );
 	}
 
+	/**
+	 * Make a request to the RAG API
+	 *
+	 * @param string $endpoint The API endpoint to call (without the base URL)
+	 * @param array|null $postData Optional data to send in a POST request
+	 * @param string $method HTTP method (GET or POST)
+	 * @return Status Status object with the result or error
+	 */
+	public static function makeRagApiRequest(
+		string $endpoint, ?array $postData = null, string $method = 'GET' ): Status {
+		$services = MediaWikiServices::getInstance();
+		$config = $services->getMainConfig();
+		$httpFactory = $services->getHttpRequestFactory();
+
+		$apiUrl = rtrim( $config->get( 'KZChatbotLlmApiUrl' ), '/' ) . '/' . ltrim( $endpoint, '/' );
+
+		$options = [
+			'method' => $method,
+			'timeout' => 30,
+			'headers' => [
+				'Accept' => 'application/json'
+			]
+		];
+
+		if ( $postData !== null && $method === 'POST' ) {
+			$options['headers']['Content-Type'] = 'application/json';
+			$options['postData'] = json_encode( $postData );
+		}
+
+		$request = $httpFactory->create( $apiUrl, $options, __METHOD__ );
+		try {
+			$status = $request->execute();
+		} catch ( \Exception $e ) {
+			return Status::newFatal( 'kzchatbot-rag-settings-error-execution-failed', $e->getMessage() );
+		}
+		if ( !$status->isOK() ) {
+			return Status::newFatal( 'kzchatbot-rag-settings-error-api-unreachable' );
+		}
+
+		$content = $request->getContent();
+		$result = json_decode( $content, true );
+
+		if ( $result === null && json_last_error() !== JSON_ERROR_NONE ) {
+			return Status::newFatal( 'kzchatbot-rag-settings-error-invalid-response' );
+		}
+
+		return Status::newGood( $result );
+	}
+
+	/**
+	 * Get RAG configuration
+	 *
+	 * @return Status Status object with the config or error
+	 */
+	public static function getRagConfig(): Status {
+		return self::makeRagApiRequest( 'get_config' );
+	}
+
+	/**
+	 * Get RAG models version information
+	 *
+	 * @return Status Status object with the model version or error
+	 */
+	public static function getModelsVersion(): Status {
+		$status = self::makeRagApiRequest( 'get_models_version' );
+		if ( $status->isOK() ) {
+			$status->setResult( true, $status->getValue()[0] );
+		}
+
+		return $status;
+	}
 }

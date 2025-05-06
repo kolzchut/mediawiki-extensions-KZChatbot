@@ -22,7 +22,9 @@ class BatchProcessor {
 		this.clearAllButton.id = 'clear-all';
 		this.clearAllButton.className = 'mw-ui-button mw-ui-destructive';
 		this.clearAllButton.textContent = mw.msg( 'kzchatbot-testing-batch-clear-all' );
-		this.addQueryButton.parentNode.insertBefore( this.clearAllButton, this.addQueryButton.nextSibling );
+		this.addQueryButton.parentNode.insertBefore(
+			this.clearAllButton, this.addQueryButton.nextSibling
+		);
 
 		this.isProcessing = false;
 		this.spinnerId = 'kz-chatbot-batch-spinner';
@@ -209,7 +211,8 @@ class BatchProcessor {
 
 		row.innerHTML = `
 			<td class="query-number">${ number }</td>
-			<td><div class="query-cell" contenteditable="true" placeholder="${ mw.msg( 'kzchatbot-testing-batch-placeholder' ) }">${ this.escapeHtml( queryText ) }</div></td>
+			<td><!--suppress HtmlUnknownAttribute (this ignores the placeholder attribute here)-->
+				<div class="query-cell" contenteditable="true" placeholder="${ mw.msg( 'kzchatbot-testing-batch-placeholder' ) }">${ this.escapeHtml( queryText ) }</div></td>
 			<td class="query-actions">
 				<button type="button" class="query-delete mw-ui-button mw-ui-destructive" title="${ mw.msg( 'kzchatbot-testing-batch-delete-query' ) }">×</button>
 			</td>
@@ -235,7 +238,7 @@ class BatchProcessor {
 
 	renumberRows() {
 		Array.from( this.queriesBody.children ).forEach( ( row, index ) => {
-			row.querySelector( '.query-number' ).textContent = index + 1;
+			row.querySelector( '.query-number' ).textContent = String( index + 1 );
 		} );
 	}
 
@@ -334,6 +337,7 @@ class BatchProcessor {
 			if ( response.error ) {
 				throw new Error( response.error.info || mw.msg( 'kzchatbot-testing-batch-unknown-error' ) );
 			}
+
 			return response.kzchatbotsearch;
 		} ).catch( ( error ) => {
 			// Clear current request reference
@@ -368,25 +372,65 @@ class BatchProcessor {
 			row.classList.add( 'error-row' );
 		}
 
-		// Create the sources cell content with numbered links
-		const sourcesHtml = result.docs ?
-			'<ol>' +
-			result.docs.map( ( doc ) => `<li><a href="${ this.escapeHtml( doc.url ) }" target="_blank">${ this.escapeHtml( doc.title ) }</a></li>`
-			).join( '' ) +
-			'</ol>' :
-			'';
+		// Get documents and filtered docs using shared methods
+		const docs = result.docs || [];
+		const filteredDocs = this.getFilteredDocuments( result );
+
+		// Generate HTML for document lists
+		const docsHtml = this.formatDocumentList( docs, true );
+		const filteredDocsHtml = this.formatDocumentList( filteredDocs, true );
 
 		row.innerHTML = `
 			<td>${ result.index }</td>
 			<td>${ this.escapeHtml( result.query ) }</td>
 			<td>${ this.escapeHtml( result.error || result.gpt_result ) }</td>
-			<td>${ sourcesHtml }</td>
-			<td>${ result.error ? '' : this.escapeHtml( result.metadata.gpt_model ) }</td>
-			<td>${ result.error ? '' : this.escapeHtml( result.metadata.gpt_time ) }</td>
-			<td>${ result.error ? '' : this.escapeHtml( result.metadata.tokens ) }</td>
+			<td>${ docsHtml }</td>
+			<td>${ filteredDocsHtml }</td>
 		`;
 
 		this.resultsTableBody.appendChild( row );
+	}
+
+	/**
+	 * Format a list of documents either as HTML or plain text
+	 *
+	 * @param {Array} docs Array of document objects with title and url properties
+	 * @param {boolean} asHtml Whether to return HTML (true) or plain text (false)
+	 * @return {string} Formatted document list
+	 */
+	formatDocumentList( docs, asHtml ) {
+		if ( !docs || docs.length === 0 ) {
+			return '';
+		}
+
+		if ( asHtml ) {
+			return '<ol>' +
+				docs.map( ( doc ) => `<li><a href="${ this.escapeHtml( doc.url ) }" target="_blank">${ this.escapeHtml( doc.title ) }</a></li>`
+				).join( '' ) +
+				'</ol>';
+		} else {
+			// Format as plain text for CSV
+			return docs.map( ( doc, index ) => `${ index + 1 }. ${ doc.title } (${ doc.url })`
+			).join( '\n' );
+		}
+	}
+
+	/**
+	 * Get documents that were filtered out by the backend
+	 *
+	 * @param {Object} result Result object from API
+	 * @return {Array} Array of filtered document objects
+	 */
+	getFilteredDocuments( result ) {
+		let filteredDocs = [];
+		if ( result.docs && result.docs_before_filter ) {
+			// Find documents in docs_before_filter that aren't in docs
+			const docUrls = result.docs.map( ( doc ) => doc.url );
+			filteredDocs = result.docs_before_filter.filter(
+				( doc ) => docUrls.indexOf( doc.url ) === -1
+			);
+		}
+		return filteredDocs;
 	}
 
 	downloadResults() {
@@ -408,28 +452,26 @@ class BatchProcessor {
 			mw.msg( 'kzchatbot-testing-batch-header-query' ),
 			mw.msg( 'kzchatbot-testing-batch-header-response' ),
 			mw.msg( 'kzchatbot-testing-batch-header-documents' ),
-			mw.msg( 'kzchatbot-testing-batch-header-model' ),
-			mw.msg( 'kzchatbot-testing-batch-header-time' ),
-			mw.msg( 'kzchatbot-testing-batch-header-tokens' ),
+			mw.msg( 'kzchatbot-testing-batch-header-filtered-documents' ),
 			mw.msg( 'kzchatbot-testing-batch-header-error' )
 		];
 
 		const rows = [ headers ];
 
 		for ( const result of this.results ) {
-			// Format sources as numbered list in plain text
-			const sources = result.docs ?
-				result.docs.map( ( doc, index ) => `${ index + 1 }. ${ doc.title } (${ doc.url })`
-				).join( '\n' ) :
-				'';
+			// Get documents and filtered docs using the same methods as updateTableRow
+			const docs = result.docs || [];
+			const filteredDocs = this.getFilteredDocuments( result );
+
+			// Format document lists as plain text
+			const docsText = this.formatDocumentList( docs, false );
+			const filteredDocsText = this.formatDocumentList( filteredDocs, false );
 
 			rows.push( [
 				result.query,
 				result.error || result.gpt_result,
-				sources, // Add sources column
-				result.error ? '' : result.metadata.gpt_model,
-				result.error ? '' : result.metadata.gpt_time,
-				result.error ? '' : result.metadata.tokens,
+				docsText,
+				filteredDocsText,
 				result.error || ''
 			].map( ( cell ) => this.escapeCSV( cell ) ) );
 		}

@@ -123,9 +123,7 @@
 				"kzchatbot-testing-batch-header-query",
 				"kzchatbot-testing-batch-header-response",
 				"kzchatbot-testing-batch-header-documents",
-				"kzchatbot-testing-batch-header-model",
-				"kzchatbot-testing-batch-header-time",
-				"kzchatbot-testing-batch-header-tokens",
+				"kzchatbot-testing-batch-header-filtered-documents",
 				"kzchatbot-testing-batch-header-error",
 				"kzchatbot-testing-batch-progress-error",
 				"kzchatbot-testing-batch-network-error",
@@ -135,7 +133,6 @@
 				"kzchatbot-testing-batch-clear-all-confirm",
 				"kzchatbot-testing-batch-placeholder",
 				"kzchatbot-testing-batch-delete-query"
-
 			]
 		}
 	},

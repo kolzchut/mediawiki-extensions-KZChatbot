@@ -109,8 +109,7 @@
 			"dependencies": [
 				"mediawiki.api",
 				"mediawiki.ui.button",
-				"oojs-ui-core",
-				"oojs-ui-windows",
+				"oojs-ui-widgets",
 				"jquery.spinner"
 			],
 			"messages": [
@@ -132,7 +131,14 @@
 				"kzchatbot-testing-batch-clear-all",
 				"kzchatbot-testing-batch-clear-all-confirm",
 				"kzchatbot-testing-batch-placeholder",
-				"kzchatbot-testing-batch-delete-query"
+				"kzchatbot-testing-batch-delete-query",
+				"kzchatbot-testing-batch-rephrase-toggle-label",
+				"kzchatbot-testing-batch-header-number",
+				"kzchatbot-testing-batch-header-rephrase-time",
+				"kzchatbot-testing-batch-header-response-time",
+				"kzchatbot-testing-batch-header-rephrased-question",
+				"kzchatbot-testing-batch-header-original-question"
+
 			]
 		}
 	},

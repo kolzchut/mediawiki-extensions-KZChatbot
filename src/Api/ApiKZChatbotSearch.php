@@ -16,16 +16,21 @@ class ApiKZChatbotSearch extends ApiBase {
 
 		$params = $this->extractRequestParams();
 		$query = $params['query'];
+		$rephrase = isset( $params['rephrase'] ) ? (bool)$params['rephrase'] : false;
 
 		try {
 			$apiUrl = rtrim( $this->getConfig()->get( 'KZChatbotLlmApiUrl' ), '/' );
 			$ch = curl_init( "$apiUrl/search" );
 
-			$postData = json_encode( [
+			$postDataArr = [
 				'query' => $query,
 				// asked_from is now mandatory
 				'asked_from' => 'testing interface'
-			] );
+			];
+			if ( $rephrase ) {
+				$postDataArr['rephrase'] = true;
+			}
+			$postData = json_encode( $postDataArr );
 
 			curl_setopt_array( $ch, [
 				CURLOPT_POST => true,
@@ -72,6 +77,11 @@ class ApiKZChatbotSearch extends ApiBase {
 			'query' => [
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
+			],
+			'rephrase' => [
+				ParamValidator::PARAM_TYPE => 'boolean',
+				ParamValidator::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_DEFAULT => false,
 			],
 		];
 	}

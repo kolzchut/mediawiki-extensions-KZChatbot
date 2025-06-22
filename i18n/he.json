@@ -10,7 +10,7 @@
 	"kzchatbot-toplink-banned-words": "ניהול מילים ודפוסים אסורים »",
 	"kzchatbot-toplink-slugs": "ניהול סלאגים »",
 	"kzchatbot-settings-title": "הגדרות צ'טבוט כל זכות",
-	"kzchatbot-settings-section-throttle": "רמת החשיפה לצ'טבוט",
+	"kzchatbot-settings-section-throttle": "����מת החשיפה לצ'טבוט",
 	"kzchatbot-settings-section-display": "הצגת הצ'טבוט",
 	"kzchatbot-settings-section-general": "הגדרות כלליות",
 	"kzchatbot-settings-section-per-user": "מגבלות למשתמש",
@@ -27,7 +27,7 @@
 	"kzchatbot-settings-help-cookie-expiry-days": "מספר הימים מאז פעילותו האחרונה של משתמש שלאחריו העוגיה תפוג",
 	"kzchatbot-settings-label-uuid-request-limit": "מקסימום הבקשות בשעה למזהה חדש (UUID) מאותו IP",
 	"kzchatbot-settings-help-uuid-request-limit": "על מנת למנוע חלקית ממשתמש למחוק את העוגיה שלו ולעקוף את המגבלות",
-	"kzchatbot-settings-label-question-character-limit": "מקסימום תווים בשאלה",
+	"kzchatbot-settings-label-question-character-limit": "��קסימום תווים בשאלה",
 	"kzchatbot-settings-label-feedback-character-limit": "מקסימום תווים במשוב",
 	"kzchatbot-settings-label-terms-of-service-url": "כתובת URL לתנאי השימוש",
 	"kzchatbot-settings-label-usage-help-url": "כתובת URL לעזרה (טיפים)",
@@ -72,7 +72,7 @@
 	"right-kzchatbot-view-rag-settings": "צפייה בהגדרות ה-RAG של צ'טבוט כל זכות",
 	"action-kzchatbot-view-settings": "לצפות בהגדרות הכלליות של צ'טבוט כל זכות",
 	"action-kzchatbot-view-rag-settings": "לצפות בהגדרות ה-RAG של צ'טבוט כל זכות",
-	"kzchatbot-settings-view-only": "יש לך הרשאת צפייה בלבד בהגדרות אלה. צור קשר עם מנהל המערכת כדי לבצע שינויים.",
+	"kzchatbot-settings-view-only": "יש לך הרשאת צפייה בלבד בהגדרות אלה. צור קשר ��ם מנהל המערכת כדי לבצע שינויים.",
 	"kzchatbot-rag-settings-view-only": "יש לך הרשאת צפייה בלבד בהגדרות ה-RAG. צור קשר עם מנהל המערכת כדי לבצע שינויים.",
 	"group-chatbot-settings-viewer": "צופים בהגדרות צ'טבוט",
 	"group-chatbot-settings-viewer-member": "{{GENDER:$1|צופה בהגדרות צ'טבוט}}",
@@ -104,6 +104,9 @@
 	"kzchatbot-rag-settings-label-banned-fields": "שדות חסומים",
 	"kzchatbot-rag-settings-help-banned-fields": "הזן שדות לסינון, מופרדים בפסיקים",
 
+	"kzchatbot-rag-settings-label-rephrase-prompt": "פרומפט ניסוח מחדש",
+	"kzchatbot-rag-settings-help-rephrase-prompt": "הוראות לניסוח מחדש של שאלת המשתמש לפני שליחתה למודל.",
+
 	"right-kzchatbot-edit-rag-settings": "ניהול הגדרות שרת ה-RAG",
 	"action-kzchatbot-edit-rag-settings": "לנהל את הגדרות שרת ה-RAG",
 
@@ -113,7 +116,7 @@
 	"kzchatbot-rag-settings-error-save": "שגיאה בשמירת ההגדרות.",
 	"kzchatbot-rag-settings-save-success": "ההגדרות נשמרו בהצלחה.",
 	"kzchatbot-rag-settings-error-invalid-response": "תגובה לא תקינה מה-API.",
-	"kzchatbot-rag-settings-error-execution-failed": "הקריאה ל-API של ה-RAG נכשלה.",
+	"kzchatbot-rag-settings-error-execution-failed": "הקריאה ל-API ש�� ה-RAG נכשלה.",
 	"kzchatbot-rag-settings-error-no-change": "לא בוצעו שינויים בהגדרות.",
 
 	"kzchatbot-testing": "צ'טבוט בדיקות",
@@ -164,5 +167,10 @@
 	"kzchatbot-testing-batch-add-query": "הוסף שורת שאילתה",
 	"kzchatbot-testing-batch-initial-query": "השאילתה הראשונה שלך...",
 	"kzchatbot-testing-batch-clear-all": "נקה הכל",
-	"kzchatbot-testing-batch-clear-all-confirm": "האם אתה בטוח שברצונך להסיר את כל השאילתות?"
+	"kzchatbot-testing-batch-clear-all-confirm": "האם אתה בטוח שברצונך להסיר את כל השאילתות?",
+	"kzchatbot-testing-batch-rephrase-toggle-label": "ניסוח מחדש של השאלה",
+	"kzchatbot-testing-batch-header-original-question": "שאלה מקורית",
+	"kzchatbot-testing-batch-header-rephrased-question": "שאלה מנוסחת מחדש",
+	"kzchatbot-testing-batch-header-response-time": "זמן תגובה (שניות)",
+	"kzchatbot-testing-batch-header-rephrase-time": "זמן ניסוח מחדש (שניות)"
 }

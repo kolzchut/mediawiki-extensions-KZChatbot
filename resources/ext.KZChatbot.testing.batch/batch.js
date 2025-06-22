@@ -26,6 +26,23 @@ class BatchProcessor {
 			this.clearAllButton, this.addQueryButton.nextSibling
 		);
 
+		// Add OOUI toggle for rephrase
+		this.rephraseToggle = new OO.ui.ToggleSwitchWidget( {
+			value: false
+		} );
+		this.rephraseToggleLabel = new OO.ui.LabelWidget( {
+			label: mw.msg( 'kzchatbot-testing-batch-rephrase-toggle-label' )
+		} );
+		const $toggleContainer = $( '#rephrase-toggle-container' );
+		$toggleContainer.append( this.rephraseToggle.$element );
+		$toggleContainer.append( this.rephraseToggleLabel.$element );
+		this.isRephrase = false;
+		this.rephraseToggle.on( 'change', ( value ) => {
+			this.isRephrase = value;
+			// Do not update table headers immediately; only update on processQueries()
+		} );
+		this.updateResultsTableHeaders();
+
 		this.isProcessing = false;
 		this.spinnerId = 'kz-chatbot-batch-spinner';
 
@@ -242,10 +259,54 @@ class BatchProcessor {
 		} );
 	}
 
+	updateResultsTableHeaders() {
+		const resultsTable = document.querySelector( '.batch-results-table thead tr' );
+		if ( !resultsTable ) {
+			return;
+		}
+		// Remove all headers
+		while ( resultsTable.firstChild ) {
+			resultsTable.removeChild( resultsTable.firstChild );
+		}
+		const headers = [
+			mw.msg( 'kzchatbot-testing-batch-header-number' )
+		];
+		if ( this.isRephrase ) {
+			headers.push(
+				mw.msg( 'kzchatbot-testing-batch-header-original-question' ),
+				mw.msg( 'kzchatbot-testing-batch-header-rephrased-question' )
+			);
+		} else {
+			headers.push( mw.msg( 'kzchatbot-testing-batch-header-query' ) );
+		}
+		headers.push(
+			mw.msg( 'kzchatbot-testing-batch-header-response' )
+		);
+		if ( this.isRephrase ) {
+			headers.push(
+				mw.msg( 'kzchatbot-testing-batch-header-response-time' ),
+				mw.msg( 'kzchatbot-testing-batch-header-rephrase-time' )
+			);
+		}
+		headers.push(
+			mw.msg( 'kzchatbot-testing-batch-header-documents' ),
+			mw.msg( 'kzchatbot-testing-batch-header-filtered-documents' )
+		);
+		headers.forEach( ( h ) => {
+			const th = document.createElement( 'th' );
+			th.textContent = h;
+			resultsTable.appendChild( th );
+		} );
+	}
+
 	processQueries() {
 		const queries = Array.from( this.queriesBody.children )
 			.map( ( row ) => row.querySelector( '.query-cell' ).textContent.trim() )
 			.filter( ( q ) => q );
+
+		// Set rephrase state for this batch only
+		this.isRephrase = this.rephraseToggle.getValue();
+		this.updateResultsTableHeaders();
 
 		// Clear previous results
 		this.results = [];
@@ -273,13 +334,15 @@ class BatchProcessor {
 				return Promise.reject( new Error( 'cancelled' ) );
 			}
 
-			return this.processQuery( query )
+			this.isRephrase = this.rephraseToggle.getValue();
+			return this.processQuery( query, this.isRephrase )
 				.then( ( result ) => {
 					// Only update results if not cancelled
 					if ( !this.isCancelled ) {
 						this.results.push( Object.assign( {
 							query,
-							index: i + 1
+							index: i + 1,
+							rephrase: this.isRephrase
 						}, result ) );
 						this.updateProgress( i + 1, queries.length );
 						this.updateTableRow( this.results[ this.results.length - 1 ] );
@@ -291,7 +354,8 @@ class BatchProcessor {
 						this.results.push( {
 							query,
 							error: error.message,
-							index: i + 1
+							index: i + 1,
+							rephrase: this.isRephrase
 						} );
 						this.updateTableRow( this.results[ this.results.length - 1 ] );
 						this.progressIndicator.textContent = mw.msg(
@@ -319,30 +383,26 @@ class BatchProcessor {
 			} );
 	}
 
-	processQuery( query ) {
-		// Create new API instance for this request
+	processQuery( query, rephrase ) {
 		const api = new mw.Api();
-		// Store the current request
 		this.currentRequest = api;
-
-		return api.post( {
+		const params = {
 			action: 'kzchatbotsearch',
 			query,
 			format: 'json',
 			token: mw.user.tokens.get( 'csrfToken' )
-		} ).then( ( response ) => {
-			// Clear current request reference
+		};
+		if ( rephrase ) {
+			params.rephrase = true;
+		}
+		return api.post( params ).then( ( response ) => {
 			this.currentRequest = null;
-
 			if ( response.error ) {
 				throw new Error( response.error.info || mw.msg( 'kzchatbot-testing-batch-unknown-error' ) );
 			}
-
 			return response.kzchatbotsearch;
 		} ).catch( ( error ) => {
-			// Clear current request reference
 			this.currentRequest = null;
-
 			throw new Error(
 				error.error ? error.error.info : mw.msg( 'kzchatbot-testing-batch-network-error' )
 			);
@@ -380,13 +440,21 @@ class BatchProcessor {
 		const docsHtml = this.formatDocumentList( docs, true );
 		const filteredDocsHtml = this.formatDocumentList( filteredDocs, true );
 
-		row.innerHTML = `
-			<td>${ result.index }</td>
-			<td>${ this.escapeHtml( result.query ) }</td>
-			<td>${ this.escapeHtml( result.error || result.gpt_result ) }</td>
-			<td>${ docsHtml }</td>
-			<td>${ filteredDocsHtml }</td>
-		`;
+		let html = `<td>${ result.index }</td>`;
+		if ( result.rephrase ) {
+			html += `<td>${ this.escapeHtml( result.original_question || '' ) }</td>`;
+			html += `<td>${ this.escapeHtml( result.rephrased_question || '' ) }</td>`;
+		} else {
+			html += `<td>${ this.escapeHtml( result.query ) }</td>`;
+		}
+		html += `<td>${ this.escapeHtml( result.error || result.gpt_result ) }</td>`;
+		if ( result.rephrase ) {
+			html += `<td>${ this.escapeHtml( result.response_time || '' ) }</td>`;
+			html += `<td>${ this.escapeHtml( result.rephrase_time || '' ) }</td>`;
+		}
+		html += `<td>${ docsHtml }</td>`;
+		html += `<td>${ filteredDocsHtml }</td>`;
+		row.innerHTML = html;
 
 		this.resultsTableBody.appendChild( row );
 	}
@@ -455,7 +523,14 @@ class BatchProcessor {
 			mw.msg( 'kzchatbot-testing-batch-header-filtered-documents' ),
 			mw.msg( 'kzchatbot-testing-batch-header-error' )
 		];
-
+		if ( this.isRephrase ) {
+			headers.splice( 1, 0,
+				mw.msg( 'kzchatbot-testing-batch-header-original-question' ),
+				mw.msg( 'kzchatbot-testing-batch-header-rephrased-question' ),
+				mw.msg( 'kzchatbot-testing-batch-header-response-time' ),
+				mw.msg( 'kzchatbot-testing-batch-header-rephrase-time' )
+			);
+		}
 		const rows = [ headers ];
 
 		for ( const result of this.results ) {
@@ -467,13 +542,13 @@ class BatchProcessor {
 			const docsText = this.formatDocumentList( docs, false );
 			const filteredDocsText = this.formatDocumentList( filteredDocs, false );
 
-			rows.push( [
-				result.query,
-				result.error || result.gpt_result,
-				docsText,
-				filteredDocsText,
-				result.error || ''
-			].map( ( cell ) => this.escapeCSV( cell ) ) );
+			const row = [];
+			if ( result.rephrase ) {
+				row.push( result.query, result.original_question || '', result.rephrased_question || '', result.error || result.gpt_result, result.response_time || '', result.rephrase_time || '', docsText, filteredDocsText, result.error || '' );
+			} else {
+				row.push( result.query, result.error || result.gpt_result, docsText, filteredDocsText, result.error || '' );
+			}
+			rows.push( row.map( ( cell ) => this.escapeCSV( cell ) ) );
 		}
 
 		return rows.join( '\n' );

@@ -106,6 +106,9 @@
 	"kzchatbot-rag-settings-help-banned-fields": "Enter fields to be filtered, separated by commas",
 	"kzchatbot-rag-settings-error-banned-fields-format": "Invalid format for banned fields.",
 
+	"kzchatbot-rag-settings-label-rephrase-prompt": "Rephrase Prompt",
+	"kzchatbot-rag-settings-help-rephrase-prompt": "Instructions for rephrasing the user's question before sending to the model.",
+
 	"right-kzchatbot-edit-rag-settings": "Manage the RAG backend settings",
 	"action-kzchatbot-edit-rag-settings": "manage the RAG backend settings",
 
@@ -164,5 +167,10 @@
 	"kzchatbot-testing-batch-add-query": "Add query row",
 	"kzchatbot-testing-batch-initial-query": "Your first query...",
 	"kzchatbot-testing-batch-clear-all": "Clear All",
-	"kzchatbot-testing-batch-clear-all-confirm": "Are you sure you want to remove all queries?"
+	"kzchatbot-testing-batch-clear-all-confirm": "Are you sure you want to remove all queries?",
+	"kzchatbot-testing-batch-rephrase-toggle-label": "Rephrase question",
+	"kzchatbot-testing-batch-header-original-question": "Original question",
+	"kzchatbot-testing-batch-header-rephrased-question": "Rephrased question",
+	"kzchatbot-testing-batch-header-response-time": "Response time (s)",
+	"kzchatbot-testing-batch-header-rephrase-time": "Rephrase time (s)"
 }

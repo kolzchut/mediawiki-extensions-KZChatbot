@@ -197,6 +197,14 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 				'default' => $this->currentConfig['banned_fields'] ?? '',
 				'validation-callback' => [ $this, 'validateBannedFields' ],
 			],
+			'rephrase_prompt' => [
+				'type' => 'textarea',
+				'rows' => 3,
+				'label-message' => 'kzchatbot-rag-settings-label-rephrase-prompt',
+				'help-message' => 'kzchatbot-rag-settings-help-rephrase-prompt',
+				'default' => $this->currentConfig['rephrase_prompt'] ?? '',
+				'required' => false,
+			],
 		];
 
 		// If user only has view permission, make all fields disabled
@@ -222,6 +230,7 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 			'system_prompt' => trim( $config['system_prompt'] ?? '' ),
 			'user_prompt' => trim( $config['user_prompt'] ?? '' ),
 			'banned_fields' => trim( $config['banned_fields'] ?? '' ),
+			'rephrase_prompt' => trim( $config['rephrase_prompt'] ?? '' ),
 			'version' => $config['version'] ?? '',
 		];
 	}

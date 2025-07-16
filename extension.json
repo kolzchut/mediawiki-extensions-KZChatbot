@@ -92,8 +92,14 @@
 			"es6": true,
 			"localBasePath": "resources/ext.KZChatbot.bot",
 			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.bot",
-			"scripts": "index.js",
-			"styles": "index.css"
+			"scripts": "index.js"
+		},
+		"ext.KZChatbot.bot.styles": {
+			"localBasePath": "resources/ext.KZChatbot.bot",
+			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.bot",
+			"styles": [
+				"overrides.less"
+			]
 		},
 		"ext.KZChatbot.testing.styles": {
 			"styles": [

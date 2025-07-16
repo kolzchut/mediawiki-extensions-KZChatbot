@@ -1,0 +1,27 @@
+// This file handles Kol-Zchut overrides for the chatbot styles.
+
+// Put the chatbot window below the navbar
+body.mediawiki .chatbot-popover-content {
+	height: ~'calc( 100vh - 64px )';
+	margin-top: 64px;
+}
+
+// Main page overrides
+body.article-type-mainpage {
+	#chat-section {
+		margin-top: 30px;
+	}
+
+	.jumbotron {
+		height: 540px;
+	}
+
+	@media (max-width: 767px) {
+		#chat-button {
+			display: none;
+		}
+	}
+
+}
+
+

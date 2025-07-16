@@ -1,5 +1,5 @@
 const initializeChatbot = () => {
-	const scriptVersion = 25;
+	const scriptVersion = 26;
 	const cookieName = 'kzchatbot-uuid';
 	const cookie = mw.cookie.get( cookieName );
 	const uuid = cookie !== null ? cookie : '';
@@ -86,6 +86,7 @@ const initializeChatbot = () => {
 			// Launch React app
 			$.ajaxSetup( { cache: true } );
 			$.getScript( `${ extensionCodePath }/index.js?${ scriptVersion }` );
+			mw.loader.load( 'ext.KZChatbot.bot.styles' );
 		}
 	} );
 };

@@ -27,6 +27,21 @@ The RAG API should be protected through other means, such as IP whitelisting or 
 2. Run `npm run build` to rebuild the React code
 3. After any changes to React code, increment the version number in `resources/ext.KZChatbot.launcher/kzChatbotLauncher.js`
 
+### Mock RAG Server for Local Testing
+A simple mock RAG backend is provided for local development in `tests/mock_rag_server.php`.
+#### How to Use
+1. Open a terminal in the `extensions/KZChatbot/tests/` directory.
+2. Start the PHP built-in server:
+   ```bash
+   php -S localhost:5000 mock_rag_server.php
+   ```
+3. In your LocalSettings.php, set the API URL to point to the mock server:
+   ```php
+   $wgKZChatbotLlmApiUrl = 'http://localhost:5000';
+   ```
+4. The extension will now use the mock server for /search and /rating endpoints, returning random answers and conversation IDs.
+
+
 ## Configuration
 
 ### LocalSettings Settings
@@ -162,3 +177,4 @@ $wgGroupPermissions['sysop']['kzchatbot-edit-settings'] = true;
 - Consider caching in memory the count of active users to avoid querying the database on every request
 - What is kzchatbot_users.kzcbu_ranking_eligible_answer_id?
 - Implement UUID request limit functionality
+

@@ -36,7 +36,9 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 		'gpt-4o' => 'gpt-4o',
 		'gpt-4.5-preview' => 'gpt-4.5-preview-2025-02-27',
 		'gpt-o1' => 'o1-2024-12-17',
-		'gpt-o3-mini' => 'o3-mini-2025-01-31'
+		'gpt-o3-mini' => 'o3-mini-2025-01-31',
+		'gemini-2.5-flash' => 'gemini-2.5-flash',
+		'gemini-2.5-pro' => 'gemini-2.5-pro'
 	];
 
 	/** Available temperature values */

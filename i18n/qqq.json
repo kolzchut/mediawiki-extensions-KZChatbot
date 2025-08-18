@@ -28,5 +28,8 @@
 	"kzchatbot-rag-settings-help-banned-fields": "Help text explaining the banned fields input. Describes that users should enter comma-separated field names to be excluded from processing",
 
 	"kzchatbot-testing-models-version-label": "Label for displaying the current models version information in the testing interface",
-	"kzchatbot-testing-models-error-unknown": "Error message displayed when the model version information cannot be retrieved"
+	"kzchatbot-testing-models-error-unknown": "Error message displayed when the model version information cannot be retrieved",
+	
+	"kzchatbot-rag-settings-error-metadata-failed": "Error message displayed when the RAG backend's /get_config_metadata endpoint fails or is unreachable",
+	"kzchatbot-rag-settings-error-metadata-invalid": "Error message displayed when the RAG backend's /get_config_metadata endpoint returns invalid or malformed metadata"
 }

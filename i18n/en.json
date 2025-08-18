@@ -119,6 +119,8 @@
 	"kzchatbot-rag-settings-error-invalid-response": "Invalid response from the API.",
 	"kzchatbot-rag-settings-error-execution-failed": "RAG API request failed.",
 	"kzchatbot-rag-settings-error-no-change": "No changes were made.",
+	"kzchatbot-rag-settings-error-metadata-failed": "Failed to retrieve configuration metadata from RAG backend.",
+	"kzchatbot-rag-settings-error-metadata-invalid": "Invalid configuration metadata received from RAG backend.",
 
 	"kzchatbot-testing": "KZ Chatbot Testing",
 	"kzchatbot-testing-title": "KZ Chatbot Testing Interface",

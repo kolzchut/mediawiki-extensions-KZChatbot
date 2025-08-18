@@ -429,4 +429,13 @@ class KZChatbot {
 
 		return $status;
 	}
+
+	/**
+	 * Get RAG configuration metadata
+	 *
+	 * @return Status Status object with the config metadata or error
+	 */
+	public static function getConfigMetadata(): Status {
+		return self::makeRagApiRequest( 'get_config_metadata' );
+	}
 }

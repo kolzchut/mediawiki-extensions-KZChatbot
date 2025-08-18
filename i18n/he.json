@@ -118,6 +118,8 @@
 	"kzchatbot-rag-settings-error-invalid-response": "תגובה לא תקינה מה-API.",
 	"kzchatbot-rag-settings-error-execution-failed": "הקריאה ל-API של ה-RAG נכשלה.",
 	"kzchatbot-rag-settings-error-no-change": "לא בוצעו שינויים בהגדרות.",
+	"kzchatbot-rag-settings-error-metadata-failed": "נכשל באחזור מטא-דאטת ההגדרות מהשרת ה-RAG.",
+	"kzchatbot-rag-settings-error-metadata-invalid": "התקבלה מטא-דאטת הגדרות לא תקינה מהשרת ה-RAG.",
 
 	"kzchatbot-testing": "צ'טבוט בדיקות",
 	"kzchatbot-testing-title": "ממשק בדיקות צ'טבוט",

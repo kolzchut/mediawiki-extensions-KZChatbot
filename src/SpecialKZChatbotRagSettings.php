@@ -29,30 +29,9 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 	/** @var array|null */
 	private ?array $currentConfig = null;
 
-	/** Available LLM models */
-	private const AVAILABLE_MODELS = [
-		'gpt-3.5-turbo' => 'gpt-3.5-turbo',
-		'gpt-4o-mini' => 'gpt-4o-mini',
-		'gpt-4o' => 'gpt-4o',
-		'gpt-4.5-preview' => 'gpt-4.5-preview-2025-02-27',
-		'gpt-o1' => 'o1-2024-12-17',
-		'gpt-o3-mini' => 'o3-mini-2025-01-31',
-		'gemini-2.5-flash' => 'gemini-2.5-flash',
-		'gemini-2.5-pro' => 'gemini-2.5-pro'
-	];
+	/** @var array|null */
+	private ?array $configMetadata = null;
 
-	/** Available temperature values */
-	private const AVAILABLE_TEMPERATURES = [
-		'0.1' => 0.1,
-		'0.2' => 0.2,
-		'0.3' => 0.3,
-		'0.4' => 0.4,
-		'0.5' => 0.5,
-		'0.6' => 0.6,
-		'0.7' => 0.7,
-		'0.8' => 0.8,
-		'0.9' => 0.9
-	];
 
 	public function __construct() {
 		parent::__construct( 'KZChatbotRagSettings' );
@@ -76,13 +55,25 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 			throw new PermissionsError( 'kzchatbot-view-rag-settings' );
 		}
 
-		// Fetch current config before displaying the form
+		// Fetch current config and metadata before displaying the form
 		$configStatus = KZChatbot::getRagConfig();
 		if ( !$configStatus->isOK() ) {
 			$errors = $configStatus->getErrors();
-			throw new ErrorPageError( 'kzchatbot-rag-settings-error', $errors ? $errors[0] : '' );
+			$errorMsg = $errors ? $errors[0]['message'] : 'kzchatbot-rag-settings-error-api-unreachable';
+			throw new ErrorPageError( 'kzchatbot-rag-settings-error', $errorMsg );
 		}
 		$this->currentConfig = $configStatus->getValue();
+
+		$metadataStatus = KZChatbot::getConfigMetadata();
+		if ( !$metadataStatus->isOK() ) {
+			$errors = $metadataStatus->getErrors();
+			$errorMsg = $errors ? $errors[0]['message'] : 'kzchatbot-rag-settings-error-metadata-failed';
+			throw new ErrorPageError( 'kzchatbot-rag-settings-error', $errorMsg );
+		}
+		$this->configMetadata = $metadataStatus->getValue();
+		if ( !$this->validateMetadataStructure() ) {
+			throw new ErrorPageError( 'kzchatbot-rag-settings-error', 'kzchatbot-rag-settings-error-metadata-invalid' );
+		}
 
 		// Show view-only notice if user can't edit
 		if ( !$this->isAllowedEdit ) {
@@ -136,52 +127,125 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 	}
 
 	/**
+	 * Validate metadata structure
+	 * @return bool
+	 */
+	private function validateMetadataStructure(): bool {
+		if ( !$this->configMetadata || !is_array( $this->configMetadata ) ) {
+			return false;
+		}
+
+		$required = [ 'available_models', 'temperature_options', 'num_of_pages_options', 'config_field_types' ];
+		foreach ( $required as $field ) {
+			if ( !isset( $this->configMetadata[$field] ) || !is_array( $this->configMetadata[$field] ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Build MediaWiki HTMLForm hide-if condition for models that don't support temperature
+	 * 
+	 * Creates a conditional expression that will hide the temperature field when
+	 * models that don't support temperature are selected. Uses MediaWiki's native
+	 * hide-if functionality for real-time client-side field visibility.
+	 * 
+	 * @return array|null MediaWiki hide-if condition array, or null if no models lack temperature support
+	 */
+	private function buildTemperatureHideCondition(): ?array {
+		$modelsWithoutTemperature = [];
+		
+		// Collect models that don't support temperature (like o1, o3-mini models)
+		foreach ( $this->configMetadata['available_models'] as $modelName => $modelInfo ) {
+			if ( !( $modelInfo['supports_temperature'] ?? true ) ) {
+				$modelsWithoutTemperature[] = $modelName;
+			}
+		}
+		
+		if ( empty( $modelsWithoutTemperature ) ) {
+			return null; // All models support temperature, no hiding needed
+		}
+		
+		if ( count( $modelsWithoutTemperature ) === 1 ) {
+			// Single condition: hide if model === 'specific-model'
+			return [ '===', 'model', $modelsWithoutTemperature[0] ];
+		}
+		
+		// Multiple conditions: hide if model === 'model1' OR model === 'model2' OR ...
+		// MediaWiki expects: [ 'OR', condition1, condition2, ... ]
+		$hideConditions = [];
+		foreach ( $modelsWithoutTemperature as $model ) {
+			$hideConditions[] = [ '===', 'model', $model ];
+		}
+		
+		return array_merge( [ 'OR' ], $hideConditions );
+	}
+
+	/**
 	 * @return array Form fields configuration
 	 */
 	protected function getFormFields(): array {
+		$availableModels = array_combine(
+			array_keys( $this->configMetadata['available_models'] ),
+			array_keys( $this->configMetadata['available_models'] )
+		);
+
+		$temperatureOptions = array_combine(
+			array_map( static function ( $val ) {
+				return (string)$val;
+			}, $this->configMetadata['temperature_options'] ),
+			$this->configMetadata['temperature_options']
+		);
+
+		$numPagesOptions = array_combine(
+			array_map( static function ( $val ) {
+				return (string)$val;
+			}, $this->configMetadata['num_of_pages_options'] ),
+			$this->configMetadata['num_of_pages_options']
+		);
+
+		// Get hide condition for temperature field based on model selection
+		$temperatureHideCondition = $this->buildTemperatureHideCondition();
+
 		$fields = [
 			'version' => [
 				'type' => 'text',
 				'readonly' => true,
 				'label-message' => 'kzchatbot-rag-settings-label-version',
-				'default' => $this->currentConfig['version'],
+				'default' => $this->currentConfig['version'] ?? '',
 			],
 			'model' => [
 				'type' => 'select',
 				'label-message' => 'kzchatbot-rag-settings-label-model',
 				'help-message' => 'kzchatbot-rag-settings-help-model',
-				'options' => self::AVAILABLE_MODELS,
-				'default' => $this->currentConfig['model'],
+				'options' => $availableModels,
+				'default' => $this->currentConfig['model'] ?? '',
 				'required' => true,
 			],
 			'num_of_pages' => [
-				'type' => 'int',
+				'type' => 'select',
 				'label-message' => 'kzchatbot-rag-settings-label-num-of-pages',
 				'help-message' => 'kzchatbot-rag-settings-help-num-of-pages',
-				'min' => 1,
-				'max' => 5,
-				'default' => $this->currentConfig['num_of_pages'],
+				'options' => $numPagesOptions,
+				'default' => $this->currentConfig['num_of_pages'] ?? 1,
 				'required' => true,
 			],
 			'temperature' => [
 				'type' => 'select',
 				'label-message' => 'kzchatbot-rag-settings-label-temperature',
 				'help-message' => 'kzchatbot-rag-settings-help-temperature',
-				'options' => array_combine(
-					array_map( static function ( $val ) {
-						return (string)$val;
-					}, self::AVAILABLE_TEMPERATURES ),
-					self::AVAILABLE_TEMPERATURES
-				),
-				'default' => $this->currentConfig['temperature'],
-				'required' => true
+				'options' => $temperatureOptions,
+				'default' => $this->currentConfig['temperature'] ?? 0.7,
+				'required' => false,
 			],
 			'system_prompt' => [
 				'type' => 'textarea',
 				'rows' => 3,
 				'label-message' => 'kzchatbot-rag-settings-label-system-prompt',
 				'help-message' => 'kzchatbot-rag-settings-help-system-prompt',
-				'default' => $this->currentConfig['system_prompt'],
+				'default' => $this->currentConfig['system_prompt'] ?? '',
 				'required' => true,
 			],
 			'user_prompt' => [
@@ -189,7 +253,7 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 				'rows' => 3,
 				'label-message' => 'kzchatbot-rag-settings-label-user-prompt',
 				'help-message' => 'kzchatbot-rag-settings-help-user-prompt',
-				'default' => $this->currentConfig['user_prompt'],
+				'default' => $this->currentConfig['user_prompt'] ?? '',
 				'required' => true,
 			],
 			'banned_fields' => [
@@ -208,6 +272,11 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 				'required' => false,
 			],
 		];
+
+		// Add conditional hiding for temperature field if some models don't support it
+		if ( $temperatureHideCondition !== null ) {
+			$fields['temperature']['hide-if'] = $temperatureHideCondition;
+		}
 
 		// If user only has view permission, make all fields disabled
 		if ( !$this->isAllowedEdit ) {

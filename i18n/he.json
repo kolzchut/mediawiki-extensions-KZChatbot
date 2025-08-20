@@ -176,5 +176,7 @@
 	"kzchatbot-testing-batch-header-original-question": "שאלה מקורית",
 	"kzchatbot-testing-batch-header-rephrased-question": "שאלה מנוסחת מחדש",
 	"kzchatbot-testing-batch-header-response-time": "זמן תגובה (שניות)",
-	"kzchatbot-testing-batch-header-rephrase-time": "זמן ניסוח מחדש (שניות)"
+	"kzchatbot-testing-batch-header-rephrase-time": "זמן ניסוח מחדש (שניות)",
+	"kzchatbot-testing-nav-to-rag-settings": "הגדרות RAG",
+	"kzchatbot-rag-settings-nav-to-testing": "ממשק בדיקות"
 }

@@ -32,7 +32,6 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 	/** @var array|null */
 	private ?array $configMetadata = null;
 
-
 	public function __construct() {
 		parent::__construct( 'KZChatbotRagSettings' );
 		$this->config = MediaWikiServices::getInstance()->getMainConfig();
@@ -74,6 +73,15 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 		if ( !$this->validateMetadataStructure() ) {
 			throw new ErrorPageError( 'kzchatbot-rag-settings-error', 'kzchatbot-rag-settings-error-metadata-invalid' );
 		}
+
+		// Add navigation link to Testing Interface
+		$testingTitle = self::getSafeTitleFor( 'KZChatbotTesting' );
+		$linkRenderer = $this->getLinkRenderer();
+		$testingLink = $linkRenderer->makeLink(
+			$testingTitle,
+			$this->msg( 'kzchatbot-rag-settings-nav-to-testing' )->text()
+		);
+		$this->getOutput()->addSubtitle( $testingLink );
 
 		// Show view-only notice if user can't edit
 		if ( !$this->isAllowedEdit ) {
@@ -147,39 +155,40 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 
 	/**
 	 * Build MediaWiki HTMLForm hide-if condition for models that don't support temperature
-	 * 
+	 *
 	 * Creates a conditional expression that will hide the temperature field when
 	 * models that don't support temperature are selected. Uses MediaWiki's native
 	 * hide-if functionality for real-time client-side field visibility.
-	 * 
+	 *
 	 * @return array|null MediaWiki hide-if condition array, or null if no models lack temperature support
 	 */
 	private function buildTemperatureHideCondition(): ?array {
 		$modelsWithoutTemperature = [];
-		
+
 		// Collect models that don't support temperature (like o1, o3-mini models)
 		foreach ( $this->configMetadata['available_models'] as $modelName => $modelInfo ) {
 			if ( !( $modelInfo['supports_temperature'] ?? true ) ) {
 				$modelsWithoutTemperature[] = $modelName;
 			}
 		}
-		
+
 		if ( empty( $modelsWithoutTemperature ) ) {
-			return null; // All models support temperature, no hiding needed
+			// All models support temperature, no hiding needed
+			return null;
 		}
-		
+
 		if ( count( $modelsWithoutTemperature ) === 1 ) {
 			// Single condition: hide if model === 'specific-model'
 			return [ '===', 'model', $modelsWithoutTemperature[0] ];
 		}
-		
+
 		// Multiple conditions: hide if model === 'model1' OR model === 'model2' OR ...
 		// MediaWiki expects: [ 'OR', condition1, condition2, ... ]
 		$hideConditions = [];
 		foreach ( $modelsWithoutTemperature as $model ) {
 			$hideConditions[] = [ '===', 'model', $model ];
 		}
-		
+
 		return array_merge( [ 'OR' ], $hideConditions );
 	}
 

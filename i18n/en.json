@@ -176,5 +176,7 @@
 	"kzchatbot-testing-batch-header-original-question": "Original question",
 	"kzchatbot-testing-batch-header-rephrased-question": "Rephrased question",
 	"kzchatbot-testing-batch-header-response-time": "Response time (s)",
-	"kzchatbot-testing-batch-header-rephrase-time": "Rephrase time (s)"
+	"kzchatbot-testing-batch-header-rephrase-time": "Rephrase time (s)",
+	"kzchatbot-testing-nav-to-rag-settings": "RAG Settings",
+	"kzchatbot-rag-settings-nav-to-testing": "Testing Interface"
 }

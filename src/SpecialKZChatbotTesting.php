@@ -21,6 +21,15 @@ class SpecialKZChatbotTesting extends SpecialPage {
 		$this->getOutput()->addModuleStyles( 'ext.KZChatbot.testing.styles' );
 		$this->getOutput()->addModules( 'ext.KZChatbot.testing.batch' );
 
+		// Add navigation link to RAG Settings
+		$ragSettingsTitle = SpecialPage::getTitleFor( 'KZChatbotRagSettings' );
+		$linkRenderer = $this->getLinkRenderer();
+		$ragSettingsLink = $linkRenderer->makeLink( 
+			$ragSettingsTitle,
+			$this->msg( 'kzchatbot-testing-nav-to-rag-settings' )->text()
+		);
+		$this->getOutput()->addSubtitle( $ragSettingsLink );
+
 		// Fetch model information from the RAG backend
 		$modelsVersionStatus = KZChatbot::getModelsVersion();
 		$modelsVersion = '';

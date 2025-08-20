@@ -35,6 +35,21 @@ class SpecialKZChatbotTesting extends SpecialPage {
 				$this->msg( 'kzchatbot-testing-models-error-unknown' )->text();
 		}
 
+		// Fetch current RAG configuration to get the current model
+		$ragConfigStatus = KZChatbot::getRagConfig();
+		$currentModel = '';
+		$currentModelError = '';
+
+		if ( $ragConfigStatus->isOK() ) {
+			$config = $ragConfigStatus->getValue();
+			$currentModel = $config['model'] ?? '';
+		} else {
+			$errors = $ragConfigStatus->getErrors();
+			$currentModelError = $errors ?
+				$this->msg( $errors[0] )->text() :
+				$this->msg( 'kzchatbot-testing-current-model-error-unknown' )->text();
+		}
+
 		$templateData = [
 			'batchTitle' => $this->msg( 'kzchatbot-testing-batch-title' )->text(),
 			'inputLabel' => $this->msg( 'kzchatbot-testing-batch-input-label' )->text(),
@@ -57,6 +72,10 @@ class SpecialKZChatbotTesting extends SpecialPage {
 			'modelsVersion' => $modelsVersion,
 			'modelsError' => $modelsError,
 			'hasModelsError' => !empty( $modelsError ),
+			'currentModelLabel' => $this->msg( 'kzchatbot-testing-current-model-label' )->text(),
+			'currentModel' => $currentModel,
+			'currentModelError' => $currentModelError,
+			'hasCurrentModelError' => !empty( $currentModelError ),
 		];
 
 		$this->getOutput()->addHTML(

@@ -126,6 +126,8 @@
 	"kzchatbot-testing-document-ids": "מזהי מסמכים",
 	"kzchatbot-testing-retrieval-time": "זמן אחזור",
 	"kzchatbot-testing-tokens": "כמות טוקנים",
+	"kzchatbot-testing-current-model-label": "מודל נוכחי",
+	"kzchatbot-testing-current-model-error-unknown": "לא ניתן לאחזר מידע על המודל הנוכחי",
 	"kzchatbot-testing-models-version-label": "גרסת המודלים",
 	"kzchatbot-testing-models-error-unknown": "לא ניתן לאחזר מידע על גרסת המודל",
 

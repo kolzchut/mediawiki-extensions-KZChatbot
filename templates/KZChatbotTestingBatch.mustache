@@ -1,5 +1,14 @@
 <div class="kz-chatbot-batch">
 	<div class="kz-chatbot-model-info">
+		<div class="kz-chatbot-current-model">
+			<span class="kz-chatbot-current-model-label">{{currentModelLabel}}:</span>
+			{{#hasCurrentModelError}}
+				<span class="kz-chatbot-current-model-error">{{currentModelError}}</span>
+			{{/hasCurrentModelError}}
+			{{^hasCurrentModelError}}
+				<span class="kz-chatbot-current-model-value">{{currentModel}}</span>
+			{{/hasCurrentModelError}}
+		</div>
 		<div class="kz-chatbot-model-version">
 			<span class="kz-chatbot-model-version-label">{{modelsVersionLabel}}:</span>
 			{{#hasModelsError}}

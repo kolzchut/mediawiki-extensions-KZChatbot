@@ -127,6 +127,8 @@
 	"kzchatbot-testing-document-ids": "Document IDs",
 	"kzchatbot-testing-retrieval-time": "Retrieval Time",
 	"kzchatbot-testing-tokens": "Token Count",
+	"kzchatbot-testing-current-model-label": "Current Model",
+	"kzchatbot-testing-current-model-error-unknown": "Unable to retrieve current model information",
 	"kzchatbot-testing-models-version-label": "Models Version",
 	"kzchatbot-testing-models-error-unknown": "Unable to retrieve model version information",
 	"apihelp-kzchatbotsearch-summary": "Perform a chatbot search query",

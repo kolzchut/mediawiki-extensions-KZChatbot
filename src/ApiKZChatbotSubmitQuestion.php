@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use MediaWiki\Extension\ChatbotRagContent\ChatbotRagContent;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\HttpException;
@@ -60,6 +61,10 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		return $answer;
 	}
 
+	/**
+	 * @throws HttpException
+	 * @throws \MWException
+	 */
 	private function generateAnswer() {
 		$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'KZChatbot' );
 		$question = $this->question;
@@ -67,16 +72,22 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		KZChatbot::useQuestion( $uuid );
 		$apiUrl = $config->get( 'KZChatbotLlmApiUrl' ) . '/search';
 		$client = new \GuzzleHttp\Client();
+		$params = [
+			'query' => $question,
+			'asked_from' => strval( $this->referrer )
+		];
+
+		$relevantPageId = $this->getRelevantPageId();
+		if ( $relevantPageId !== null ) {
+			$params['add_page'] = $relevantPageId;
+		}
+
 		try {
 			$result = $client->post( $apiUrl, [
 				'headers' => [
 					'X-FORWARDED-FOR' => RequestContext::getMain()->getRequest()->getIP(),
 				],
-				'json' => [
-					'query' => $question,
-					'asked_from' => strval( $this->referrer )
-
-				]
+				'json' => $params
 			] );
 		} catch ( \GuzzleHttp\Exception\GuzzleException $e ) {
 			wfDebugLog( 'KZChatbot', 'RAG backend request failed (' . $e->getCode() . '): ' . $e->getMessage() );
@@ -149,5 +160,30 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		if ( KZChatbot::getQuestionsPermitted( $uuid ) <= 0 ) {
 			throw new HttpException( Slugs::getSlug( 'questions_daily_limit' ), 429 );
 		}
+	}
+
+	/**
+	 * Check if referrer contains a page ID and if it's relevant for RAG content
+	 * @return int|null Page ID if relevant, null otherwise
+	 */
+	private function getRelevantPageId(): ?int {
+		if ( !\ExtensionRegistry::getInstance()->isLoaded( 'ChatbotRagContent' ) ) {
+			return null;
+		}
+
+		$pageId = null;
+		$title = null;
+
+		// Check if referrer is a page ID
+		if ( is_numeric( $this->referrer ) && (int)$this->referrer > 0 ) {
+			$pageId = (int)$this->referrer;
+			$title = \Title::newFromID( $pageId );
+		}
+
+		if ( $title && ChatbotRagContent::isRelevantTitle( $title ) ) {
+			return $pageId;
+		}
+
+		return null;
 	}
 }

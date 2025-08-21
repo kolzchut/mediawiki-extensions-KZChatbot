@@ -85,13 +85,13 @@ These settings can be configured through `Special:KZChatbotSettings`:
 | Terms of Service URL | URL    | -       | Link to terms of service    |
 
 ### RAG Settings
-These settings are stored in the RAG database and configured through `Special:KZChatbotRagTesting`:
+These settings are stored in the RAG database and configured through `Special:KZChatbotRagSettings`:
 
 | Setting         | Values                             | Description                          |
 |-----------------|------------------------------------|--------------------------------------|
-| Model           | gpt-4o, gpt-4o-mini, gpt-3.5-turbo | LLM model selection                  |
-| Number of Pages | Integer                            | Number of articles for RAG algorithm |
-| Temperature     | 0.1-0.9                            | LLM creativity level ([more info])   |
+| Model           | Dynamic (fetched from backend)     | LLM model selection                  |
+| Number of Pages | Dynamic (fetched from backend)     | Number of articles for RAG algorithm |
+| Temperature     | Dynamic (fetched from backend)     | LLM creativity level ([more info]) - hidden for models that don't support it |
 | System Prompt   | String                             | Base LLM prompt                      |
 | User Prompt     | String                             | Additional user-specific prompt      |
 | Banned Fields   | -                                  | (Currently unused)                   |

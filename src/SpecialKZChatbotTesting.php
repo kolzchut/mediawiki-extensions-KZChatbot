@@ -70,6 +70,7 @@ class SpecialKZChatbotTesting extends SpecialPage {
 			'totalQueriesLabel' => $this->msg( 'kzchatbot-testing-batch-total-queries' )->text(),
 			'numberColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-number' )->text(),
 			'queryColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-query' )->text(),
+			'contextPageColumnHeader' => $this->msg( 'kzchatbot-testing-batch-context-page-header' )->text(),
 			'responseColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-response' )->text(),
 			'documentsColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-documents' )->text(),
 			'filteredDocsColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-filtered-documents' )->text(),
@@ -85,6 +86,10 @@ class SpecialKZChatbotTesting extends SpecialPage {
 			'currentModel' => $currentModel,
 			'currentModelError' => $currentModelError,
 			'hasCurrentModelError' => !empty( $currentModelError ),
+			'optionsLegend' => $this->msg( 'kzchatbot-testing-batch-options-legend' )->text(),
+			'rephraseLabel' => $this->msg( 'kzchatbot-testing-batch-rephrase-toggle-label' )->text(),
+			'includeDebugDataLabel' => $this->msg( 'kzchatbot-testing-batch-include-debug-data-toggle-label' )->text(),
+			'sendCompletePagesLabel' => $this->msg( 'kzchatbot-testing-batch-send-complete-pages-to-llm-toggle-label' )->text(),
 		];
 
 		$this->getOutput()->addHTML(

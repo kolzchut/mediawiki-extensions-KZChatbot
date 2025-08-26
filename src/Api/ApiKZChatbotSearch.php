@@ -17,6 +17,9 @@ class ApiKZChatbotSearch extends ApiBase {
 		$params = $this->extractRequestParams();
 		$query = $params['query'];
 		$rephrase = isset( $params['rephrase'] ) ? (bool)$params['rephrase'] : false;
+		$includeDebugData = isset( $params['include_debug_data'] ) ? (bool)$params['include_debug_data'] : true;
+		$sendCompletePagesToLlm = isset( $params['send_complete_pages_to_llm'] ) ? (bool)$params['send_complete_pages_to_llm'] : false;
+		$contextPageTitle = isset( $params['context_page_title'] ) ? trim( $params['context_page_title'] ) : '';
 
 		try {
 			$apiUrl = rtrim( $this->getConfig()->get( 'KZChatbotLlmApiUrl' ), '/' );
@@ -29,6 +32,24 @@ class ApiKZChatbotSearch extends ApiBase {
 			];
 			if ( $rephrase ) {
 				$postDataArr['rephrase'] = true;
+			}
+			$postDataArr['include_debug_data'] = $includeDebugData;
+			$postDataArr['send_complete_pages_to_llm'] = $sendCompletePagesToLlm;
+			
+			// Convert context page title to page ID if provided
+			if ( $contextPageTitle ) {
+				$title = \Title::newFromText( $contextPageTitle );
+				if ( $title && $title->exists() ) {
+					// Resolve redirects to get the target page ID
+					if ( $title->isRedirect() ) {
+						$wikipage = \WikiPage::factory( $title );
+						$redirectTarget = $wikipage->getRedirectTarget();
+						if ( $redirectTarget ) {
+							$title = $redirectTarget;
+						}
+					}
+					$postDataArr['page_id'] = strval( $title->getArticleID() );
+				}
 			}
 			$postData = json_encode( $postDataArr );
 
@@ -82,6 +103,20 @@ class ApiKZChatbotSearch extends ApiBase {
 				ParamValidator::PARAM_TYPE => 'boolean',
 				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_DEFAULT => false,
+			],
+			'include_debug_data' => [
+				ParamValidator::PARAM_TYPE => 'boolean',
+				ParamValidator::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_DEFAULT => true,
+			],
+			'send_complete_pages_to_llm' => [
+				ParamValidator::PARAM_TYPE => 'boolean',
+				ParamValidator::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_DEFAULT => false,
+			],
+			'context_page_title' => [
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => false,
 			],
 		];
 	}

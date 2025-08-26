@@ -115,7 +115,9 @@
 			"dependencies": [
 				"mediawiki.api",
 				"mediawiki.ui.button",
+				"mediawiki.widgets",
 				"oojs-ui-widgets",
+				"oojs-ui-windows",
 				"jquery.spinner"
 			],
 			"messages": [
@@ -143,7 +145,13 @@
 				"kzchatbot-testing-batch-header-rephrase-time",
 				"kzchatbot-testing-batch-header-response-time",
 				"kzchatbot-testing-batch-header-rephrased-question",
-				"kzchatbot-testing-batch-header-original-question"
+				"kzchatbot-testing-batch-header-original-question",
+				"kzchatbot-testing-batch-header-debug",
+				"kzchatbot-testing-batch-debug-dialog-title",
+				"kzchatbot-testing-batch-debug-copy-button",
+				"kzchatbot-testing-batch-debug-close-button",
+				"kzchatbot-testing-batch-debug-button-title",
+				"kzchatbot-testing-batch-context-page-placeholder"
 
 			]
 		}

@@ -27,6 +27,7 @@
 			<tr>
 				<th class="query-number">#</th>
 				<th>{{queryColumnHeader}}</th>
+				<th>{{contextPageColumnHeader}}</th>
 				<th class="query-actions"></th>
 			</tr>
 			</thead>
@@ -34,6 +35,7 @@
 			<tr class="query-row">
 				<td class="query-number">1</td>
 				<td><div class="query-cell" contenteditable="true" placeholder="{{inputPlaceholder}}"></div></td>
+				<td><div class="context-page-widget"></div></td>
 				<td class="query-actions">
 					<button class="query-delete mw-ui-button mw-ui-destructive" title="{{deleteQueryLabel}}">×</button>
 				</td>
@@ -44,7 +46,23 @@
 	</div>
 
 	<div class="kz-chatbot-batch-controls">
-		<div id="rephrase-toggle-container" style="display:inline-block; margin-right:1em;"></div>
+		<fieldset class="kz-chatbot-options">
+			<legend>{{optionsLegend}}</legend>
+			<div class="kz-chatbot-toggles">
+				<div class="toggle-row">
+					<input type="checkbox" id="rephrase-checkbox" />
+					<label for="rephrase-checkbox">{{rephraseLabel}}</label>
+				</div>
+				<div class="toggle-row">
+					<input type="checkbox" id="include-debug-data-checkbox" />
+					<label for="include-debug-data-checkbox">{{includeDebugDataLabel}}</label>
+				</div>
+				<div class="toggle-row">
+					<input type="checkbox" id="send-complete-pages-checkbox" />
+					<label for="send-complete-pages-checkbox">{{sendCompletePagesLabel}}</label>
+				</div>
+			</div>
+		</fieldset>
 		<button id="batch-process" class="mw-ui-button mw-ui-progressive">
 			{{processButtonText}}
 		</button>

@@ -79,7 +79,8 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 
 		$relevantPageId = $this->getRelevantPageId();
 		if ( $relevantPageId !== null ) {
-			$params['add_page'] = $relevantPageId;
+			// Add page ID as additional context for RAG to improve answer relevance
+			$params['page_id'] = strval( $relevantPageId );
 		}
 
 		try {

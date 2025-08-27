@@ -229,15 +229,13 @@ class BatchProcessor {
 		// Don't clean the line yet, we need to preserve separators
 		const trimmedLine = line.trim();
 
-		// Split by tab first (most reliable), then by multiple spaces (4+), then by comma
+		// Split by tab first (most reliable), then by multiple spaces (4+)
 		let parts;
 		if ( trimmedLine.includes( '\t' ) ) {
 			parts = trimmedLine.split( '\t' );
 		} else if ( /\s{4,}/.test( trimmedLine ) ) {
 			// Split on 4 or more consecutive spaces
 			parts = trimmedLine.split( /\s{4,}/ );
-		} else if ( trimmedLine.includes( ',' ) ) {
-			parts = trimmedLine.split( ',' );
 		} else {
 			// If no separator found, treat entire line as query
 			parts = [ trimmedLine ];

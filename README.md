@@ -146,7 +146,7 @@ https://example.com/wiki/any_page?autoOpenChatbot
 | `Special:KZChatbotBannedWords` | Banned words management                       |
 | `Special:KZChatbotSlugs`       | Interface text configuration                  |
 | `Special:KZChatbotRagSettings` | RAG backend configuration                     |
-| `Special:KZChatbotRagTesting`  | Question testing and LLM parameter adjustment |
+| `Special:KZChatbotRagTesting`  | Batch testing interface with retry logic and error handling |
 
 ### Permissions
 The `chatbot-admin` group has these default permissions:
@@ -169,6 +169,55 @@ To grant permissions to other groups, add to `LocalSettings.php`:
 ```php
 $wgGroupPermissions['sysop']['kzchatbot-edit-settings'] = true;
 ```
+
+## Testing Interface
+
+The `Special:KZChatbotRagTesting` page provides a robust batch testing interface for evaluating chatbot responses across multiple queries.
+
+### Features
+
+#### Batch Processing
+- Process multiple queries sequentially with full error recovery
+- Add queries individually or paste from spreadsheet applications (TSV format)
+- Support for context page specification to provide focused responses
+- Real-time progress tracking with detailed status updates
+
+#### Error Handling & Resilience
+- **Automatic Retry Logic**: Failed queries are automatically retried up to 2 times
+- **Intelligent Error Classification**: Only retries network errors, timeouts, and search failures
+- **Continue on Error**: Single query failures don't stop the entire batch
+- **Manual Retry**: Click refresh icons (🔄) next to failed queries to retry individually
+- **Immediate Cancellation**: Stop processing instantly while preserving completed results
+
+#### Configuration Options
+- **Rephrase Questions**: Enable question rephrasing before processing
+- **Debug Data**: Include detailed processing information in results
+- **Complete Pages**: Send full page content instead of excerpts to the LLM
+- **Context Pages**: Specify relevant wiki pages for context-aware responses
+
+#### Results & Export
+- **Live Results Table**: See results as they complete with full response details
+- **CSV Export**: Download all results including debug data and document links
+- **Document Tracking**: View both included and filtered-out source documents
+- **Debug Information**: Detailed processing data for troubleshooting
+
+### Technical Details
+
+#### Timeout Configuration
+- API requests timeout after 60 seconds (increased from 30s for complex queries)
+- Automatic retry with 1-second delay between attempts
+- Configurable in `ApiKZChatbotSearch.php` if different timeouts are needed
+
+#### Error Recovery
+- **Retryable Errors**: Network timeouts, connection failures, search operation failures
+- **Non-Retryable Errors**: Authentication errors, malformed requests, permission denials
+- **Progress Preservation**: Completed results are saved even if processing is cancelled
+
+### Usage Tips
+- Use spreadsheet applications to prepare large query sets, then paste directly
+- Include context page titles for domain-specific testing
+- Enable debug data when investigating response quality issues
+- Use manual retry for queries that failed due to temporary issues
 
 ## Future Development
 - Prevent users from sending unlimited rating requests: right now it's possible to switch indefinitely between 

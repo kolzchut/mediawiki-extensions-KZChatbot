@@ -57,7 +57,7 @@ class ApiKZChatbotSearch extends ApiBase {
 				CURLOPT_POST => true,
 				CURLOPT_POSTFIELDS => $postData,
 				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_TIMEOUT => 30,
+				CURLOPT_TIMEOUT => 60,
 				CURLOPT_HTTPHEADER => [
 					'Content-Type: application/json',
 					'Accept: application/json'

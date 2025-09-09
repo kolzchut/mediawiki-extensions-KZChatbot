@@ -188,5 +188,8 @@
 	"kzchatbot-testing-batch-debug-dialog-title": "Query Data - Query #$1",
 	"kzchatbot-testing-batch-debug-copy-button": "Copy to Clipboard",
 	"kzchatbot-testing-batch-debug-close-button": "Close",
-	"kzchatbot-testing-batch-debug-button-title": "Show query details"
+	"kzchatbot-testing-batch-debug-button-title": "Show query details",
+	"kzchatbot-testing-batch-progress-retry": "Processing query $1/$2 (retry $3/$4)",
+	"kzchatbot-testing-batch-retry-button": "Retry this query",
+	"kzchatbot-testing-batch-retrying": "Retrying..."
 }

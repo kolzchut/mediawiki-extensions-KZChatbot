@@ -188,5 +188,8 @@
 	"kzchatbot-testing-batch-debug-dialog-title": "נתוני שאילתה - שאילתה מספר $1",
 	"kzchatbot-testing-batch-debug-copy-button": "העתק ללוח",
 	"kzchatbot-testing-batch-debug-close-button": "סגור",
-	"kzchatbot-testing-batch-debug-button-title": "הצג פרטי שאילתה"
+	"kzchatbot-testing-batch-debug-button-title": "הצג פרטי שאילתה",
+	"kzchatbot-testing-batch-progress-retry": "מעבד שאילתה $1/$2 (ניסיון $3/$4)",
+	"kzchatbot-testing-batch-retry-button": "נסה שוב שאילתה זו",
+	"kzchatbot-testing-batch-retrying": "מנסה שוב..."
 }

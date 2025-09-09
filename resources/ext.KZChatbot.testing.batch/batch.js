@@ -3,7 +3,6 @@ class BatchProcessor {
 		this.init();
 	}
 
-
 	init() {
 		this.queriesBody = document.querySelector( '#queries-table-body' );
 		this.processButton = document.querySelector( '#batch-process' );
@@ -132,6 +131,15 @@ class BatchProcessor {
 				this.showDebugModal( this.results[ debugIndex ] );
 			}
 		} );
+
+		// Manual retry button handler
+		this.resultsTableBody.addEventListener( 'click', ( e ) => {
+			if ( e.target.matches( '.retry-btn' ) ) {
+				e.preventDefault();
+				const retryIndex = parseInt( e.target.dataset.retryIndex );
+				this.retryFailedQuery( retryIndex );
+			}
+		} );
 	}
 
 	handlePaste( e ) {
@@ -247,7 +255,7 @@ class BatchProcessor {
 		};
 
 		// Debug logging
-		console.log( 'parseRowColumns:', { line, trimmedLine, parts, result } );
+		mw.log( 'parseRowColumns:', { line, trimmedLine, parts, result } );
 
 		return result;
 	}
@@ -429,13 +437,15 @@ class BatchProcessor {
 					i,
 					queries.length
 				);
-				return Promise.reject( new Error( 'cancelled' ) );
+				return; // Continue to next query instead of throwing
 			}
 
 			this.isRephrase = this.rephraseCheckbox.checked;
 			this.includeDebugData = this.includeDebugDataCheckbox.checked;
 			this.sendCompletePages = this.sendCompletePagesCheckbox.checked;
-			return this.processQuery( queryObj.query, this.isRephrase, this.includeDebugData, this.sendCompletePages, queryObj.contextPageTitle )
+			
+			// Wrap the query processing to handle retries with progress updates
+			return this.processQueryWithProgressRetry( queryObj.query, this.isRephrase, this.includeDebugData, this.sendCompletePages, queryObj.contextPageTitle, i + 1, queries.length )
 				.then( ( result ) => {
 					// Only update results if not cancelled
 					if ( !this.isCancelled ) {
@@ -451,7 +461,7 @@ class BatchProcessor {
 				} )
 				.catch( ( error ) => {
 					// Only update results if not cancelled and error isn't from abort
-					if ( !this.isCancelled && error.message !== 'aborted' ) {
+					if ( !this.isCancelled && error.message !== 'aborted' && error.message !== 'cancelled' ) {
 						this.results.push( {
 							query: queryObj.query,
 							contextPageTitle: queryObj.contextPageTitle,
@@ -460,13 +470,8 @@ class BatchProcessor {
 							rephrase: this.isRephrase
 						} );
 						this.updateTableRow( this.results[ this.results.length - 1 ] );
-						this.progressIndicator.textContent = mw.msg(
-							'kzchatbot-testing-batch-progress-error',
-							i + 1,
-							queries.length
-						);
 					}
-					return Promise.reject( error );
+					// Continue to next query instead of stopping entire batch
 				} );
 		} ), Promise.resolve() )
 			.then( () => {
@@ -486,42 +491,78 @@ class BatchProcessor {
 	}
 
 	processQuery( query, rephrase, includeDebugData, sendCompletePages, contextPageTitle = '' ) {
-		const api = new mw.Api();
-		this.currentRequest = api;
-		const params = {
-			action: 'kzchatbotsearch',
-			query,
-			format: 'json',
-			token: mw.user.tokens.get( 'csrfToken' )
+		return this.processQueryWithRetry( query, rephrase, includeDebugData, sendCompletePages, contextPageTitle, 2 );
+	}
+
+	processQueryWithRetry( query, rephrase, includeDebugData, sendCompletePages, contextPageTitle = '', maxRetries = 2 ) {
+		const attemptQuery = ( attempt = 0 ) => {
+			const api = new mw.Api();
+			this.currentRequest = api;
+			const params = {
+				action: 'kzchatbotsearch',
+				query,
+				format: 'json',
+				token: mw.user.tokens.get( 'csrfToken' )
+			};
+			if ( rephrase ) {
+				params.rephrase = true;
+			}
+			if ( includeDebugData !== undefined ) {
+				// eslint-disable-next-line camelcase
+				params.include_debug_data = includeDebugData;
+			}
+			if ( sendCompletePages !== undefined ) {
+				// eslint-disable-next-line camelcase
+				params.send_complete_pages_to_llm = sendCompletePages;
+			}
+			if ( contextPageTitle ) {
+				// Get page ID from title
+				const titleObj = mw.Title.newFromText( contextPageTitle );
+				if ( titleObj ) {
+					// eslint-disable-next-line camelcase
+					params.context_page_title = contextPageTitle;
+				}
+			}
+
+			return api.post( params ).then( ( response ) => {
+				this.currentRequest = null;
+				if ( response.error ) {
+					throw new Error( response.error.info || mw.msg( 'kzchatbot-testing-batch-unknown-error' ) );
+				}
+				return response.kzchatbotsearch;
+			} ).catch( ( error ) => {
+				this.currentRequest = null;
+				const errorMessage = error.error ? error.error.info : error.message || mw.msg( 'kzchatbot-testing-batch-network-error' );
+				const shouldRetry = this.shouldRetryError( errorMessage ) && attempt < maxRetries;
+
+				if ( shouldRetry ) {
+					// Wait 1 second before retrying
+					return new Promise( ( resolve ) => {
+						setTimeout( () => {
+							resolve( attemptQuery( attempt + 1 ) );
+						}, 1000 );
+					} );
+				} else {
+					throw new Error( errorMessage );
+				}
+			} );
 		};
-		if ( rephrase ) {
-			params.rephrase = true;
-		}
-		if ( includeDebugData !== undefined ) {
-			params.include_debug_data = includeDebugData;
-		}
-		if ( sendCompletePages !== undefined ) {
-			params.send_complete_pages_to_llm = sendCompletePages;
-		}
-		if ( contextPageTitle ) {
-			// Get page ID from title
-			const titleObj = mw.Title.newFromText( contextPageTitle );
-			if ( titleObj ) {
-				params.context_page_title = contextPageTitle;
-			}
-		}
-		return api.post( params ).then( ( response ) => {
-			this.currentRequest = null;
-			if ( response.error ) {
-				throw new Error( response.error.info || mw.msg( 'kzchatbot-testing-batch-unknown-error' ) );
-			}
-			return response.kzchatbotsearch;
-		} ).catch( ( error ) => {
-			this.currentRequest = null;
-			throw new Error(
-				error.error ? error.error.info : mw.msg( 'kzchatbot-testing-batch-network-error' )
-			);
-		} );
+
+		return attemptQuery();
+	}
+
+	shouldRetryError( errorMessage ) {
+		// Retry for network errors, timeouts, and search failures
+		const retryableErrors = [
+			'Network error',
+			'Search operation failed',
+			'timeout',
+			'connection',
+			'unreachable'
+		];
+		return retryableErrors.some( ( retryableError ) => 
+			errorMessage.toLowerCase().includes( retryableError.toLowerCase() )
+		);
 	}
 
 	cancelProcessing() {
@@ -533,8 +574,99 @@ class BatchProcessor {
 			this.currentRequest.abort();
 		}
 
+		// Update progress indicator immediately
+		const currentProgress = this.progressIndicator.textContent;
+		if ( currentProgress.includes( 'of' ) ) {
+			const matches = currentProgress.match( /(\d+) of (\d+)/ );
+			if ( matches ) {
+				this.progressIndicator.textContent = mw.msg(
+					'kzchatbot-testing-batch-progress-cancelled',
+					matches[1],
+					matches[2]
+				);
+			}
+		}
+
 		// Reset processing state immediately when cancelled
 		this.setProcessingState( false );
+		
+		// Show download button if we have results
+		if ( this.results.length > 0 ) {
+			this.downloadButton.style.display = 'block';
+		}
+	}
+
+	processQueryWithProgressRetry( query, rephrase, includeDebugData, sendCompletePages, contextPageTitle = '', queryIndex, totalQueries, maxRetries = 2 ) {
+		const attemptQuery = ( attempt = 0 ) => {
+			if ( this.isCancelled ) {
+				return Promise.reject( new Error( 'cancelled' ) );
+			}
+
+			// Update progress indicator with retry info
+			if ( attempt > 0 ) {
+				this.progressIndicator.textContent = mw.msg(
+					'kzchatbot-testing-batch-progress-retry',
+					queryIndex,
+					totalQueries,
+					attempt + 1,
+					maxRetries + 1
+				);
+			} else {
+				this.updateProgress( queryIndex, totalQueries );
+			}
+
+			const api = new mw.Api();
+			this.currentRequest = api;
+			const params = {
+				action: 'kzchatbotsearch',
+				query,
+				format: 'json',
+				token: mw.user.tokens.get( 'csrfToken' )
+			};
+			if ( rephrase ) {
+				params.rephrase = true;
+			}
+			if ( includeDebugData !== undefined ) {
+				// eslint-disable-next-line camelcase
+				params.include_debug_data = includeDebugData;
+			}
+			if ( sendCompletePages !== undefined ) {
+				// eslint-disable-next-line camelcase
+				params.send_complete_pages_to_llm = sendCompletePages;
+			}
+			if ( contextPageTitle ) {
+				const titleObj = mw.Title.newFromText( contextPageTitle );
+				if ( titleObj ) {
+					// eslint-disable-next-line camelcase
+					params.context_page_title = contextPageTitle;
+				}
+			}
+
+			return api.post( params ).then( ( response ) => {
+				this.currentRequest = null;
+				if ( response.error ) {
+					throw new Error( response.error.info || mw.msg( 'kzchatbot-testing-batch-unknown-error' ) );
+				}
+				return response.kzchatbotsearch;
+			} ).catch( ( error ) => {
+				this.currentRequest = null;
+				const errorMessage = error.error ? error.error.info : error.message || mw.msg( 'kzchatbot-testing-batch-network-error' );
+				const shouldRetry = this.shouldRetryError( errorMessage ) && attempt < maxRetries;
+
+				if ( shouldRetry ) {
+					// Wait 1 second before retrying
+					return new Promise( ( resolve ) => {
+						setTimeout( () => {
+							resolve( attemptQuery( attempt + 1 ) );
+						}, 1000 );
+					} );
+				} else {
+					throw new Error( errorMessage );
+				}
+			} );
+		};
+
+		return attemptQuery();
 	}
 
 	updateProgress( current, total ) {
@@ -562,7 +694,15 @@ class BatchProcessor {
 		} else {
 			html += `<td>${ this.escapeHtml( result.query ) }</td>`;
 		}
-		html += `<td>${ this.escapeHtml( result.error || result.gpt_result ) }</td>`;
+		
+		// Add retry button for errors
+		let responseCell = this.escapeHtml( result.error || result.gpt_result );
+		if ( result.error ) {
+			const retryButton = `<button class="retry-btn mw-ui-button mw-ui-progressive mw-ui-quiet" data-retry-index="${ result.index - 1 }" title="${ mw.msg( 'kzchatbot-testing-batch-retry-button' ) }">🔄</button>`;
+			responseCell += ` ${ retryButton }`;
+		}
+		html += `<td>${ responseCell }</td>`;
+		
 		if ( result.rephrase ) {
 			html += `<td>${ this.escapeHtml( result.response_time || '' ) }</td>`;
 			html += `<td>${ this.escapeHtml( result.rephrase_time || '' ) }</td>`;
@@ -580,6 +720,122 @@ class BatchProcessor {
 		row.innerHTML = html;
 
 		this.resultsTableBody.appendChild( row );
+	}
+
+	retryFailedQuery( index ) {
+		const result = this.results[ index ];
+		if ( !result || !result.error ) {
+			return;
+		}
+
+		// Find the corresponding table row
+		const tableRows = this.resultsTableBody.children;
+		const targetRow = Array.from( tableRows ).find( row => {
+			const firstCell = row.querySelector( 'td:first-child' );
+			return firstCell && parseInt( firstCell.textContent ) === result.index;
+		} );
+
+		if ( !targetRow ) {
+			return;
+		}
+
+		// Update the response cell to show "Retrying..."
+		const responseCell = targetRow.children[ result.rephrase ? 3 : 2 ];
+		const retryButton = responseCell.querySelector( '.retry-btn' );
+		if ( retryButton ) {
+			retryButton.disabled = true;
+			retryButton.textContent = mw.msg( 'kzchatbot-testing-batch-retrying' );
+		}
+
+		// Perform the retry
+		this.processQuery( result.query, result.rephrase, this.includeDebugData, this.sendCompletePages, result.contextPageTitle )
+			.then( ( newResult ) => {
+				// Update the result in the array
+				this.results[ index ] = Object.assign( {
+					query: result.query,
+					contextPageTitle: result.contextPageTitle,
+					index: result.index,
+					rephrase: result.rephrase
+				}, newResult );
+
+				// Update the table row
+				this.updateResultAtIndex( index, this.results[ index ] );
+			} )
+			.catch( ( error ) => {
+				// Update with new error
+				this.results[ index ] = {
+					query: result.query,
+					contextPageTitle: result.contextPageTitle,
+					error: error.message,
+					index: result.index,
+					rephrase: result.rephrase
+				};
+
+				// Update the table row
+				this.updateResultAtIndex( index, this.results[ index ] );
+			} );
+	}
+
+	updateResultAtIndex( index, newResult ) {
+		// Find the corresponding table row
+		const tableRows = this.resultsTableBody.children;
+		const targetRow = Array.from( tableRows ).find( row => {
+			const firstCell = row.querySelector( 'td:first-child' );
+			return firstCell && parseInt( firstCell.textContent ) === newResult.index;
+		} );
+
+		if ( !targetRow ) {
+			return;
+		}
+
+		// Remove old row and insert updated row
+		const newRow = document.createElement( 'tr' );
+		if ( newResult.error ) {
+			newRow.classList.add( 'error-row' );
+		}
+
+		// Get documents and filtered docs using shared methods
+		const docs = newResult.docs || [];
+		const filteredDocs = this.getFilteredDocuments( newResult );
+
+		// Generate HTML for document lists
+		const docsHtml = this.formatDocumentList( docs, true );
+		const filteredDocsHtml = this.formatDocumentList( filteredDocs, true );
+
+		let html = `<td>${ newResult.index }</td>`;
+		if ( newResult.rephrase ) {
+			html += `<td>${ this.escapeHtml( newResult.original_question || '' ) }</td>`;
+			html += `<td>${ this.escapeHtml( newResult.rephrased_question || '' ) }</td>`;
+		} else {
+			html += `<td>${ this.escapeHtml( newResult.query ) }</td>`;
+		}
+		
+		// Add retry button for errors
+		let responseCell = this.escapeHtml( newResult.error || newResult.gpt_result );
+		if ( newResult.error ) {
+			const retryButton = `<button class="retry-btn mw-ui-button mw-ui-progressive mw-ui-quiet" data-retry-index="${ newResult.index - 1 }" title="${ mw.msg( 'kzchatbot-testing-batch-retry-button' ) }">🔄</button>`;
+			responseCell += ` ${ retryButton }`;
+		}
+		html += `<td>${ responseCell }</td>`;
+		
+		if ( newResult.rephrase ) {
+			html += `<td>${ this.escapeHtml( newResult.response_time || '' ) }</td>`;
+			html += `<td>${ this.escapeHtml( newResult.rephrase_time || '' ) }</td>`;
+		}
+		html += `<td>${ docsHtml }</td>`;
+		html += `<td>${ filteredDocsHtml }</td>`;
+		if ( newResult.rephrase ? this.isRephrase && this.includeDebugData : this.includeDebugData ) {
+			const debugData = newResult.debug_data || newResult.debugData || {};
+			const hasDebugData = Object.keys( debugData ).length > 0;
+			const debugIcon = hasDebugData ?
+				`<button class="debug-btn" data-debug-index="${ newResult.index - 1 }" title="${ mw.msg( 'kzchatbot-testing-batch-debug-button-title' ) }">ℹ️</button>` :
+				'<span class="no-debug">—</span>';
+			html += `<td class="debug-column">${ debugIcon }</td>`;
+		}
+		newRow.innerHTML = html;
+
+		// Replace the old row
+		targetRow.parentNode.replaceChild( newRow, targetRow );
 	}
 
 	showDebugModal( result ) {
@@ -618,7 +874,7 @@ class BatchProcessor {
 		windowInstance.opened.then( () => {
 			const $overlay = windowManager.$element.find( '.oo-ui-windowManager-modal' );
 			$overlay.on( 'click', ( e ) => {
-				if ( e.target === $overlay[0] ) {
+				if ( e.target === $overlay[ 0 ] ) {
 					windowManager.closeWindow( messageDialog );
 				}
 			} );
@@ -678,7 +934,7 @@ class BatchProcessor {
 			// Find documents in docs_before_filter that aren't in docs
 			const docUrls = result.docs.map( ( doc ) => doc.url );
 			filteredDocs = result.docs_before_filter.filter(
-				( doc ) => docUrls.indexOf( doc.url ) === -1
+				( doc ) => !docUrls.includes( doc.url )
 			);
 		}
 		return filteredDocs;
@@ -753,8 +1009,8 @@ class BatchProcessor {
 			return '';
 		}
 		str = str.toString();
-		if ( str.indexOf( '"' ) !== -1 || str.indexOf( ',' ) !== -1 ||
-			str.indexOf( '\n' ) !== -1 || str.indexOf( '\r' ) !== -1 ) {
+		if ( str.includes( '"' ) || str.includes( ',' ) ||
+			str.includes( '\n' ) || str.includes( '\r' ) ) {
 			return `"${ str.replace( /"/g, '""' ) }"`;
 		}
 		return str;

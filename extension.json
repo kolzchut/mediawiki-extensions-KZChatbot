@@ -151,8 +151,10 @@
 				"kzchatbot-testing-batch-debug-copy-button",
 				"kzchatbot-testing-batch-debug-close-button",
 				"kzchatbot-testing-batch-debug-button-title",
-				"kzchatbot-testing-batch-context-page-placeholder"
-
+				"kzchatbot-testing-batch-context-page-placeholder",
+				"kzchatbot-testing-batch-progress-retry",
+				"kzchatbot-testing-batch-retry-button",
+				"kzchatbot-testing-batch-retrying"
 			]
 		}
 	},

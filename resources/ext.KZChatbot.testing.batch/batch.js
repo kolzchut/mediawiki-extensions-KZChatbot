@@ -889,64 +889,82 @@ class BatchProcessor {
 
 	showDebugModal( result ) {
 		const debugData = result.debug_data || result.debugData || {};
-
-		// Convert JSON to HTML with line breaks
 		const jsonString = JSON.stringify( debugData, null, 2 );
-		const htmlString = this.escapeHtml( jsonString ).replace( /\\n/g, '<br>' );
+		// Replace escaped newlines with actual newlines for better display
+		const displayString = jsonString.replace( /\\n/g, '\n' );
 
-		// Create modal dialog using OOUI
-		const debugContent = new OO.ui.Element( {
-			content: [
-				$( '<pre>' ).addClass( 'debug-data-content' ).html( htmlString )
-			]
-		} );
+		// Create a custom ProcessDialog for the debug modal
+		function DebugDialog( config ) {
+			DebugDialog.super.call( this, config );
+		}
+		OO.inheritClass( DebugDialog, OO.ui.ProcessDialog );
 
-		const messageDialog = new OO.ui.MessageDialog();
-		const windowManager = new OO.ui.WindowManager();
-		$( document.body ).append( windowManager.$element );
-		windowManager.addWindows( [ messageDialog ] );
+		DebugDialog.static.name = 'debugDialog';
+		DebugDialog.static.size = 'large';
+		DebugDialog.static.actions = [
+			{
+				action: 'close',
+				label: mw.msg( 'kzchatbot-testing-batch-debug-close-button' ),
+				flags: [ 'safe', 'close' ]
+			}
+		];
 
-		const windowInstance = windowManager.openWindow( messageDialog, {
-			title: mw.msg( 'kzchatbot-testing-batch-debug-dialog-title', result.index ),
-			message: debugContent.$element,
-			size: 'larger',
-			actions: [
-				{
-					label: mw.msg( 'kzchatbot-testing-batch-debug-copy-button' ),
-					action: 'copy'
-				},
-				{
-					label: mw.msg( 'kzchatbot-testing-batch-debug-close-button' ),
-					action: 'close',
-					flags: [ 'primary', 'safe' ]
-				}
-			]
-		} );
+		DebugDialog.prototype.initialize = function () {
+			DebugDialog.super.prototype.initialize.apply( this, arguments );
 
-		// Add click-outside-to-close behavior
-		windowInstance.opened.then( () => {
-			const $overlay = windowManager.$element.find( '.oo-ui-windowManager-modal' );
-			$overlay.on( 'click', ( e ) => {
-				if ( e.target === $overlay[ 0 ] ) {
-					windowManager.closeWindow( messageDialog );
-				}
+			// Create copy button for the header
+			const copyButton = new OO.ui.ButtonWidget( {
+				label: mw.msg( 'kzchatbot-testing-batch-debug-copy-button' ),
+				flags: [ 'progressive' ],
+				icon: 'articles'
 			} );
-		} );
-
-		windowInstance.closed.then( ( data ) => {
-			if ( data && data.action === 'copy' ) {
-				// Copy debug data to clipboard
-				navigator.clipboard.writeText( JSON.stringify( debugData, null, 2 ) ).catch( () => {
+			copyButton.on( 'click', () => {
+				navigator.clipboard.writeText( jsonString ).then( () => {
+					mw.notify( mw.msg( 'kzchatbot-testing-batch-debug-copied' ) );
+				} ).catch( () => {
 					// Fallback for older browsers
 					const textArea = document.createElement( 'textarea' );
-					textArea.value = JSON.stringify( debugData, null, 2 );
+					textArea.value = jsonString;
 					document.body.appendChild( textArea );
 					textArea.select();
 					document.execCommand( 'copy' );
 					document.body.removeChild( textArea );
+					mw.notify( mw.msg( 'kzchatbot-testing-batch-debug-copied' ) );
+				} );
+			} );
+
+			// Create title with copy button
+			const titleElement = $( '<div>' )
+				.addClass( 'debug-modal-title' )
+				.append(
+					$( '<span>' )
+						.addClass( 'debug-modal-title-text' )
+						.text( mw.msg( 'kzchatbot-testing-batch-debug-dialog-title', result.index ) ),
+					copyButton.$element
+				);
+			this.$head.find( '.oo-ui-processDialog-title' ).empty().append( titleElement );
+
+			const content = new OO.ui.PanelLayout( { padded: true, expanded: false, scrollable: true } );
+			content.$element.append(
+				$( '<pre>' ).addClass( 'debug-data-content' ).text( displayString )
+			);
+			this.$body.append( content.$element );
+		};
+
+		DebugDialog.prototype.getActionProcess = function ( action ) {
+			if ( action === 'close' ) {
+				return new OO.ui.Process( () => {
+					this.close( { action: 'close' } );
 				} );
 			}
-			// Clean up
+			return DebugDialog.super.prototype.getActionProcess.call( this, action );
+		};
+
+		const windowManager = new OO.ui.WindowManager();
+		$( document.body ).append( windowManager.$element );
+		const dialog = new DebugDialog();
+		windowManager.addWindows( [ dialog ] );
+		windowManager.openWindow( dialog ).closed.then( () => {
 			windowManager.destroy();
 		} );
 	}

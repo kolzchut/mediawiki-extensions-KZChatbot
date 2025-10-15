@@ -191,5 +191,9 @@
 	"kzchatbot-testing-batch-debug-button-title": "הצג פרטי שאילתה",
 	"kzchatbot-testing-batch-progress-retry": "מעבד שאילתה $1/$2 (ניסיון $3/$4)",
 	"kzchatbot-testing-batch-retry-button": "נסה שוב שאילתה זו",
-	"kzchatbot-testing-batch-retrying": "מנסה שוב..."
+	"kzchatbot-testing-batch-retrying": "מנסה שוב...",
+	"kzchatbot-testing-batch-retrieval-size-label": "גודל אחזור",
+	"kzchatbot-testing-batch-retrieval-size-help": "כמה מסמכים לאחזר מ-Elasticsearch. ברירת המחדל היא 50. כאשר \"מספר מסמכים מקסימלי לעמוד\" הוא 2 או יותר, מומלץ להשתמש בערך גבוה יותר: \"מספר מסמכים מקסימלי לעמוד\" × (75 עד 100)",
+	"kzchatbot-testing-batch-max-docs-per-page-label": "מספר מסמכים מקסימלי לעמוד",
+	"kzchatbot-testing-batch-max-docs-per-page-help": "מספר המסמכים בעלי הדירוג הגבוה ביותר מכל עמוד שייכללו בשאילתה ל-LLM. הגדר ל-1 כדי לשמור על ההתנהגות הישנה"
 }

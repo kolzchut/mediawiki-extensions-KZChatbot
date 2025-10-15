@@ -18,6 +18,32 @@ class BatchProcessor {
 		this.rephraseCheckbox = document.querySelector( '#rephrase-checkbox' );
 		this.includeDebugDataCheckbox = document.querySelector( '#include-debug-data-checkbox' );
 		this.sendCompletePagesCheckbox = document.querySelector( '#send-complete-pages-checkbox' );
+
+		// Create OOUI numeric input widgets with proper labels and help text
+		this.maxDocsPerPageWidget = new OO.ui.NumberInputWidget( {
+			value: 1,
+			min: 1,
+			step: 1
+		} );
+		const maxDocsPerPageField = new OO.ui.FieldLayout( this.maxDocsPerPageWidget, {
+			label: mw.msg( 'kzchatbot-testing-batch-max-docs-per-page-label' ),
+			help: mw.msg( 'kzchatbot-testing-batch-max-docs-per-page-help' ),
+			align: 'top'
+		} );
+		document.querySelector( '#max-docs-per-page-widget' ).appendChild( maxDocsPerPageField.$element[ 0 ] );
+
+		this.retrievalSizeWidget = new OO.ui.NumberInputWidget( {
+			value: 50,
+			min: 1,
+			step: 1
+		} );
+		const retrievalSizeField = new OO.ui.FieldLayout( this.retrievalSizeWidget, {
+			label: mw.msg( 'kzchatbot-testing-batch-retrieval-size-label' ),
+			help: mw.msg( 'kzchatbot-testing-batch-retrieval-size-help' ),
+			align: 'top'
+		} );
+		document.querySelector( '#retrieval-size-widget' ).appendChild( retrievalSizeField.$element[ 0 ] );
+
 		this.results = [];
 		this.currentRequest = null;
 		this.isCancelled = false;
@@ -500,9 +526,7 @@ class BatchProcessor {
 			this.currentRequest = api;
 			const params = {
 				action: 'kzchatbotsearch',
-				query,
-				format: 'json',
-				token: mw.user.tokens.get( 'csrfToken' )
+				query
 			};
 			if ( rephrase ) {
 				params.rephrase = true;
@@ -523,8 +547,21 @@ class BatchProcessor {
 					params.context_page_title = contextPageTitle;
 				}
 			}
+			// Add retrieval size parameter
+			const retrievalSize = parseInt( this.retrievalSizeWidget.getValue() );
+			if ( retrievalSize && retrievalSize > 0 ) {
+				// eslint-disable-next-line camelcase
+				params.retrieval_size = retrievalSize;
+			}
+			// Add max documents per page parameter
+			const maxDocsPerPage = parseInt( this.maxDocsPerPageWidget.getValue() );
+			if ( maxDocsPerPage && maxDocsPerPage > 0 ) {
+				// eslint-disable-next-line camelcase
+				params.max_documents_from_same_page = maxDocsPerPage;
+			}
 
-			return api.post( params ).then( ( response ) => {
+			// Use postWithToken() which automatically handles badtoken errors
+			return api.postWithToken( 'csrf', params ).then( ( response ) => {
 				this.currentRequest = null;
 				if ( response.error ) {
 					throw new Error( response.error.info || mw.msg( 'kzchatbot-testing-batch-unknown-error' ) );
@@ -553,6 +590,7 @@ class BatchProcessor {
 
 	shouldRetryError( errorMessage ) {
 		// Retry for network errors, timeouts, and search failures
+		// Note: badtoken errors are handled automatically by postWithToken()
 		const retryableErrors = [
 			'Network error',
 			'Search operation failed',
@@ -560,7 +598,7 @@ class BatchProcessor {
 			'connection',
 			'unreachable'
 		];
-		return retryableErrors.some( ( retryableError ) => 
+		return retryableErrors.some( ( retryableError ) =>
 			errorMessage.toLowerCase().includes( retryableError.toLowerCase() )
 		);
 	}
@@ -619,9 +657,7 @@ class BatchProcessor {
 			this.currentRequest = api;
 			const params = {
 				action: 'kzchatbotsearch',
-				query,
-				format: 'json',
-				token: mw.user.tokens.get( 'csrfToken' )
+				query
 			};
 			if ( rephrase ) {
 				params.rephrase = true;
@@ -641,8 +677,21 @@ class BatchProcessor {
 					params.context_page_title = contextPageTitle;
 				}
 			}
+			// Add retrieval size parameter
+			const retrievalSize = parseInt( this.retrievalSizeWidget.getValue() );
+			if ( retrievalSize && retrievalSize > 0 ) {
+				// eslint-disable-next-line camelcase
+				params.retrieval_size = retrievalSize;
+			}
+			// Add max documents per page parameter
+			const maxDocsPerPage = parseInt( this.maxDocsPerPageWidget.getValue() );
+			if ( maxDocsPerPage && maxDocsPerPage > 0 ) {
+				// eslint-disable-next-line camelcase
+				params.max_documents_from_same_page = maxDocsPerPage;
+			}
 
-			return api.post( params ).then( ( response ) => {
+			// Use postWithToken() which automatically handles badtoken errors
+			return api.postWithToken( 'csrf', params ).then( ( response ) => {
 				this.currentRequest = null;
 				if ( response.error ) {
 					throw new Error( response.error.info || mw.msg( 'kzchatbot-testing-batch-unknown-error' ) );
@@ -841,10 +890,14 @@ class BatchProcessor {
 	showDebugModal( result ) {
 		const debugData = result.debug_data || result.debugData || {};
 
+		// Convert JSON to HTML with line breaks
+		const jsonString = JSON.stringify( debugData, null, 2 );
+		const htmlString = this.escapeHtml( jsonString ).replace( /\\n/g, '<br>' );
+
 		// Create modal dialog using OOUI
 		const debugContent = new OO.ui.Element( {
 			content: [
-				$( '<pre>' ).addClass( 'debug-data-content' ).text( JSON.stringify( debugData, null, 2 ) )
+				$( '<pre>' ).addClass( 'debug-data-content' ).html( htmlString )
 			]
 		} );
 

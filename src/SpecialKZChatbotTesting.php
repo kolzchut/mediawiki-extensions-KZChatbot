@@ -90,6 +90,10 @@ class SpecialKZChatbotTesting extends SpecialPage {
 			'rephraseLabel' => $this->msg( 'kzchatbot-testing-batch-rephrase-toggle-label' )->text(),
 			'includeDebugDataLabel' => $this->msg( 'kzchatbot-testing-batch-include-debug-data-toggle-label' )->text(),
 			'sendCompletePagesLabel' => $this->msg( 'kzchatbot-testing-batch-send-complete-pages-to-llm-toggle-label' )->text(),
+			'retrievalSizeLabel' => $this->msg( 'kzchatbot-testing-batch-retrieval-size-label' )->text(),
+			'retrievalSizeHelp' => $this->msg( 'kzchatbot-testing-batch-retrieval-size-help' )->text(),
+			'maxDocsPerPageLabel' => $this->msg( 'kzchatbot-testing-batch-max-docs-per-page-label' )->text(),
+			'maxDocsPerPageHelp' => $this->msg( 'kzchatbot-testing-batch-max-docs-per-page-help' )->text(),
 		];
 
 		$this->getOutput()->addHTML(

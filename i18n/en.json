@@ -191,5 +191,9 @@
 	"kzchatbot-testing-batch-debug-button-title": "Show query details",
 	"kzchatbot-testing-batch-progress-retry": "Processing query $1/$2 (retry $3/$4)",
 	"kzchatbot-testing-batch-retry-button": "Retry this query",
-	"kzchatbot-testing-batch-retrying": "Retrying..."
+	"kzchatbot-testing-batch-retrying": "Retrying...",
+	"kzchatbot-testing-batch-retrieval-size-label": "Retrieval size",
+	"kzchatbot-testing-batch-retrieval-size-help": "How many documents to retrieve from Elasticsearch. Default is 50. When \"Max documents per page\" is 2 or more, consider using a higher value: \"Max documents per page\" × (75 to 100)",
+	"kzchatbot-testing-batch-max-docs-per-page-label": "Max documents per page",
+	"kzchatbot-testing-batch-max-docs-per-page-help": "Number of highest-rated documents from each page to include in the LLM query. Set to 1 to maintain the old behavior"
 }

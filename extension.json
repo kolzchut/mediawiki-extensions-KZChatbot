@@ -154,7 +154,11 @@
 				"kzchatbot-testing-batch-context-page-placeholder",
 				"kzchatbot-testing-batch-progress-retry",
 				"kzchatbot-testing-batch-retry-button",
-				"kzchatbot-testing-batch-retrying"
+				"kzchatbot-testing-batch-retrying",
+				"kzchatbot-testing-batch-retrieval-size-label",
+				"kzchatbot-testing-batch-retrieval-size-help",
+				"kzchatbot-testing-batch-max-docs-per-page-label",
+				"kzchatbot-testing-batch-max-docs-per-page-help"
 			]
 		}
 	},

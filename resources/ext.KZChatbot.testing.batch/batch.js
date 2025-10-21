@@ -13,6 +13,37 @@ class BatchProcessor {
 		this.resultsTableBody = document.querySelector( '#results-table-body' );
 		this.queryCountElement = document.querySelector( '#query-count' );
 		this.addQueryButton = document.querySelector( '#add-query' );
+
+		// Get references to checkboxes
+		this.rephraseCheckbox = document.querySelector( '#rephrase-checkbox' );
+		this.includeDebugDataCheckbox = document.querySelector( '#include-debug-data-checkbox' );
+		this.sendCompletePagesCheckbox = document.querySelector( '#send-complete-pages-checkbox' );
+
+		// Create OOUI numeric input widgets with proper labels and help text
+		this.maxDocsPerPageWidget = new OO.ui.NumberInputWidget( {
+			value: 1,
+			min: 1,
+			step: 1
+		} );
+		const maxDocsPerPageField = new OO.ui.FieldLayout( this.maxDocsPerPageWidget, {
+			label: mw.msg( 'kzchatbot-testing-batch-max-docs-per-page-label' ),
+			help: mw.msg( 'kzchatbot-testing-batch-max-docs-per-page-help' ),
+			align: 'top'
+		} );
+		document.querySelector( '#max-docs-per-page-widget' ).appendChild( maxDocsPerPageField.$element[ 0 ] );
+
+		this.retrievalSizeWidget = new OO.ui.NumberInputWidget( {
+			value: 50,
+			min: 1,
+			step: 1
+		} );
+		const retrievalSizeField = new OO.ui.FieldLayout( this.retrievalSizeWidget, {
+			label: mw.msg( 'kzchatbot-testing-batch-retrieval-size-label' ),
+			help: mw.msg( 'kzchatbot-testing-batch-retrieval-size-help' ),
+			align: 'top'
+		} );
+		document.querySelector( '#retrieval-size-widget' ).appendChild( retrievalSizeField.$element[ 0 ] );
+
 		this.results = [];
 		this.currentRequest = null;
 		this.isCancelled = false;
@@ -26,21 +57,10 @@ class BatchProcessor {
 			this.clearAllButton, this.addQueryButton.nextSibling
 		);
 
-		// Add OOUI toggle for rephrase
-		this.rephraseToggle = new OO.ui.ToggleSwitchWidget( {
-			value: false
-		} );
-		this.rephraseToggleLabel = new OO.ui.LabelWidget( {
-			label: mw.msg( 'kzchatbot-testing-batch-rephrase-toggle-label' )
-		} );
-		const $toggleContainer = $( '#rephrase-toggle-container' );
-		$toggleContainer.append( this.rephraseToggle.$element );
-		$toggleContainer.append( this.rephraseToggleLabel.$element );
-		this.isRephrase = false;
-		this.rephraseToggle.on( 'change', ( value ) => {
-			this.isRephrase = value;
-			// Do not update table headers immediately; only update on processQueries()
-		} );
+		// Initialize toggle states
+		this.isRephrase = this.rephraseCheckbox.checked;
+		this.includeDebugData = this.includeDebugDataCheckbox.checked;
+		this.sendCompletePages = this.sendCompletePagesCheckbox.checked;
 		this.updateResultsTableHeaders();
 
 		this.isProcessing = false;
@@ -48,6 +68,12 @@ class BatchProcessor {
 
 		// Initially disable process button if no queries
 		this.updateProcessButtonState();
+
+		// Initialize the title lookup widget for the initial row
+		const initialContextWidget = this.queriesBody.querySelector( '.context-page-widget' );
+		if ( initialContextWidget ) {
+			this.createTitleLookupWidget( initialContextWidget );
+		}
 
 		this.bindEvents();
 	}
@@ -122,6 +148,24 @@ class BatchProcessor {
 				this.deleteQueryRow( e.target.closest( 'tr' ) );
 			}
 		} );
+
+		// Debug button handler
+		this.resultsTableBody.addEventListener( 'click', ( e ) => {
+			if ( e.target.matches( '.debug-btn' ) ) {
+				e.preventDefault();
+				const debugIndex = parseInt( e.target.dataset.debugIndex );
+				this.showDebugModal( this.results[ debugIndex ] );
+			}
+		} );
+
+		// Manual retry button handler
+		this.resultsTableBody.addEventListener( 'click', ( e ) => {
+			if ( e.target.matches( '.retry-btn' ) ) {
+				e.preventDefault();
+				const retryIndex = parseInt( e.target.dataset.retryIndex );
+				this.retryFailedQuery( retryIndex );
+			}
+		} );
 	}
 
 	handlePaste( e ) {
@@ -142,24 +186,37 @@ class BatchProcessor {
 		// Get text from clipboard
 		const text = ( e.clipboardData || window.clipboardData ).getData( 'text' );
 
-		// Parse CSV-like format
-		const queries = this.parseCSVLikeQueries( text );
+		// Parse CSV-like format supporting 1-2 columns
+		const rows = this.parseCSVLikeRows( text );
 
-		// Replace content of current cell with first query
+		// Replace content of current cell with first row
 		const currentCell = e.target;
-		currentCell.textContent = queries[ 0 ] || '';
+		const currentRow = currentCell.closest( 'tr' );
+		const firstRow = rows[ 0 ] || {};
+		currentCell.textContent = firstRow.query || '';
 
-		// Add remaining queries as new rows
-		for ( let i = 1; i < queries.length; i++ ) {
-			this.addQueryRow( queries[ i ] );
+		// Set context page for current row if provided
+		if ( firstRow.contextPage ) {
+			const contextWidgetContainer = currentRow.querySelector( '.context-page-widget' );
+			if ( contextWidgetContainer && contextWidgetContainer.titleWidget ) {
+				// Use setTimeout to ensure widget is fully initialized
+				setTimeout( () => {
+					contextWidgetContainer.titleWidget.setValue( firstRow.contextPage );
+				}, 0 );
+			}
+		}
+
+		// Add remaining rows as new query rows
+		for ( let i = 1; i < rows.length; i++ ) {
+			this.addQueryRow( rows[ i ].query || '', rows[ i ].contextPage || '' );
 		}
 
 		// Update process button state
 		this.updateProcessButtonState();
 	}
 
-	parseCSVLikeQueries( text ) {
-		const queries = [];
+	parseCSVLikeRows( text ) {
+		const rows = [];
 		let currentQuery = '';
 		let inQuotes = false;
 
@@ -178,24 +235,55 @@ class BatchProcessor {
 				inQuotes = false;
 				// Add the line (without ending quote) and handle escaped quotes
 				currentQuery += '\n' + line.slice( 0, line.lastIndexOf( '"' ) );
-				// Clean up and add to queries
-				queries.push( this.cleanQuery( currentQuery ) );
+				// Clean up and add to rows
+				rows.push( this.parseRowColumns( currentQuery ) );
 				currentQuery = '';
 				// Inside a quoted string
 			} else if ( inQuotes ) {
 				currentQuery += '\n' + line;
 				// Regular unquoted line
 			} else {
-				queries.push( this.cleanQuery( line ) );
+				rows.push( this.parseRowColumns( line ) );
 			}
 		}
 
 		// Handle any remaining content
 		if ( currentQuery ) {
-			queries.push( this.cleanQuery( currentQuery ) );
+			rows.push( this.parseRowColumns( currentQuery ) );
 		}
 
-		return queries.filter( ( q ) => q );
+		return rows.filter( ( row ) => row.query || row.contextPage );
+	}
+
+	parseRowColumns( line ) {
+		if ( !line || !line.trim() ) {
+			return { query: '', contextPage: '' };
+		}
+
+		// Don't clean the line yet, we need to preserve separators
+		const trimmedLine = line.trim();
+
+		// Split by tab first (most reliable), then by multiple spaces (4+)
+		let parts;
+		if ( trimmedLine.includes( '\t' ) ) {
+			parts = trimmedLine.split( '\t' );
+		} else if ( /\s{4,}/.test( trimmedLine ) ) {
+			// Split on 4 or more consecutive spaces
+			parts = trimmedLine.split( /\s{4,}/ );
+		} else {
+			// If no separator found, treat entire line as query
+			parts = [ trimmedLine ];
+		}
+
+		const result = {
+			query: ( parts[ 0 ] || '' ).trim(),
+			contextPage: ( parts[ 1 ] || '' ).trim()
+		};
+
+		// Debug logging
+		mw.log( 'parseRowColumns:', { line, trimmedLine, parts, result } );
+
+		return result;
 	}
 
 	cleanQuery( query ) {
@@ -206,6 +294,21 @@ class BatchProcessor {
 			.replace( /""/g, '"' )
 			// Remove any remaining quotes at start/end
 			.trim();
+	}
+
+	createTitleLookupWidget( container, initialValue = '' ) {
+		const titleWidget = new mw.widgets.TitleInputWidget( {
+			placeholder: mw.msg( 'kzchatbot-testing-batch-context-page-placeholder' ),
+			value: initialValue,
+			suggestions: true,
+			showMissing: false,
+			excludeCurrentPage: false
+		} );
+
+		container.appendChild( titleWidget.$element[ 0 ] );
+		// Store reference to widget on container for easy access
+		container.titleWidget = titleWidget;
+		return titleWidget;
 	}
 
 	clearAllRows() {
@@ -220,7 +323,7 @@ class BatchProcessor {
 		} );
 	}
 
-	addQueryRow( queryText = '' ) {
+	addQueryRow( queryText = '', contextPageTitle = '' ) {
 		const row = document.createElement( 'tr' );
 		row.className = 'query-row';
 
@@ -230,12 +333,27 @@ class BatchProcessor {
 			<td class="query-number">${ number }</td>
 			<td><!--suppress HtmlUnknownAttribute (this ignores the placeholder attribute here)-->
 				<div class="query-cell" contenteditable="true" placeholder="${ mw.msg( 'kzchatbot-testing-batch-placeholder' ) }">${ this.escapeHtml( queryText ) }</div></td>
+			<td><div class="context-page-widget"></div></td>
 			<td class="query-actions">
 				<button type="button" class="query-delete mw-ui-button mw-ui-destructive" title="${ mw.msg( 'kzchatbot-testing-batch-delete-query' ) }">×</button>
 			</td>
 		`;
 
 		this.queriesBody.appendChild( row );
+
+		// Create the title lookup widget
+		const contextWidgetContainer = row.querySelector( '.context-page-widget' );
+		this.createTitleLookupWidget( contextWidgetContainer, contextPageTitle );
+
+		// Set initial value if provided (with delay to ensure widget is ready)
+		if ( contextPageTitle ) {
+			setTimeout( () => {
+				if ( contextWidgetContainer.titleWidget ) {
+					contextWidgetContainer.titleWidget.setValue( contextPageTitle );
+				}
+			}, 0 );
+		}
+
 		this.renumberRows();
 	}
 
@@ -292,6 +410,9 @@ class BatchProcessor {
 			mw.msg( 'kzchatbot-testing-batch-header-documents' ),
 			mw.msg( 'kzchatbot-testing-batch-header-filtered-documents' )
 		);
+		if ( this.includeDebugData ) {
+			headers.push( mw.msg( 'kzchatbot-testing-batch-header-debug' ) );
+		}
 		headers.forEach( ( h ) => {
 			const th = document.createElement( 'th' );
 			th.textContent = h;
@@ -301,11 +422,22 @@ class BatchProcessor {
 
 	processQueries() {
 		const queries = Array.from( this.queriesBody.children )
-			.map( ( row ) => row.querySelector( '.query-cell' ).textContent.trim() )
-			.filter( ( q ) => q );
+			.map( ( row ) => {
+				const queryText = row.querySelector( '.query-cell' ).textContent.trim();
+				const contextWidgetContainer = row.querySelector( '.context-page-widget' );
+				const contextPageTitle = contextWidgetContainer && contextWidgetContainer.titleWidget ?
+					contextWidgetContainer.titleWidget.getValue().trim() : '';
+				return {
+					query: queryText,
+					contextPageTitle: contextPageTitle
+				};
+			} )
+			.filter( ( q ) => q.query );
 
-		// Set rephrase state for this batch only
-		this.isRephrase = this.rephraseToggle.getValue();
+		// Set toggle states for this batch only
+		this.isRephrase = this.rephraseCheckbox.checked;
+		this.includeDebugData = this.includeDebugDataCheckbox.checked;
+		this.sendCompletePages = this.sendCompletePagesCheckbox.checked;
 		this.updateResultsTableHeaders();
 
 		// Clear previous results
@@ -324,23 +456,28 @@ class BatchProcessor {
 		this.queryCountElement.textContent = queries.length;
 
 		// Process queries sequentially
-		return queries.reduce( ( promise, query, i ) => promise.then( () => {
+		return queries.reduce( ( promise, queryObj, i ) => promise.then( () => {
 			if ( this.isCancelled ) {
 				this.progressIndicator.textContent = mw.msg(
 					'kzchatbot-testing-batch-progress-cancelled',
 					i,
 					queries.length
 				);
-				return Promise.reject( new Error( 'cancelled' ) );
+				return; // Continue to next query instead of throwing
 			}
 
-			this.isRephrase = this.rephraseToggle.getValue();
-			return this.processQuery( query, this.isRephrase )
+			this.isRephrase = this.rephraseCheckbox.checked;
+			this.includeDebugData = this.includeDebugDataCheckbox.checked;
+			this.sendCompletePages = this.sendCompletePagesCheckbox.checked;
+			
+			// Wrap the query processing to handle retries with progress updates
+			return this.processQueryWithProgressRetry( queryObj.query, this.isRephrase, this.includeDebugData, this.sendCompletePages, queryObj.contextPageTitle, i + 1, queries.length )
 				.then( ( result ) => {
 					// Only update results if not cancelled
 					if ( !this.isCancelled ) {
 						this.results.push( Object.assign( {
-							query,
+							query: queryObj.query,
+							contextPageTitle: queryObj.contextPageTitle,
 							index: i + 1,
 							rephrase: this.isRephrase
 						}, result ) );
@@ -350,21 +487,17 @@ class BatchProcessor {
 				} )
 				.catch( ( error ) => {
 					// Only update results if not cancelled and error isn't from abort
-					if ( !this.isCancelled && error.message !== 'aborted' ) {
+					if ( !this.isCancelled && error.message !== 'aborted' && error.message !== 'cancelled' ) {
 						this.results.push( {
-							query,
+							query: queryObj.query,
+							contextPageTitle: queryObj.contextPageTitle,
 							error: error.message,
 							index: i + 1,
 							rephrase: this.isRephrase
 						} );
 						this.updateTableRow( this.results[ this.results.length - 1 ] );
-						this.progressIndicator.textContent = mw.msg(
-							'kzchatbot-testing-batch-progress-error',
-							i + 1,
-							queries.length
-						);
 					}
-					return Promise.reject( error );
+					// Continue to next query instead of stopping entire batch
 				} );
 		} ), Promise.resolve() )
 			.then( () => {
@@ -383,30 +516,91 @@ class BatchProcessor {
 			} );
 	}
 
-	processQuery( query, rephrase ) {
-		const api = new mw.Api();
-		this.currentRequest = api;
-		const params = {
-			action: 'kzchatbotsearch',
-			query,
-			format: 'json',
-			token: mw.user.tokens.get( 'csrfToken' )
-		};
-		if ( rephrase ) {
-			params.rephrase = true;
-		}
-		return api.post( params ).then( ( response ) => {
-			this.currentRequest = null;
-			if ( response.error ) {
-				throw new Error( response.error.info || mw.msg( 'kzchatbot-testing-batch-unknown-error' ) );
+	processQuery( query, rephrase, includeDebugData, sendCompletePages, contextPageTitle = '' ) {
+		return this.processQueryWithRetry( query, rephrase, includeDebugData, sendCompletePages, contextPageTitle, 2 );
+	}
+
+	processQueryWithRetry( query, rephrase, includeDebugData, sendCompletePages, contextPageTitle = '', maxRetries = 2 ) {
+		const attemptQuery = ( attempt = 0 ) => {
+			const api = new mw.Api();
+			this.currentRequest = api;
+			const params = {
+				action: 'kzchatbotsearch',
+				query
+			};
+			if ( rephrase ) {
+				params.rephrase = true;
 			}
-			return response.kzchatbotsearch;
-		} ).catch( ( error ) => {
-			this.currentRequest = null;
-			throw new Error(
-				error.error ? error.error.info : mw.msg( 'kzchatbot-testing-batch-network-error' )
-			);
-		} );
+			if ( includeDebugData !== undefined ) {
+				// eslint-disable-next-line camelcase
+				params.include_debug_data = includeDebugData;
+			}
+			if ( sendCompletePages !== undefined ) {
+				// eslint-disable-next-line camelcase
+				params.send_complete_pages_to_llm = sendCompletePages;
+			}
+			if ( contextPageTitle ) {
+				// Get page ID from title
+				const titleObj = mw.Title.newFromText( contextPageTitle );
+				if ( titleObj ) {
+					// eslint-disable-next-line camelcase
+					params.context_page_title = contextPageTitle;
+				}
+			}
+			// Add retrieval size parameter
+			const retrievalSize = parseInt( this.retrievalSizeWidget.getValue() );
+			if ( retrievalSize && retrievalSize > 0 ) {
+				// eslint-disable-next-line camelcase
+				params.retrieval_size = retrievalSize;
+			}
+			// Add max documents per page parameter
+			const maxDocsPerPage = parseInt( this.maxDocsPerPageWidget.getValue() );
+			if ( maxDocsPerPage && maxDocsPerPage > 0 ) {
+				// eslint-disable-next-line camelcase
+				params.max_documents_from_same_page = maxDocsPerPage;
+			}
+
+			// Use postWithToken() which automatically handles badtoken errors
+			return api.postWithToken( 'csrf', params ).then( ( response ) => {
+				this.currentRequest = null;
+				if ( response.error ) {
+					throw new Error( response.error.info || mw.msg( 'kzchatbot-testing-batch-unknown-error' ) );
+				}
+				return response.kzchatbotsearch;
+			} ).catch( ( error ) => {
+				this.currentRequest = null;
+				const errorMessage = error.error ? error.error.info : error.message || mw.msg( 'kzchatbot-testing-batch-network-error' );
+				const shouldRetry = this.shouldRetryError( errorMessage ) && attempt < maxRetries;
+
+				if ( shouldRetry ) {
+					// Wait 1 second before retrying
+					return new Promise( ( resolve ) => {
+						setTimeout( () => {
+							resolve( attemptQuery( attempt + 1 ) );
+						}, 1000 );
+					} );
+				} else {
+					throw new Error( errorMessage );
+				}
+			} );
+		};
+
+		return attemptQuery();
+	}
+
+	shouldRetryError( errorMessage ) {
+		// Retry for network errors, timeouts, and search failures
+		// Note: badtoken errors are handled automatically by postWithToken()
+		const retryableErrors = [
+			'Network error',
+			'Search operation failed',
+			'timeout',
+			'connection',
+			'unreachable'
+		];
+		return retryableErrors.some( ( retryableError ) =>
+			errorMessage.toLowerCase().includes( retryableError.toLowerCase() )
+		);
 	}
 
 	cancelProcessing() {
@@ -418,8 +612,110 @@ class BatchProcessor {
 			this.currentRequest.abort();
 		}
 
+		// Update progress indicator immediately
+		const currentProgress = this.progressIndicator.textContent;
+		if ( currentProgress.includes( 'of' ) ) {
+			const matches = currentProgress.match( /(\d+) of (\d+)/ );
+			if ( matches ) {
+				this.progressIndicator.textContent = mw.msg(
+					'kzchatbot-testing-batch-progress-cancelled',
+					matches[1],
+					matches[2]
+				);
+			}
+		}
+
 		// Reset processing state immediately when cancelled
 		this.setProcessingState( false );
+		
+		// Show download button if we have results
+		if ( this.results.length > 0 ) {
+			this.downloadButton.style.display = 'block';
+		}
+	}
+
+	processQueryWithProgressRetry( query, rephrase, includeDebugData, sendCompletePages, contextPageTitle = '', queryIndex, totalQueries, maxRetries = 2 ) {
+		const attemptQuery = ( attempt = 0 ) => {
+			if ( this.isCancelled ) {
+				return Promise.reject( new Error( 'cancelled' ) );
+			}
+
+			// Update progress indicator with retry info
+			if ( attempt > 0 ) {
+				this.progressIndicator.textContent = mw.msg(
+					'kzchatbot-testing-batch-progress-retry',
+					queryIndex,
+					totalQueries,
+					attempt + 1,
+					maxRetries + 1
+				);
+			} else {
+				this.updateProgress( queryIndex, totalQueries );
+			}
+
+			const api = new mw.Api();
+			this.currentRequest = api;
+			const params = {
+				action: 'kzchatbotsearch',
+				query
+			};
+			if ( rephrase ) {
+				params.rephrase = true;
+			}
+			if ( includeDebugData !== undefined ) {
+				// eslint-disable-next-line camelcase
+				params.include_debug_data = includeDebugData;
+			}
+			if ( sendCompletePages !== undefined ) {
+				// eslint-disable-next-line camelcase
+				params.send_complete_pages_to_llm = sendCompletePages;
+			}
+			if ( contextPageTitle ) {
+				const titleObj = mw.Title.newFromText( contextPageTitle );
+				if ( titleObj ) {
+					// eslint-disable-next-line camelcase
+					params.context_page_title = contextPageTitle;
+				}
+			}
+			// Add retrieval size parameter
+			const retrievalSize = parseInt( this.retrievalSizeWidget.getValue() );
+			if ( retrievalSize && retrievalSize > 0 ) {
+				// eslint-disable-next-line camelcase
+				params.retrieval_size = retrievalSize;
+			}
+			// Add max documents per page parameter
+			const maxDocsPerPage = parseInt( this.maxDocsPerPageWidget.getValue() );
+			if ( maxDocsPerPage && maxDocsPerPage > 0 ) {
+				// eslint-disable-next-line camelcase
+				params.max_documents_from_same_page = maxDocsPerPage;
+			}
+
+			// Use postWithToken() which automatically handles badtoken errors
+			return api.postWithToken( 'csrf', params ).then( ( response ) => {
+				this.currentRequest = null;
+				if ( response.error ) {
+					throw new Error( response.error.info || mw.msg( 'kzchatbot-testing-batch-unknown-error' ) );
+				}
+				return response.kzchatbotsearch;
+			} ).catch( ( error ) => {
+				this.currentRequest = null;
+				const errorMessage = error.error ? error.error.info : error.message || mw.msg( 'kzchatbot-testing-batch-network-error' );
+				const shouldRetry = this.shouldRetryError( errorMessage ) && attempt < maxRetries;
+
+				if ( shouldRetry ) {
+					// Wait 1 second before retrying
+					return new Promise( ( resolve ) => {
+						setTimeout( () => {
+							resolve( attemptQuery( attempt + 1 ) );
+						}, 1000 );
+					} );
+				} else {
+					throw new Error( errorMessage );
+				}
+			} );
+		};
+
+		return attemptQuery();
 	}
 
 	updateProgress( current, total ) {
@@ -447,16 +743,230 @@ class BatchProcessor {
 		} else {
 			html += `<td>${ this.escapeHtml( result.query ) }</td>`;
 		}
-		html += `<td>${ this.escapeHtml( result.error || result.gpt_result ) }</td>`;
+		
+		// Add retry button for errors
+		let responseCell = this.escapeHtml( result.error || result.gpt_result );
+		if ( result.error ) {
+			const retryButton = `<button class="retry-btn mw-ui-button mw-ui-progressive mw-ui-quiet" data-retry-index="${ result.index - 1 }" title="${ mw.msg( 'kzchatbot-testing-batch-retry-button' ) }">🔄</button>`;
+			responseCell += ` ${ retryButton }`;
+		}
+		html += `<td>${ responseCell }</td>`;
+		
 		if ( result.rephrase ) {
 			html += `<td>${ this.escapeHtml( result.response_time || '' ) }</td>`;
 			html += `<td>${ this.escapeHtml( result.rephrase_time || '' ) }</td>`;
 		}
 		html += `<td>${ docsHtml }</td>`;
 		html += `<td>${ filteredDocsHtml }</td>`;
+		if ( result.rephrase ? this.isRephrase && this.includeDebugData : this.includeDebugData ) {
+			const debugData = result.debug_data || result.debugData || {};
+			const hasDebugData = Object.keys( debugData ).length > 0;
+			const debugIcon = hasDebugData ?
+				`<button class="debug-btn" data-debug-index="${ result.index - 1 }" title="${ mw.msg( 'kzchatbot-testing-batch-debug-button-title' ) }">ℹ️</button>` :
+				'<span class="no-debug">—</span>';
+			html += `<td class="debug-column">${ debugIcon }</td>`;
+		}
 		row.innerHTML = html;
 
 		this.resultsTableBody.appendChild( row );
+	}
+
+	retryFailedQuery( index ) {
+		const result = this.results[ index ];
+		if ( !result || !result.error ) {
+			return;
+		}
+
+		// Find the corresponding table row
+		const tableRows = this.resultsTableBody.children;
+		const targetRow = Array.from( tableRows ).find( row => {
+			const firstCell = row.querySelector( 'td:first-child' );
+			return firstCell && parseInt( firstCell.textContent ) === result.index;
+		} );
+
+		if ( !targetRow ) {
+			return;
+		}
+
+		// Update the response cell to show "Retrying..."
+		const responseCell = targetRow.children[ result.rephrase ? 3 : 2 ];
+		const retryButton = responseCell.querySelector( '.retry-btn' );
+		if ( retryButton ) {
+			retryButton.disabled = true;
+			retryButton.textContent = mw.msg( 'kzchatbot-testing-batch-retrying' );
+		}
+
+		// Perform the retry
+		this.processQuery( result.query, result.rephrase, this.includeDebugData, this.sendCompletePages, result.contextPageTitle )
+			.then( ( newResult ) => {
+				// Update the result in the array
+				this.results[ index ] = Object.assign( {
+					query: result.query,
+					contextPageTitle: result.contextPageTitle,
+					index: result.index,
+					rephrase: result.rephrase
+				}, newResult );
+
+				// Update the table row
+				this.updateResultAtIndex( index, this.results[ index ] );
+			} )
+			.catch( ( error ) => {
+				// Update with new error
+				this.results[ index ] = {
+					query: result.query,
+					contextPageTitle: result.contextPageTitle,
+					error: error.message,
+					index: result.index,
+					rephrase: result.rephrase
+				};
+
+				// Update the table row
+				this.updateResultAtIndex( index, this.results[ index ] );
+			} );
+	}
+
+	updateResultAtIndex( index, newResult ) {
+		// Find the corresponding table row
+		const tableRows = this.resultsTableBody.children;
+		const targetRow = Array.from( tableRows ).find( row => {
+			const firstCell = row.querySelector( 'td:first-child' );
+			return firstCell && parseInt( firstCell.textContent ) === newResult.index;
+		} );
+
+		if ( !targetRow ) {
+			return;
+		}
+
+		// Remove old row and insert updated row
+		const newRow = document.createElement( 'tr' );
+		if ( newResult.error ) {
+			newRow.classList.add( 'error-row' );
+		}
+
+		// Get documents and filtered docs using shared methods
+		const docs = newResult.docs || [];
+		const filteredDocs = this.getFilteredDocuments( newResult );
+
+		// Generate HTML for document lists
+		const docsHtml = this.formatDocumentList( docs, true );
+		const filteredDocsHtml = this.formatDocumentList( filteredDocs, true );
+
+		let html = `<td>${ newResult.index }</td>`;
+		if ( newResult.rephrase ) {
+			html += `<td>${ this.escapeHtml( newResult.original_question || '' ) }</td>`;
+			html += `<td>${ this.escapeHtml( newResult.rephrased_question || '' ) }</td>`;
+		} else {
+			html += `<td>${ this.escapeHtml( newResult.query ) }</td>`;
+		}
+		
+		// Add retry button for errors
+		let responseCell = this.escapeHtml( newResult.error || newResult.gpt_result );
+		if ( newResult.error ) {
+			const retryButton = `<button class="retry-btn mw-ui-button mw-ui-progressive mw-ui-quiet" data-retry-index="${ newResult.index - 1 }" title="${ mw.msg( 'kzchatbot-testing-batch-retry-button' ) }">🔄</button>`;
+			responseCell += ` ${ retryButton }`;
+		}
+		html += `<td>${ responseCell }</td>`;
+		
+		if ( newResult.rephrase ) {
+			html += `<td>${ this.escapeHtml( newResult.response_time || '' ) }</td>`;
+			html += `<td>${ this.escapeHtml( newResult.rephrase_time || '' ) }</td>`;
+		}
+		html += `<td>${ docsHtml }</td>`;
+		html += `<td>${ filteredDocsHtml }</td>`;
+		if ( newResult.rephrase ? this.isRephrase && this.includeDebugData : this.includeDebugData ) {
+			const debugData = newResult.debug_data || newResult.debugData || {};
+			const hasDebugData = Object.keys( debugData ).length > 0;
+			const debugIcon = hasDebugData ?
+				`<button class="debug-btn" data-debug-index="${ newResult.index - 1 }" title="${ mw.msg( 'kzchatbot-testing-batch-debug-button-title' ) }">ℹ️</button>` :
+				'<span class="no-debug">—</span>';
+			html += `<td class="debug-column">${ debugIcon }</td>`;
+		}
+		newRow.innerHTML = html;
+
+		// Replace the old row
+		targetRow.parentNode.replaceChild( newRow, targetRow );
+	}
+
+	showDebugModal( result ) {
+		const debugData = result.debug_data || result.debugData || {};
+		const jsonString = JSON.stringify( debugData, null, 2 );
+		// Replace escaped newlines with actual newlines for better display
+		const displayString = jsonString.replace( /\\n/g, '\n' );
+
+		// Create a custom ProcessDialog for the debug modal
+		function DebugDialog( config ) {
+			DebugDialog.super.call( this, config );
+		}
+		OO.inheritClass( DebugDialog, OO.ui.ProcessDialog );
+
+		DebugDialog.static.name = 'debugDialog';
+		DebugDialog.static.size = 'large';
+		DebugDialog.static.actions = [
+			{
+				action: 'close',
+				label: mw.msg( 'kzchatbot-testing-batch-debug-close-button' ),
+				flags: [ 'safe', 'close' ]
+			}
+		];
+
+		DebugDialog.prototype.initialize = function () {
+			DebugDialog.super.prototype.initialize.apply( this, arguments );
+
+			// Create copy button for the header
+			const copyButton = new OO.ui.ButtonWidget( {
+				label: mw.msg( 'kzchatbot-testing-batch-debug-copy-button' ),
+				flags: [ 'progressive' ],
+				icon: 'articles'
+			} );
+			copyButton.on( 'click', () => {
+				navigator.clipboard.writeText( jsonString ).then( () => {
+					mw.notify( mw.msg( 'kzchatbot-testing-batch-debug-copied' ) );
+				} ).catch( () => {
+					// Fallback for older browsers
+					const textArea = document.createElement( 'textarea' );
+					textArea.value = jsonString;
+					document.body.appendChild( textArea );
+					textArea.select();
+					document.execCommand( 'copy' );
+					document.body.removeChild( textArea );
+					mw.notify( mw.msg( 'kzchatbot-testing-batch-debug-copied' ) );
+				} );
+			} );
+
+			// Create title with copy button
+			const titleElement = $( '<div>' )
+				.addClass( 'debug-modal-title' )
+				.append(
+					$( '<span>' )
+						.addClass( 'debug-modal-title-text' )
+						.text( mw.msg( 'kzchatbot-testing-batch-debug-dialog-title', result.index ) ),
+					copyButton.$element
+				);
+			this.$head.find( '.oo-ui-processDialog-title' ).empty().append( titleElement );
+
+			const content = new OO.ui.PanelLayout( { padded: true, expanded: false, scrollable: true } );
+			content.$element.append(
+				$( '<pre>' ).addClass( 'debug-data-content' ).text( displayString )
+			);
+			this.$body.append( content.$element );
+		};
+
+		DebugDialog.prototype.getActionProcess = function ( action ) {
+			if ( action === 'close' ) {
+				return new OO.ui.Process( () => {
+					this.close( { action: 'close' } );
+				} );
+			}
+			return DebugDialog.super.prototype.getActionProcess.call( this, action );
+		};
+
+		const windowManager = new OO.ui.WindowManager();
+		$( document.body ).append( windowManager.$element );
+		const dialog = new DebugDialog();
+		windowManager.addWindows( [ dialog ] );
+		windowManager.openWindow( dialog ).closed.then( () => {
+			windowManager.destroy();
+		} );
 	}
 
 	/**
@@ -495,7 +1005,7 @@ class BatchProcessor {
 			// Find documents in docs_before_filter that aren't in docs
 			const docUrls = result.docs.map( ( doc ) => doc.url );
 			filteredDocs = result.docs_before_filter.filter(
-				( doc ) => docUrls.indexOf( doc.url ) === -1
+				( doc ) => !docUrls.includes( doc.url )
 			);
 		}
 		return filteredDocs;
@@ -516,21 +1026,24 @@ class BatchProcessor {
 	}
 
 	generateCSV() {
-		const headers = [
-			mw.msg( 'kzchatbot-testing-batch-header-query' ),
-			mw.msg( 'kzchatbot-testing-batch-header-response' ),
-			mw.msg( 'kzchatbot-testing-batch-header-documents' ),
-			mw.msg( 'kzchatbot-testing-batch-header-filtered-documents' ),
-			mw.msg( 'kzchatbot-testing-batch-header-error' )
-		];
+		const headers = [ mw.msg( 'kzchatbot-testing-batch-header-query' ) ];
 		if ( this.isRephrase ) {
-			headers.splice( 1, 0,
+			headers.push(
 				mw.msg( 'kzchatbot-testing-batch-header-original-question' ),
 				mw.msg( 'kzchatbot-testing-batch-header-rephrased-question' ),
 				mw.msg( 'kzchatbot-testing-batch-header-response-time' ),
 				mw.msg( 'kzchatbot-testing-batch-header-rephrase-time' )
 			);
 		}
+		headers.push(
+			mw.msg( 'kzchatbot-testing-batch-header-response' ),
+			mw.msg( 'kzchatbot-testing-batch-header-documents' ),
+			mw.msg( 'kzchatbot-testing-batch-header-filtered-documents' )
+		);
+		if ( this.includeDebugData ) {
+			headers.push( mw.msg( 'kzchatbot-testing-batch-header-debug' ) );
+		}
+		headers.push( mw.msg( 'kzchatbot-testing-batch-header-error' ) );
 		const rows = [ headers ];
 
 		for ( const result of this.results ) {
@@ -544,10 +1057,18 @@ class BatchProcessor {
 
 			const row = [];
 			if ( result.rephrase ) {
-				row.push( result.query, result.original_question || '', result.rephrased_question || '', result.error || result.gpt_result, result.response_time || '', result.rephrase_time || '', docsText, filteredDocsText, result.error || '' );
+				row.push( result.query, result.original_question || '', result.rephrased_question || '', result.response_time || '', result.rephrase_time || '', result.error || result.gpt_result, docsText, filteredDocsText );
 			} else {
-				row.push( result.query, result.error || result.gpt_result, docsText, filteredDocsText, result.error || '' );
+				row.push( result.query, result.error || result.gpt_result, docsText, filteredDocsText );
 			}
+
+			if ( this.includeDebugData ) {
+				const debugData = result.debug_data || result.debugData || {};
+				const debugText = Object.keys( debugData ).length > 0 ? JSON.stringify( debugData, null, 2 ) : '';
+				row.push( debugText );
+			}
+
+			row.push( result.error || '' );
 			rows.push( row.map( ( cell ) => this.escapeCSV( cell ) ) );
 		}
 
@@ -559,8 +1080,8 @@ class BatchProcessor {
 			return '';
 		}
 		str = str.toString();
-		if ( str.indexOf( '"' ) !== -1 || str.indexOf( ',' ) !== -1 ||
-			str.indexOf( '\n' ) !== -1 || str.indexOf( '\r' ) !== -1 ) {
+		if ( str.includes( '"' ) || str.includes( ',' ) ||
+			str.includes( '\n' ) || str.includes( '\r' ) ) {
 			return `"${ str.replace( /"/g, '""' ) }"`;
 		}
 		return str;

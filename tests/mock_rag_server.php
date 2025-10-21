@@ -42,6 +42,33 @@ if ( preg_match( '#/rating$#', $uri ) && $method === 'POST' ) {
 	exit;
 }
 
+if ( preg_match( '#/get_config_metadata$#', $uri ) && $method === 'POST' ) {
+	$response = [
+		'available_models' => [
+			'gpt-3.5-turbo' => [ 'supports_temperature' => true ],
+			'gpt-4o-mini' => [ 'supports_temperature' => true ],
+			'gpt-4o' => [ 'supports_temperature' => true ],
+			'gpt-4.5-preview' => [ 'supports_temperature' => true ],
+			'gpt-o1' => [ 'supports_temperature' => false ],
+			'gpt-o3-mini' => [ 'supports_temperature' => false ],
+			'gemini-2.5-flash' => [ 'supports_temperature' => true ],
+			'gemini-2.5-pro' => [ 'supports_temperature' => true ]
+		],
+		'temperature_options' => [ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 ],
+		'num_of_pages_options' => [ 1, 2, 3, 4, 5 ],
+		'config_field_types' => [
+			'model' => 'string',
+			'temperature' => 'float',
+			'num_of_pages' => 'integer',
+			'system_prompt' => 'string',
+			'user_prompt' => 'string',
+			'banned_fields' => 'string'
+		]
+	];
+	echo json_encode( $response );
+	exit;
+}
+
 // Default: Not found
 http_response_code( 404 );
 echo json_encode( [ 'error' => 'Not found' ] );

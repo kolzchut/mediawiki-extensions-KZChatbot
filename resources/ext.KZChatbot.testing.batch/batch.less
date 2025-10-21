@@ -52,6 +52,14 @@
 			white-space: nowrap;
 		}
 
+		.context-page-widget {
+			min-width: 200px;
+
+			.oo-ui-textInputWidget {
+				width: 100%;
+			}
+		}
+
 		.query-cell {
 			min-height: 1.5em;
 			white-space: pre-wrap;
@@ -103,8 +111,6 @@
 		margin: 1em 0;
 		max-height: 500px;
 		overflow-y: auto;
-		border: 1px solid #c8ccd1;
-		border-radius: 2px;
 	}
 
 	.batch-results-table {
@@ -138,6 +144,34 @@
 				background-color: #fdd6d6;
 			}
 		}
+
+		.debug-column {
+			text-align: center;
+			width: 60px;
+
+			.debug-btn {
+				background: none;
+				border: none;
+				cursor: pointer;
+				font-size: 16px;
+				padding: 4px;
+				border-radius: 2px;
+				transition: background-color 0.2s;
+
+				&:hover {
+					background-color: #eaf3ff;
+				}
+
+				&:active {
+					background-color: #c8ccd1;
+				}
+			}
+
+			.no-debug {
+				color: #72777d;
+				font-style: italic;
+			}
+		}
 	}
 
 	.batch-results-summary {
@@ -146,14 +180,53 @@
 		color: #202122;
 	}
 
-	// Style for the rephrase toggle and label
-	#rephrase-toggle-container {
-		display: inline-block;
-		margin-inline-end: 1em;
-		vertical-align: middle;
+	// Style for the options fieldset
+	.kz-chatbot-options {
+		border: 1px solid #c8ccd1;
+		border-radius: 2px;
+		padding: 1em;
+		margin-bottom: 1em;
 
-		.oo-ui-toggleSwitchWidget {
-			margin-inline-end: 0.5em;
+		legend {
+			padding: 0 0.5em;
+			font-weight: bold;
+			color: #202122;
 		}
+
+		// Limit width of numeric input field layouts
+		.kz-chatbot-numeric-inputs {
+			max-width: 15em;
+		}
+	}
+}
+
+// Style for debug data modal
+.debug-data-content {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	max-width: 100%;
+	overflow-x: auto;
+	font-family: monospace;
+	font-size: 12px;
+	line-height: 1.5;
+	background-color: #f8f9fa;
+	padding: 1em;
+	border: 1px solid #c8ccd1;
+	border-radius: 2px;
+}
+
+.debug-modal-title {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+
+	.debug-modal-title-text {
+		flex: 1;
+	}
+
+	.oo-ui-buttonWidget {
+		margin-left: 1em;
 	}
 }

@@ -21,6 +21,15 @@ class SpecialKZChatbotTesting extends SpecialPage {
 		$this->getOutput()->addModuleStyles( 'ext.KZChatbot.testing.styles' );
 		$this->getOutput()->addModules( 'ext.KZChatbot.testing.batch' );
 
+		// Add navigation link to RAG Settings
+		$ragSettingsTitle = SpecialPage::getTitleFor( 'KZChatbotRagSettings' );
+		$linkRenderer = $this->getLinkRenderer();
+		$ragSettingsLink = $linkRenderer->makeLink( 
+			$ragSettingsTitle,
+			$this->msg( 'kzchatbot-testing-nav-to-rag-settings' )->text()
+		);
+		$this->getOutput()->addSubtitle( $ragSettingsLink );
+
 		// Fetch model information from the RAG backend
 		$modelsVersionStatus = KZChatbot::getModelsVersion();
 		$modelsVersion = '';
@@ -35,6 +44,21 @@ class SpecialKZChatbotTesting extends SpecialPage {
 				$this->msg( 'kzchatbot-testing-models-error-unknown' )->text();
 		}
 
+		// Fetch current RAG configuration to get the current model
+		$ragConfigStatus = KZChatbot::getRagConfig();
+		$currentModel = '';
+		$currentModelError = '';
+
+		if ( $ragConfigStatus->isOK() ) {
+			$config = $ragConfigStatus->getValue();
+			$currentModel = $config['model'] ?? '';
+		} else {
+			$errors = $ragConfigStatus->getErrors();
+			$currentModelError = $errors ?
+				$this->msg( $errors[0] )->text() :
+				$this->msg( 'kzchatbot-testing-current-model-error-unknown' )->text();
+		}
+
 		$templateData = [
 			'batchTitle' => $this->msg( 'kzchatbot-testing-batch-title' )->text(),
 			'inputLabel' => $this->msg( 'kzchatbot-testing-batch-input-label' )->text(),
@@ -46,6 +70,7 @@ class SpecialKZChatbotTesting extends SpecialPage {
 			'totalQueriesLabel' => $this->msg( 'kzchatbot-testing-batch-total-queries' )->text(),
 			'numberColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-number' )->text(),
 			'queryColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-query' )->text(),
+			'contextPageColumnHeader' => $this->msg( 'kzchatbot-testing-batch-context-page-header' )->text(),
 			'responseColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-response' )->text(),
 			'documentsColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-documents' )->text(),
 			'filteredDocsColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-filtered-documents' )->text(),
@@ -57,6 +82,18 @@ class SpecialKZChatbotTesting extends SpecialPage {
 			'modelsVersion' => $modelsVersion,
 			'modelsError' => $modelsError,
 			'hasModelsError' => !empty( $modelsError ),
+			'currentModelLabel' => $this->msg( 'kzchatbot-testing-current-model-label' )->text(),
+			'currentModel' => $currentModel,
+			'currentModelError' => $currentModelError,
+			'hasCurrentModelError' => !empty( $currentModelError ),
+			'optionsLegend' => $this->msg( 'kzchatbot-testing-batch-options-legend' )->text(),
+			'rephraseLabel' => $this->msg( 'kzchatbot-testing-batch-rephrase-toggle-label' )->text(),
+			'includeDebugDataLabel' => $this->msg( 'kzchatbot-testing-batch-include-debug-data-toggle-label' )->text(),
+			'sendCompletePagesLabel' => $this->msg( 'kzchatbot-testing-batch-send-complete-pages-to-llm-toggle-label' )->text(),
+			'retrievalSizeLabel' => $this->msg( 'kzchatbot-testing-batch-retrieval-size-label' )->text(),
+			'retrievalSizeHelp' => $this->msg( 'kzchatbot-testing-batch-retrieval-size-help' )->text(),
+			'maxDocsPerPageLabel' => $this->msg( 'kzchatbot-testing-batch-max-docs-per-page-label' )->text(),
+			'maxDocsPerPageHelp' => $this->msg( 'kzchatbot-testing-batch-max-docs-per-page-help' )->text(),
 		];
 
 		$this->getOutput()->addHTML(

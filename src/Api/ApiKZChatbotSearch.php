@@ -17,6 +17,11 @@ class ApiKZChatbotSearch extends ApiBase {
 		$params = $this->extractRequestParams();
 		$query = $params['query'];
 		$rephrase = isset( $params['rephrase'] ) ? (bool)$params['rephrase'] : false;
+		$includeDebugData = isset( $params['include_debug_data'] ) ? (bool)$params['include_debug_data'] : true;
+		$sendCompletePagesToLlm = isset( $params['send_complete_pages_to_llm'] ) ? (bool)$params['send_complete_pages_to_llm'] : false;
+		$contextPageTitle = isset( $params['context_page_title'] ) ? trim( $params['context_page_title'] ) : '';
+		$retrievalSize = isset( $params['retrieval_size'] ) ? (int)$params['retrieval_size'] : null;
+		$maxDocumentsFromSamePage = isset( $params['max_documents_from_same_page'] ) ? (int)$params['max_documents_from_same_page'] : null;
 
 		try {
 			$apiUrl = rtrim( $this->getConfig()->get( 'KZChatbotLlmApiUrl' ), '/' );
@@ -30,13 +35,41 @@ class ApiKZChatbotSearch extends ApiBase {
 			if ( $rephrase ) {
 				$postDataArr['rephrase'] = true;
 			}
+			$postDataArr['include_debug_data'] = $includeDebugData;
+			$postDataArr['send_complete_pages_to_llm'] = $sendCompletePagesToLlm;
+
+			// Add retrieval_size if provided
+			if ( $retrievalSize !== null && $retrievalSize > 0 ) {
+				$postDataArr['retrieval_size'] = $retrievalSize;
+			}
+
+			// Add max_documents_from_same_page if provided
+			if ( $maxDocumentsFromSamePage !== null && $maxDocumentsFromSamePage > 0 ) {
+				$postDataArr['max_documents_from_same_page'] = $maxDocumentsFromSamePage;
+			}
+
+			// Convert context page title to page ID if provided
+			if ( $contextPageTitle ) {
+				$title = \Title::newFromText( $contextPageTitle );
+				if ( $title && $title->exists() ) {
+					// Resolve redirects to get the target page ID
+					if ( $title->isRedirect() ) {
+						$wikipage = \WikiPage::factory( $title );
+						$redirectTarget = $wikipage->getRedirectTarget();
+						if ( $redirectTarget ) {
+							$title = $redirectTarget;
+						}
+					}
+					$postDataArr['page_id'] = strval( $title->getArticleID() );
+				}
+			}
 			$postData = json_encode( $postDataArr );
 
 			curl_setopt_array( $ch, [
 				CURLOPT_POST => true,
 				CURLOPT_POSTFIELDS => $postData,
 				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_TIMEOUT => 30,
+				CURLOPT_TIMEOUT => 180,
 				CURLOPT_HTTPHEADER => [
 					'Content-Type: application/json',
 					'Accept: application/json'
@@ -82,6 +115,28 @@ class ApiKZChatbotSearch extends ApiBase {
 				ParamValidator::PARAM_TYPE => 'boolean',
 				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_DEFAULT => false,
+			],
+			'include_debug_data' => [
+				ParamValidator::PARAM_TYPE => 'boolean',
+				ParamValidator::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_DEFAULT => true,
+			],
+			'send_complete_pages_to_llm' => [
+				ParamValidator::PARAM_TYPE => 'boolean',
+				ParamValidator::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_DEFAULT => false,
+			],
+			'context_page_title' => [
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => false,
+			],
+			'retrieval_size' => [
+				ParamValidator::PARAM_TYPE => 'integer',
+				ParamValidator::PARAM_REQUIRED => false,
+			],
+			'max_documents_from_same_page' => [
+				ParamValidator::PARAM_TYPE => 'integer',
+				ParamValidator::PARAM_REQUIRED => false,
 			],
 		];
 	}

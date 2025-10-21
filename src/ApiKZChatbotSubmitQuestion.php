@@ -77,10 +77,13 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 			'asked_from' => strval( $this->referrer )
 		];
 
-		$relevantPageId = $this->getRelevantPageId();
-		if ( $relevantPageId !== null ) {
-			// Add page ID as additional context for RAG to improve answer relevance
-			$params['page_id'] = strval( $relevantPageId );
+		$sendPageId = $config->get( 'KZChatbotSendPageId' );
+		if ( $sendPageId ) {
+			$relevantPageId = $this->getRelevantPageId();
+			if ( $relevantPageId !== null ) {
+				// Add page ID as additional context for RAG to improve answer relevance
+				$params['page_id'] = strval( $relevantPageId );
+			}
 		}
 
 		try {

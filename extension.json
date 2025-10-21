@@ -29,6 +29,11 @@
 			"value": "autoOpenChatbot",
 			"description": "URL parameter that triggers the chatbot to open automatically. Set to an empty string to disable this feature.",
 			"public": true
+		},
+		"KZChatbotSendPageId": {
+			"value": true,
+			"description": "Whether to send page_id as additional context to the RAG backend. Set to false to disable sending page context.",
+			"public": true
 		}
 	},
 	"ConfigRegistry": {

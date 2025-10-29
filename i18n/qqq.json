@@ -15,6 +15,9 @@
 	"kzchatbot-rag-settings-label-num-of-pages": "Label for the numeric input field where users specify how many pages to process",
 	"kzchatbot-rag-settings-help-num-of-pages": "Help text explaining the page number selector. Describes that this setting limits how many pages the AI will process at once",
 
+	"kzchatbot-rag-settings-label-add-current-page": "Label for the checkbox that controls whether the current page context is included when prompting the LLM",
+	"kzchatbot-rag-settings-help-add-current-page": "Help text explaining the add current page checkbox. Describes that when enabled, the current page content will be included in the LLM prompt for more contextually relevant answers",
+
 	"kzchatbot-rag-settings-label-temperature": "Label for the temperature setting dropdown. Temperature affects AI response randomness",
 	"kzchatbot-rag-settings-help-temperature": "Help text explaining the temperature setting. Describes how temperature affects the randomness/creativity of AI responses (0.1-0.9)",
 
@@ -31,7 +34,7 @@
 	"kzchatbot-testing-current-model-error-unknown": "Error message displayed when the current model information cannot be retrieved",
 	"kzchatbot-testing-models-version-label": "Label for displaying the current models version information in the testing interface",
 	"kzchatbot-testing-models-error-unknown": "Error message displayed when the model version information cannot be retrieved",
-	
+
 	"kzchatbot-rag-settings-error-metadata-failed": "Error message displayed when the RAG backend's /get_config_metadata endpoint fails or is unreachable",
 	"kzchatbot-rag-settings-error-metadata-invalid": "Error message displayed when the RAG backend's /get_config_metadata endpoint returns invalid or malformed metadata"
 }

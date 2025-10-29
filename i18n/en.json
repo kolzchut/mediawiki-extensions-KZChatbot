@@ -93,6 +93,9 @@
 	"kzchatbot-rag-settings-label-num-of-pages": "Number of Pages",
 	"kzchatbot-rag-settings-help-num-of-pages": "Select the number of pages for the model to process",
 
+	"kzchatbot-rag-settings-label-add-current-page": "Use context page",
+	"kzchatbot-rag-settings-help-add-current-page": "Include the current page content when prompting the LLM for more relevant answers",
+
 	"kzchatbot-rag-settings-label-temperature": "Temperature",
 	"kzchatbot-rag-settings-help-temperature": "Set the temperature value for model response randomness",
 

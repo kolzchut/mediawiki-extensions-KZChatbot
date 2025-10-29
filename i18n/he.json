@@ -92,6 +92,9 @@
 	"kzchatbot-rag-settings-label-num-of-pages": "מספר עמודים",
 	"kzchatbot-rag-settings-help-num-of-pages": "בחר את מספר העמודים שהמודל יעבד",
 
+	"kzchatbot-rag-settings-label-add-current-page": "השתמש בעמוד ההקשר",
+	"kzchatbot-rag-settings-help-add-current-page": "כלול את תוכן העמוד הנוכחי בעת שליחת הפנייה ל-LLM לקבלת תשובות רלוונטיות יותר",
+
 	"kzchatbot-rag-settings-label-temperature": "טמפרטורה",
 	"kzchatbot-rag-settings-help-temperature": "הגדר את ערך הטמפרטורה לאקראיות תגובות המודל",
 

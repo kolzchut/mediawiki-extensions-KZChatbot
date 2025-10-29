@@ -241,6 +241,12 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 				'default' => $this->currentConfig['num_of_pages'] ?? 1,
 				'required' => true,
 			],
+			'add_current_page_to_search' => [
+				'type' => 'check',
+				'label-message' => 'kzchatbot-rag-settings-label-add-current-page',
+				'help-message' => 'kzchatbot-rag-settings-help-add-current-page',
+				'default' => $this->currentConfig['add_current_page_to_search'] ?? false,
+			],
 			'temperature' => [
 				'type' => 'select',
 				'label-message' => 'kzchatbot-rag-settings-label-temperature',
@@ -306,6 +312,7 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 		return [
 			'model' => $config['model'] ?? '',
 			'num_of_pages' => (int)( $config['num_of_pages'] ?? 1 ),
+			'add_current_page_to_search' => (bool)( $config['add_current_page_to_search'] ?? false ),
 			'temperature' => (float)( $config['temperature'] ?? 0 ),
 			'system_prompt' => trim( $config['system_prompt'] ?? '' ),
 			'user_prompt' => trim( $config['user_prompt'] ?? '' ),

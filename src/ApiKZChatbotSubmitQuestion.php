@@ -55,7 +55,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		}
 		$answer = $this->generateAnswer();
 		if ( $answer['llmResult'] === null ) {
-			wfDebugLog( 'KZChatbot', 'RAG backend returned null. Question: ' . $this->question . "\nAnswer: " . print_r( $answer, true ) );
+			KZChatbot::getLogger()->error( 'RAG backend returned null. Question: ' . $this->question . "\nAnswer: " . print_r( $answer, true ) );
 			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
 		}
 		return $answer;
@@ -94,7 +94,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 				'json' => $params
 			] );
 		} catch ( \GuzzleHttp\Exception\GuzzleException $e ) {
-			wfDebugLog( 'KZChatbot', 'RAG backend request failed (' . $e->getCode() . '): ' . $e->getMessage() );
+			KZChatbot::getLogger()->error( 'RAG backend request failed (' . $e->getCode() . '): ' . $e->getMessage() );
 			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
 		}
 		$response = json_decode( $result->getBody()->getContents() );

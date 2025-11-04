@@ -87,7 +87,7 @@
 
 	"kzchatbot-rag-settings-label-version": "גרסת הגדרות",
 	"kzchatbot-rag-settings-label-model": "בחר מודל",
-	"kzchatbot-rag-settings-help-model": "בחר את מודל הבינה המלאכותית לשימוש בעיבוד",
+	"kzchatbot-rag-settings-help-model": "בחר את מודל הבינה המלאכותית לשימוש בעיבוד.\n\n⚠️ שים לב: החלפת משפחת מודלים (למשל מ-OpenAI ל-Gemini) דורשת פעולה ידנית נוספת של מנהל המערכת וצריך ליצור איתו קשר.",
 
 	"kzchatbot-rag-settings-label-num-of-pages": "מספר עמודים",
 	"kzchatbot-rag-settings-help-num-of-pages": "בחר את מספר העמודים שהמודל יעבד",

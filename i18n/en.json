@@ -88,7 +88,7 @@
 
 	"kzchatbot-rag-settings-label-version": "Configuration Version",
 	"kzchatbot-rag-settings-label-model": "Select Model",
-	"kzchatbot-rag-settings-help-model": "Choose the AI model to use for processing",
+	"kzchatbot-rag-settings-help-model": "Choose the AI model to use for processing.\n\n⚠️ Note: Switching model families (e.g., OpenAI to Gemini) requires additional manual action by the system administrator and you need to contact them.",
 
 	"kzchatbot-rag-settings-label-num-of-pages": "Number of Pages",
 	"kzchatbot-rag-settings-help-num-of-pages": "Select the number of pages for the model to process",

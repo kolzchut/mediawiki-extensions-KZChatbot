@@ -49,13 +49,13 @@ These settings can be configured in `LocalSettings.php`.
 
 ⚠️ `$wgKZChatbotLlmApiUrl` is required for the extension to function.
 
-| Setting                            | Default           | Description                                                                                                                             |
-|------------------------------------|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| `$wgKZChatbotLlmApiUrl`            | null              | LLM API URL                                                                                                                             |
-| `$wgKZChatbotUserLimitBypassToken` | false             | Secret token that allows bypassing the active users limit when provided as a URL parameter. Set to false to disable the bypass feature. |
-| `$wgKZChatbotAutoOpenParam`        | "autoOpenChatbot" | URL parameter that triggers the chatbot to open automatically. Set to an empty string to disable this feature.                          |
-| `$wgKZChatbotSendPageId`           | true              | Whether to send page_id as additional context to the RAG backend. Set to false to disable sending page context.                         |
-
+| Setting                                | Default           | Description                                                                                                                             |
+|----------------------------------------|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `$wgKZChatbotLlmApiUrl`                | null              | LLM API URL                                                                                                                             |
+| `$wgKZChatbotUserLimitBypassToken`     | false             | Secret token that allows bypassing the active users limit when provided as a URL parameter. Set to false to disable the bypass feature. |
+| `$wgKZChatbotAutoOpenParam`            | "autoOpenChatbot" | URL parameter that triggers the chatbot to open automatically. Set to an empty string to disable this feature.                          |
+| `$wgKZChatbotSendPageId`               | true              | Whether to send page_id as additional context to the RAG backend. Set to false to disable sending page context.                         |
+| `$wgKZChatbotReplaceAnswerWhenNoLinks` | false             | If true and no links returned, the rag's answer is replaced by a stock one.                                                             |
 
 ### Required Settings
 - `$wgKZChatbotLlmApiUrl`: Base URL for the LLM API used by the chatbot

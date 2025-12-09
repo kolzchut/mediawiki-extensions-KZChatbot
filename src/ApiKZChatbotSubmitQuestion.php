@@ -105,7 +105,12 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 			];
 		}, $response->docs );
 
-		$answer = empty( $docs ) ? Slugs::getSlug( 'returning_links_empty' ) : $response->gpt_result;
+		// Check config to determine behavior when no links are found
+		$replaceAnswerWhenNoLinks = $config->get( 'KZChatbotReplaceAnswerWhenNoLinks' );
+		$answer = ( $replaceAnswerWhenNoLinks && empty( $docs ) )
+			? Slugs::getSlug( 'returning_links_empty' )
+			: $response->gpt_result;
+
 		return [
 			'llmResult' => $answer,
 			'docs' => $docs,

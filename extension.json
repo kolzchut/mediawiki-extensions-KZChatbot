@@ -34,6 +34,11 @@
 			"value": true,
 			"description": "Whether to send page_id as additional context to the RAG backend. Set to false to disable sending page context.",
 			"public": true
+		},
+		"KZChatbotReplaceAnswerWhenNoLinks": {
+			"value": false,
+			"description": "When true, replaces the LLM answer with the 'returning_links_empty' slug when no links are returned. When false, always shows the LLM answer.",
+			"public": true
 		}
 	},
 	"ConfigRegistry": {

@@ -6,12 +6,12 @@
 		"build": "cd resources/ext.KZChatbot.react && npm install && npm run build && cp dist/assets/* ../ext.KZChatbot.bot/"
 	},
 	"devDependencies": {
-		"eslint-config-wikimedia": "0.28.2",
+		"eslint-config-wikimedia": "0.32.3",
 		"grunt": "1.6.1",
 		"grunt-banana-checker": "0.13.0",
 		"grunt-eslint": "24.3.0",
 		"grunt-stylelint": "0.20.1",
-		"stylelint-config-wikimedia": "0.17.2"
+		"stylelint-config-wikimedia": "0.18.0"
 	},
 	"eslintIgnore": [
 		"vendor/**",

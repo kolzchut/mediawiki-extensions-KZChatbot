@@ -5,4 +5,5 @@
 	<arg name="extensions" value="php"/>
 	<arg name="encoding" value="UTF-8"/>
 	<exclude-pattern type="relative">resources/ext.KZChatbot.react/*</exclude-pattern>
+	<exclude-pattern type="relative">tests/mock_rag_server\.php$</exclude-pattern>
 </ruleset>

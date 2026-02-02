@@ -2,6 +2,8 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use MediaWiki\MediaWikiServices;
+
 class Slugs {
 	/**
 	 * @var array|null of texts
@@ -95,7 +97,7 @@ class Slugs {
 		// Reset the static cache, so it is refreshed next time
 		self::$slugsRaw = null;
 
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 		return $dbw->delete(
 			'kzchatbot_text',
 			[ 'kzcbt_slug' => $slug ]
@@ -108,7 +110,7 @@ class Slugs {
 	 * @return true
 	 * @throws \MWException
 	 */
-	public static function saveSlug( string $slug, string $text ) {
+	public static function saveSlug( string $slug, string $text ): bool {
 		$slugs = self::getDefaultSlugs();
 		if ( !self::isValidSlugName( $slug ) ) {
 			throw new \MWException( 'invalid slug name' );
@@ -116,7 +118,7 @@ class Slugs {
 		if ( $text === $slugs[$slug] ) {
 			throw new \MWException( 'same as default text' );
 		}
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 		// Clear prior value if one exists.
 		$dbw->upsert(
 			'kzchatbot_text',
@@ -143,7 +145,7 @@ class Slugs {
 	 *
 	 * @return array
 	 */
-	public static function getSlugs() {
+	public static function getSlugs(): array {
 		$slugs = self::getSlugsRaw();
 		$settings = KZChatbot::getGeneralSettings();
 
@@ -161,8 +163,8 @@ class Slugs {
 	/**
 	 * @return array
 	 */
-	public static function getSlugsFromDB() {
-		$dbr = wfGetDB( DB_REPLICA );
+	public static function getSlugsFromDB(): array {
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 		$res = $dbr->select(
 			[ 'text' => 'kzchatbot_text' ],
 			[ 'kzcbt_slug', 'kzcbt_text' ],
@@ -182,7 +184,7 @@ class Slugs {
 	 * @param string $slugName
 	 * @return string|null
 	 */
-	public static function getSlug( string $slugName ) {
+	public static function getSlug( string $slugName ): ?string {
 		$slugs = self::getSlugs();
 		return $slugs[$slugName] ?? null;
 	}

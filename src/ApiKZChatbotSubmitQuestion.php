@@ -2,12 +2,15 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use GuzzleHttp\Exception\GuzzleException;
 use MediaWiki\Extension\ChatbotRagContent\ChatbotRagContent;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Validator\JsonBodyValidator;
+use MWException;
 use RequestContext;
+use Title;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ApiKZChatbotSubmitQuestion extends Handler {
@@ -15,24 +18,26 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	/**
 	 * @var string The UUID associated with the user.
 	 */
-	private $uuid;
+	private string $uuid;
 
 	/**
 	 * @var string The question to be submitted to the RAG backend.
 	 */
-	private $question;
+	private string $question;
 
 	/**
 	 * @var string currently the referring page
 	 */
-	private $referrer;
+	private string $referrer;
 
 	/**
 	 * Pass user question to RAG backend, checking first that user hasn't exceeded daily limit.
 	 * Return answer from RAG backend.
 	 * @return array
+	 * @throws HttpException
+	 * @throws MWException
 	 */
-	public function execute() {
+	public function execute(): array {
 		$body = $this->getValidatedBody();
 		$this->uuid = $body['uuid'];
 		$this->validateUser();
@@ -46,7 +51,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		$bannedWords = BannedWord::getAll();
 		foreach ( $bannedWords as $word ) {
 			// Add the 'u' modifier when testing a regular expression
-			if ( strpos( $this->question, $word->getPattern() ) !== false ||
+			if ( str_contains( $this->question, $word->getPattern() ) ||
 				preg_match( $word->getPattern() . 'u', $this->question )
 			) {
 				$message = $word->getReplyMessage() ?: Slugs::getSlug( 'banned_word_found' );
@@ -55,7 +60,9 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		}
 		$answer = $this->generateAnswer();
 		if ( $answer['llmResult'] === null ) {
-			KZChatbot::getLogger()->error( 'RAG backend returned null. Question: ' . $this->question . "\nAnswer: " . print_r( $answer, true ) );
+			$logMsg = 'RAG backend returned null. Question: ' . $this->question
+				. "\nAnswer: " . print_r( $answer, true );
+			KZChatbot::getLogger()->error( $logMsg );
 			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
 		}
 		return $answer;
@@ -63,9 +70,9 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 
 	/**
 	 * @throws HttpException
-	 * @throws \MWException
+	 * @throws MWException
 	 */
-	private function generateAnswer() {
+	private function generateAnswer(): array {
 		$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'KZChatbot' );
 		$question = $this->question;
 		$uuid = $this->uuid;
@@ -74,7 +81,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		$client = new \GuzzleHttp\Client();
 		$params = [
 			'query' => $question,
-			'asked_from' => strval( $this->referrer )
+			'asked_from' => $this->referrer
 		];
 
 		$sendPageId = $config->get( 'KZChatbotSendPageId' );
@@ -93,7 +100,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 				],
 				'json' => $params
 			] );
-		} catch ( \GuzzleHttp\Exception\GuzzleException $e ) {
+		} catch ( GuzzleException $e ) {
 			KZChatbot::getLogger()->error( 'RAG backend request failed (' . $e->getCode() . '): ' . $e->getMessage() );
 			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
 		}
@@ -121,8 +128,9 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	/**
 	 * @param string $contentType MIME Type
 	 * @return JsonBodyValidator
+	 * @throws HttpException
 	 */
-	public function getBodyValidator( $contentType ) {
+	public function getBodyValidator( $contentType ): JsonBodyValidator {
 		if ( $contentType !== 'application/json' ) {
 			throw new HttpException(
 				"Unsupported Content-Type",
@@ -159,10 +167,10 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	 * Validate the request parameters.
 	 * @throws HttpException
 	 */
-	private function validateUser() {
+	private function validateUser(): void {
 		$uuid = $this->uuid;
 		$userData = KZChatbot::getUserData( $uuid );
-		if ( $userData === null ) {
+		if ( $userData === false ) {
 			throw new HttpException( 'User not found', 404 );
 		}
 
@@ -176,7 +184,8 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	 * @return int|null Page ID if relevant, null otherwise
 	 */
 	private function getRelevantPageId(): ?int {
-		if ( !\ExtensionRegistry::getInstance()->isLoaded( 'ChatbotRagContent' ) ) {
+		$extensionRegistry = MediaWikiServices::getInstance()->getExtensionRegistry();
+		if ( !$extensionRegistry->isLoaded( 'ChatbotRagContent' ) ) {
 			return null;
 		}
 
@@ -186,7 +195,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		// Check if referrer is a page ID
 		if ( is_numeric( $this->referrer ) && (int)$this->referrer > 0 ) {
 			$pageId = (int)$this->referrer;
-			$title = \Title::newFromID( $pageId );
+			$title = Title::newFromID( $pageId );
 		}
 
 		if ( $title && ChatbotRagContent::isRelevantTitle( $title ) ) {

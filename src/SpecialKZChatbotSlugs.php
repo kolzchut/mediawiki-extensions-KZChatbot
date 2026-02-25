@@ -29,10 +29,10 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 
 	/**
 	 * Special page: Text slugs in the Kol-Zchut chatbot.
-	 * @param string|null $par Parameters passed to the page
+	 * @param string|null $subPage Parameters passed to the page
 	 */
-	public function execute( $par ) {
-		parent::execute( $par );
+	public function execute( $subPage ) {
+		parent::execute( $subPage );
 		$output = $this->getOutput();
 		$request = $this->getRequest();
 

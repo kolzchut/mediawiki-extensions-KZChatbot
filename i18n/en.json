@@ -68,7 +68,6 @@
 	"group-chatbot-admin-member": "{{GENDER:$1|Chatbot admin}}",
 	"grouppage-chatbot-admin": "{{ns:project}}:Chatbot admins",
 
-
 	"right-kzchatbot-view-settings": "View Kol-Zchut chatbot general settings",
 	"right-kzchatbot-view-rag-settings": "View Kol-Zchut chatbot RAG settings",
 	"action-kzchatbot-view-settings": "view Kol-Zchut chatbot general settings",
@@ -78,7 +77,6 @@
 	"group-chatbot-settings-viewer": "Chatbot settings viewers",
 	"group-chatbot-settings-viewer-member": "{{GENDER:$1|Chatbot settings viewer}}",
 	"grouppage-chatbot-setttings-viewer": "{{ns:project}}:Chatbot settings viewers",
-
 
 	"kzchatbot-rag-settings": "Kol-Zchut Chatbot RAG Settings",
 	"kzchatbot-rag-settings-section-general": "General Settings",

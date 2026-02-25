@@ -23,7 +23,6 @@ class Slugs {
 	 * Get the default slugs
 	 * @return array
 	 * @todo move these to MW i18n json format?
-	 *
 	 */
 	public static function getDefaultSlugs(): array {
         // phpcs:disable Generic.Files.LineLength.TooLong

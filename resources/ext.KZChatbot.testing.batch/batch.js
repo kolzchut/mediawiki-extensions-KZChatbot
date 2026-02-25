@@ -113,13 +113,17 @@ class BatchProcessor {
 		this.cancelButton.style.display = isProcessing ? 'inline-block' : 'none';
 
 		// Handle spinner and button state
-		const $processButton = $( this.processButton );
 		if ( isProcessing ) {
 			// Insert spinner inside the button
-			const $spinner = $.createSpinner( this.spinnerId );
-			$processButton.prepend( $spinner );
+			const spinner = document.createElement( 'div' );
+			spinner.id = this.spinnerId;
+			spinner.className = 'mw-spinner mw-spinner-small mw-spinner-inline';
+			this.processButton.prepend( spinner );
 		} else {
-			$processButton.find( '.mw-spinner' ).remove();
+			const spinner = this.processButton.querySelector( '.mw-spinner' );
+			if ( spinner ) {
+				spinner.remove();
+			}
 		}
 
 		// Update process button state based on both processing state and query presence
@@ -469,11 +473,14 @@ class BatchProcessor {
 			this.isRephrase = this.rephraseCheckbox.checked;
 			this.includeDebugData = this.includeDebugDataCheckbox.checked;
 			this.sendCompletePages = this.sendCompletePagesCheckbox.checked;
-			
+
 			// Wrap the query processing to handle retries with progress updates
-			return this.processQueryWithProgressRetry( queryObj.query, this.isRephrase, this.includeDebugData, this.sendCompletePages, queryObj.contextPageTitle, i + 1, queries.length )
+			return this.processQueryWithProgressRetry(
+				queryObj.query, this.isRephrase, this.includeDebugData, this.sendCompletePages,
+				i + 1, queries.length, queryObj.contextPageTitle
+			)
 				.then( ( result ) => {
-					// Only update results if not cancelled
+					// Only update results if not canceled
 					if ( !this.isCancelled ) {
 						this.results.push( Object.assign( {
 							query: queryObj.query,
@@ -598,8 +605,7 @@ class BatchProcessor {
 			'connection',
 			'unreachable'
 		];
-		return retryableErrors.some( ( retryableError ) =>
-			errorMessage.toLowerCase().includes( retryableError.toLowerCase() )
+		return retryableErrors.some( ( retryableError ) => errorMessage.toLowerCase().includes( retryableError.toLowerCase() )
 		);
 	}
 
@@ -619,22 +625,22 @@ class BatchProcessor {
 			if ( matches ) {
 				this.progressIndicator.textContent = mw.msg(
 					'kzchatbot-testing-batch-progress-cancelled',
-					matches[1],
-					matches[2]
+					matches[ 1 ],
+					matches[ 2 ]
 				);
 			}
 		}
 
 		// Reset processing state immediately when cancelled
 		this.setProcessingState( false );
-		
+
 		// Show download button if we have results
 		if ( this.results.length > 0 ) {
 			this.downloadButton.style.display = 'block';
 		}
 	}
 
-	processQueryWithProgressRetry( query, rephrase, includeDebugData, sendCompletePages, contextPageTitle = '', queryIndex, totalQueries, maxRetries = 2 ) {
+	processQueryWithProgressRetry( query, rephrase, includeDebugData, sendCompletePages, queryIndex, totalQueries, contextPageTitle = '', maxRetries = 2 ) {
 		const attemptQuery = ( attempt = 0 ) => {
 			if ( this.isCancelled ) {
 				return Promise.reject( new Error( 'cancelled' ) );
@@ -743,7 +749,7 @@ class BatchProcessor {
 		} else {
 			html += `<td>${ this.escapeHtml( result.query ) }</td>`;
 		}
-		
+
 		// Add retry button for errors
 		let responseCell = this.escapeHtml( result.error || result.gpt_result );
 		if ( result.error ) {
@@ -751,7 +757,7 @@ class BatchProcessor {
 			responseCell += ` ${ retryButton }`;
 		}
 		html += `<td>${ responseCell }</td>`;
-		
+
 		if ( result.rephrase ) {
 			html += `<td>${ this.escapeHtml( result.response_time || '' ) }</td>`;
 			html += `<td>${ this.escapeHtml( result.rephrase_time || '' ) }</td>`;
@@ -779,7 +785,7 @@ class BatchProcessor {
 
 		// Find the corresponding table row
 		const tableRows = this.resultsTableBody.children;
-		const targetRow = Array.from( tableRows ).find( row => {
+		const targetRow = Array.from( tableRows ).find( ( row ) => {
 			const firstCell = row.querySelector( 'td:first-child' );
 			return firstCell && parseInt( firstCell.textContent ) === result.index;
 		} );
@@ -828,7 +834,7 @@ class BatchProcessor {
 	updateResultAtIndex( index, newResult ) {
 		// Find the corresponding table row
 		const tableRows = this.resultsTableBody.children;
-		const targetRow = Array.from( tableRows ).find( row => {
+		const targetRow = Array.from( tableRows ).find( ( row ) => {
 			const firstCell = row.querySelector( 'td:first-child' );
 			return firstCell && parseInt( firstCell.textContent ) === newResult.index;
 		} );
@@ -858,7 +864,7 @@ class BatchProcessor {
 		} else {
 			html += `<td>${ this.escapeHtml( newResult.query ) }</td>`;
 		}
-		
+
 		// Add retry button for errors
 		let responseCell = this.escapeHtml( newResult.error || newResult.gpt_result );
 		if ( newResult.error ) {
@@ -866,7 +872,7 @@ class BatchProcessor {
 			responseCell += ` ${ retryButton }`;
 		}
 		html += `<td>${ responseCell }</td>`;
-		
+
 		if ( newResult.rephrase ) {
 			html += `<td>${ this.escapeHtml( newResult.response_time || '' ) }</td>`;
 			html += `<td>${ this.escapeHtml( newResult.rephrase_time || '' ) }</td>`;
@@ -919,6 +925,7 @@ class BatchProcessor {
 				icon: 'articles'
 			} );
 			copyButton.on( 'click', () => {
+				// eslint-disable-next-line compat/compat
 				navigator.clipboard.writeText( jsonString ).then( () => {
 					mw.notify( mw.msg( 'kzchatbot-testing-batch-debug-copied' ) );
 				} ).catch( () => {
@@ -934,21 +941,20 @@ class BatchProcessor {
 			} );
 
 			// Create title with copy button
-			const titleElement = $( '<div>' )
-				.addClass( 'debug-modal-title' )
-				.append(
-					$( '<span>' )
-						.addClass( 'debug-modal-title-text' )
-						.text( mw.msg( 'kzchatbot-testing-batch-debug-dialog-title', result.index ) ),
-					copyButton.$element
-				);
-			this.$head.find( '.oo-ui-processDialog-title' ).empty().append( titleElement );
+			const titleElement = document.createElement( 'div' );
+			titleElement.className = 'debug-modal-title';
+			const titleSpan = document.createElement( 'span' );
+			titleSpan.className = 'debug-modal-title-text';
+			titleSpan.textContent = mw.msg( 'kzchatbot-testing-batch-debug-dialog-title', result.index );
+			titleElement.append( titleSpan, copyButton.$element[ 0 ] );
+			this.$head[ 0 ].querySelector( '.oo-ui-processDialog-title' ).replaceChildren( titleElement );
 
 			const content = new OO.ui.PanelLayout( { padded: true, expanded: false, scrollable: true } );
-			content.$element.append(
-				$( '<pre>' ).addClass( 'debug-data-content' ).text( displayString )
-			);
-			this.$body.append( content.$element );
+			const pre = document.createElement( 'pre' );
+			pre.className = 'debug-data-content';
+			pre.textContent = displayString;
+			content.$element[ 0 ].appendChild( pre );
+			this.$body[ 0 ].appendChild( content.$element[ 0 ] );
 		};
 
 		DebugDialog.prototype.getActionProcess = function ( action ) {
@@ -961,7 +967,7 @@ class BatchProcessor {
 		};
 
 		const windowManager = new OO.ui.WindowManager();
-		$( document.body ).append( windowManager.$element );
+		document.body.appendChild( windowManager.$element[ 0 ] );
 		const dialog = new DebugDialog();
 		windowManager.addWindows( [ dialog ] );
 		windowManager.openWindow( dialog ).closed.then( () => {
@@ -1057,7 +1063,10 @@ class BatchProcessor {
 
 			const row = [];
 			if ( result.rephrase ) {
-				row.push( result.query, result.original_question || '', result.rephrased_question || '', result.response_time || '', result.rephrase_time || '', result.error || result.gpt_result, docsText, filteredDocsText );
+				row.push( result.query, result.original_question || '', result.rephrased_question || '',
+					result.response_time || '', result.rephrase_time || '', result.error || result.gpt_result, docsText,
+					filteredDocsText
+				);
 			} else {
 				row.push( result.query, result.error || result.gpt_result, docsText, filteredDocsText );
 			}
@@ -1098,6 +1107,4 @@ class BatchProcessor {
 }
 
 // Initialize when document is ready
-$( () => {
-	window.batchProcessor = new BatchProcessor();
-} );
+window.batchProcessor = new BatchProcessor();

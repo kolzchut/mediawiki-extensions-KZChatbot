@@ -43,7 +43,7 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 	 * @throws PermissionsError
 	 * @throws ErrorPageError
 	 */
-	public function execute( $par ) {
+	public function execute( $subPage ) {
 		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
 		$this->isAllowedView = $permissionManager->userHasRight( $this->getUser(), 'kzchatbot-view-rag-settings' );
 		$this->isAllowedEdit = $permissionManager->userHasRight( $this->getUser(), 'kzchatbot-edit-rag-settings' );
@@ -107,7 +107,7 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 			);
 		}
 
-		parent::execute( $par );
+		parent::execute( $subPage );
 	}
 
 	/**
@@ -378,11 +378,8 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 
 			if ( curl_errno( $ch ) ) {
 				wfLogWarning( 'Curl error: ' . curl_error( $ch ) );
-				curl_close( $ch );
 				return Status::newFatal( 'kzchatbot-rag-settings-error-api-unreachable' );
 			}
-
-			curl_close( $ch );
 
 			if ( $response !== false ) {
 				$result = json_decode( $response, true );

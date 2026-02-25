@@ -49,6 +49,7 @@ class ApiKZChatbotGetStatus extends Handler {
 		];
 	}
 
+	/** @inheritDoc */
 	public function needsWriteAccess() {
 		return true;
 	}

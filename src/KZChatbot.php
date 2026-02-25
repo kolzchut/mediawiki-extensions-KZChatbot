@@ -14,7 +14,7 @@ use Status;
 use Wikimedia\Rdbms\DBQueryError;
 
 /**
- * @TODO general class description
+ * @todo general class description
  */
 class KZChatbot {
 
@@ -49,7 +49,7 @@ class KZChatbot {
 	/**
 	 * @return array|false The new user data, or false if the user should not be shown the chatbot
 	 */
-	public static function newUser(): false|array{
+	public static function newUser(): false|array {
 		$settings = self::getGeneralSettings();
 		$cookieExpiry = time() + ( $settings['cookie_expiry_days'] ?? 365 ) * 24 * 60 * 60;
 
@@ -123,7 +123,7 @@ class KZChatbot {
 	 * - Formatted UUIDs (with hyphens) for client responses
 	 *
 	 * @param string $uuid The formatted or raw UUID
-	 * @return array|bool
+	 * @return array|false The user data array with formatted UUID and IP as string, or false if not found
 	 */
 	public static function getUserData( string $uuid ): bool|array {
 		$rawUuid = self::rawUuidFromFormatted( $uuid );
@@ -150,7 +150,7 @@ class KZChatbot {
 	/**
 	 * @return array|bool
 	 */
-	public static function getGeneralSettings(): bool|array	{
+	public static function getGeneralSettings(): bool|array {
 		static $settings;
 		if ( !isset( $settings ) ) {
 			$settings = [];
@@ -211,7 +211,7 @@ class KZChatbot {
 	 * @param string $uuid The UUID of the user (either formatted or raw).
 	 * @return void
 	 */
-	public static function useQuestion( string $uuid ): void{
+	public static function useQuestion( string $uuid ): void {
 		$userData = self::getUserData( $uuid );
 		if ( !$userData ) {
 			return;
@@ -257,7 +257,7 @@ class KZChatbot {
 
 		// Insert data.
 		$insertRows = array_map(
-			fn ( $name ) => [
+			static fn ( $name ) => [
 				'kzcbs_name' => $name,
 				'kzcbs_value' => $data[$name]
 			],

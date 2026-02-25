@@ -18,10 +18,12 @@ class ApiKZChatbotSearch extends ApiBase {
 		$query = $params['query'];
 		$rephrase = isset( $params['rephrase'] ) ? (bool)$params['rephrase'] : false;
 		$includeDebugData = isset( $params['include_debug_data'] ) ? (bool)$params['include_debug_data'] : true;
-		$sendCompletePagesToLlm = isset( $params['send_complete_pages_to_llm'] ) ? (bool)$params['send_complete_pages_to_llm'] : false;
+		$sendCompletePagesToLlm = isset( $params['send_complete_pages_to_llm'] )
+			? (bool)$params['send_complete_pages_to_llm'] : false;
 		$contextPageTitle = isset( $params['context_page_title'] ) ? trim( $params['context_page_title'] ) : '';
 		$retrievalSize = isset( $params['retrieval_size'] ) ? (int)$params['retrieval_size'] : null;
-		$maxDocumentsFromSamePage = isset( $params['max_documents_from_same_page'] ) ? (int)$params['max_documents_from_same_page'] : null;
+		$maxDocumentsFromSamePage = isset( $params['max_documents_from_same_page'] )
+			? (int)$params['max_documents_from_same_page'] : null;
 
 		try {
 			$apiUrl = rtrim( $this->getConfig()->get( 'KZChatbotLlmApiUrl' ), '/' );
@@ -85,8 +87,6 @@ class ApiKZChatbotSearch extends ApiBase {
 					curl_error( $ch )
 				] );
 			}
-
-			curl_close( $ch );
 
 			if ( $response === false ) {
 				$this->dieWithError( 'apierror-kzchatbot-api-unreachable' );

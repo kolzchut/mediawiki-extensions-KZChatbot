@@ -5,6 +5,7 @@ namespace MediaWiki\Extension\KZChatbot;
 use Html;
 use HTMLForm;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Message;
 use PermissionsError;
 use SpecialPage;
 
@@ -31,16 +32,16 @@ class SpecialKZChatbotSettings extends SpecialPage {
 	/**
 	 * @inheritDoc
 	 */
-	public function getDescription() {
-		return $this->msg( 'kzchatbot-desc' )->text();
+	public function getDescription(): Message {
+		return $this->msg( 'kzchatbot-desc' );
 	}
 
 	/**
 	 * Special page: General configuration settings for the Kol-Zchut chatbot.
-	 * @param string|null $par Parameters passed to the page
+	 * @param string|null $subPage Parameters passed to the page
 	 * @throws PermissionsError
 	 */
-	public function execute( $par ) {
+	public function execute( $subPage ): void {
 		$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
 		$this->isAllowedView = $permissionManager->userHasRight( $this->getUser(), 'kzchatbot-view-settings' );
 		$this->isAllowedEdit = $permissionManager->userHasRight( $this->getUser(), 'kzchatbot-edit-settings' );
@@ -50,7 +51,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			throw new PermissionsError( 'kzchatbot-view-settings' );
 		}
 
-		parent::execute( $par );
+		parent::execute( $subPage );
 		$output = $this->getOutput();
 
 		// Show view-only notice if user can't manage
@@ -109,7 +110,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 		);
 
 		// Build form.
-		$output->setPageTitle( $this->msg( 'kzchatbot-settings-title' ) );
+		$output->setPageTitleMsg( $this->msg( 'kzchatbot-settings-title' ) );
 		$htmlForm = HTMLForm::factory( 'ooui', $this->getSettingsForm(), $this->getContext() );
 		$htmlForm->setId( 'KZChatbotSettingsForm' )
 			->setFormIdentifier( 'KZChatbotSettingsForm' );
@@ -129,7 +130,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 	/**
 	 * @return array
 	 */
-	private function getFormNameToDbNameMapping() {
+	private function getFormNameToDbNameMapping(): array {
 		return [
 			'kzcNewUsersChatbotRate' => 'new_users_chatbot_rate',
 			'kzcActiveUsersLimit' => 'active_users_limit',
@@ -148,7 +149,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 	 * Define settings form structure
 	 * @return array
 	 */
-	private function getSettingsForm() {
+	private function getSettingsForm(): array {
 		$form = [
 			'kzcNewUsersChatbotRate' => [
 				'type' => 'int',
@@ -250,13 +251,13 @@ class SpecialKZChatbotSettings extends SpecialPage {
 	/**
 	 * Handle settings form submission
 	 * @param array $postData Form submission data
-	 * @return string|bool Return true on success, error message on failure
+	 * @return true
 	 */
-	public function handleSettingsSave( $postData ) {
+	public function handleSettingsSave( array $postData ): bool {
 		// Save new values to database.
 		$formNameToDbName = $this->getFormNameToDbNameMapping();
 		$data = array_map(
-			fn ( $formName ) => $postData[$formName],
+			static fn ( $formName ) => $postData[$formName],
 			array_flip( $formNameToDbName )
 		);
 		KZChatbot::saveGeneralSettings( $data );

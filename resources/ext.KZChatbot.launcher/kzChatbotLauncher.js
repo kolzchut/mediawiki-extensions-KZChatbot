@@ -49,48 +49,50 @@ const initializeChatbot = () => {
 		return base;
 	} )();
 
-	$.get( endpoint, ( data ) => {
-		if ( !data ) {
-			return;
-		}
+	fetch( endpoint )
+		.then( ( response ) => response.json() )
+		.then( ( data ) => {
+			if ( !data ) {
+				return;
+			}
 
-		// If the user wasn't selected previously , set a temporary cookie with 'none'
-		if ( data.uuid === false ) {
-			setExclusionCookie();
-			return;
-		}
+			// If the user wasn't selected previously , set a temporary cookie with 'none'
+			if ( data.uuid === false ) {
+				setExclusionCookie();
+				return;
+			}
 
-		if ( data.uuid !== uuid ) {
-			// (Re-)save cookie with the expiration from the server
-			mw.cookie.set( cookieName, data.uuid, {
-				expires: new Date( data.cookieExpiry ),
-				sameSite: 'Strict'
-			} );
-		}
+			if ( data.uuid !== uuid ) {
+				// (Re-)save cookie with the expiration from the server
+				mw.cookie.set( cookieName, data.uuid, {
+					expires: new Date( data.cookieExpiry ),
+					sameSite: 'Strict'
+				} );
+			}
 
-		// Is chatbot shown to this user?
-		if ( data.chatbotIsShown === true ) {
-			// Build config data for React app
-			const savedSettings = mw.config.get( 'KZChatbotSettings' );
-			window.KZChatbotConfig = Object.assign( {}, data, {
-				slugs: mw.config.get( 'KZChatbotSlugs' ),
-				referrer: mw.config.get( 'wgArticleId' ),
-				restPath,
-				autoOpen
-			}, savedSettings );
-			document.body.insertAdjacentHTML(
-				'beforeend',
-				'<div id="kzchatbot" class="kzchatbot"></div>'
-			);
+			// Is chatbot shown to this user?
+			if ( data.chatbotIsShown === true ) {
+				// Build config data for React app
+				const savedSettings = mw.config.get( 'KZChatbotSettings' );
+				window.KZChatbotConfig = Object.assign( {}, data, {
+					slugs: mw.config.get( 'KZChatbotSlugs' ),
+					referrer: mw.config.get( 'wgArticleId' ),
+					restPath,
+					autoOpen
+				}, savedSettings );
+				document.body.insertAdjacentHTML(
+					'beforeend',
+					'<div id="kzchatbot" class="kzchatbot"></div>'
+				);
 
-			// Launch React app
-			$.ajaxSetup( { cache: true } );
-			$.getScript( `${ extensionCodePath }/index.js?${ scriptVersion }` );
-			mw.loader.load( 'ext.KZChatbot.bot.styles' );
-		}
-	} );
+				// Launch React app
+				const script = document.createElement( 'script' );
+				script.src = `${ extensionCodePath }/index.js?${ scriptVersion }`;
+				document.head.appendChild( script );
+				mw.loader.load( 'ext.KZChatbot.bot.styles' );
+			}
+		} );
 };
 
 // Execute the initialization
 initializeChatbot();
-

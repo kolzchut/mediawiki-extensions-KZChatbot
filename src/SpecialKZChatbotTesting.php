@@ -15,7 +15,7 @@ class SpecialKZChatbotTesting extends SpecialPage {
 	}
 
 	/** @inheritDoc */
-	public function execute( $subPage ) {
+	public function execute( $subPage ): void {
 		parent::execute( $subPage );
 
 		$this->getOutput()->addModuleStyles( 'ext.KZChatbot.testing.styles' );
@@ -24,7 +24,7 @@ class SpecialKZChatbotTesting extends SpecialPage {
 		// Add navigation link to RAG Settings
 		$ragSettingsTitle = SpecialPage::getTitleFor( 'KZChatbotRagSettings' );
 		$linkRenderer = $this->getLinkRenderer();
-		$ragSettingsLink = $linkRenderer->makeLink( 
+		$ragSettingsLink = $linkRenderer->makeLink(
 			$ragSettingsTitle,
 			$this->msg( 'kzchatbot-testing-nav-to-rag-settings' )->text()
 		);
@@ -89,7 +89,8 @@ class SpecialKZChatbotTesting extends SpecialPage {
 			'optionsLegend' => $this->msg( 'kzchatbot-testing-batch-options-legend' )->text(),
 			'rephraseLabel' => $this->msg( 'kzchatbot-testing-batch-rephrase-toggle-label' )->text(),
 			'includeDebugDataLabel' => $this->msg( 'kzchatbot-testing-batch-include-debug-data-toggle-label' )->text(),
-			'sendCompletePagesLabel' => $this->msg( 'kzchatbot-testing-batch-send-complete-pages-to-llm-toggle-label' )->text(),
+			'sendCompletePagesLabel' => $this->msg(
+				'kzchatbot-testing-batch-send-complete-pages-to-llm-toggle-label' )->text(),
 			'retrievalSizeLabel' => $this->msg( 'kzchatbot-testing-batch-retrieval-size-label' )->text(),
 			'retrievalSizeHelp' => $this->msg( 'kzchatbot-testing-batch-retrieval-size-help' )->text(),
 			'maxDocsPerPageLabel' => $this->msg( 'kzchatbot-testing-batch-max-docs-per-page-label' )->text(),

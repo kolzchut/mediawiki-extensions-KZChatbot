@@ -18,6 +18,16 @@ class Slugs {
 	}
 
 	/**
+	 * Get the list of slug keys that support limited formatting (bold and line breaks).
+	 * This is the PHP-side source of truth for formatting support, used by the admin UI.
+	 * Keep in sync with FORMATTED_SLUGS in resources/ext.KZChatbot.react/src/i18n/index.ts
+	 * @return string[]
+	 */
+	public static function getFormattedSlugs(): array {
+		return [ 'welcome_message' ];
+	}
+
+	/**
 	 * Get the default slugs
 	 * @return array
 	 * @todo move these to MW i18n json format?
@@ -45,9 +55,7 @@ class Slugs {
 			'returning_links_no_links' => 'התשובה מבוססת AI. יש לבדוק את המידע המלא באתר.',
 			'returning_links_empty' => 'לא נמצאה תשובה לשאלה. אפשר לחפש את המידע באתר או לשאול שאלה חדשה.',
 			'tc_link' => 'תנאי שימוש',
-			'welcome_message_first' => 'שלום! הצ\'אט, שנמצא כרגע בהרצה, יעזור לך למצוא תשובות מתוך אתר \'כל זכות\' מהר ובקלות בעזרת בינה מלאכותית. אפשר לשאול כל שאלה על זכויות בשפה חופשית. כדאי לציין מאפיינים רלוונטיים כמו גיל ומצב משפחתי.',
-			'welcome_message_second' => 'חשוב! המידע נאסף לצורך שיפור השירות. אין למסור פרטים מזהים או רגישים כמו שם, מספר זיהוי, כתובת או מידע רפואי. ',
-			'welcome_message_third' => 'הצ\'אט יכול לטעות. \'כל זכות\' לא אחראית לנכונות התשובות וממליצה לבדוק את המידע גם בעמוד המתאים באתר. בתקופת ההרצה הצ\'אט יופיע רק לחלק מהגולשים.',
+			'welcome_message' => 'שלום! הצ\'אט, שנמצא כרגע בהרצה, יעזור לך למצוא תשובות מתוך אתר \'כל זכות\' מהר ובקלות בעזרת בינה מלאכותית. אפשר לשאול כל שאלה על זכויות בשפה חופשית. כדאי לציין מאפיינים רלוונטיים כמו גיל ומצב משפחתי.',
 			'feedback_character_limit' => 'ניתן להזין עד $1 תווים',
 			'questions_daily_limit' => 'הגעת למכסת השאלות היומית. נשמח לראותך מחר.',
 			'question_character_limit' => 'ניתן להזין עד $1 תווים',

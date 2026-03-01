@@ -152,6 +152,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 
 		// Build table of existing slugs.
 		if ( !empty( $slugs ) ) {
+			$formattedSlugs = Slugs::getFormattedSlugs();
 			$output->addModuleStyles( 'jquery.tablesorter.styles' );
 			$output->addModules( 'jquery.tablesorter' );
 			$output->addHTML(
@@ -162,6 +163,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				. Html::openElement( 'thead' ) . Html::openElement( 'tr' )
 				. Html::element( 'th', [], $this->msg( 'kzchatbot-slugs-label-slug' )->text() )
 				. Html::element( 'th', [], $this->msg( 'kzchatbot-slugs-label-text' )->text() )
+				. Html::element( 'th', [], $this->msg( 'kzchatbot-slugs-label-formatting' )->text() )
 				. Html::element( 'th' )
 				. Html::element( 'th' )
 				. Html::closeElement( 'tr' ) . Html::closeElement( 'thead' )
@@ -169,6 +171,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 			);
 			$editLabel = $this->msg( 'kzchatbot-slugs-op-edit' )->text();
 			$deleteLabel = $this->msg( 'kzchatbot-slugs-op-delete' )->text();
+			$formattingLabel = $this->msg( 'kzchatbot-slugs-formatting-supported' )->text();
 			foreach ( $slugs as $slug => $attribs ) {
 				$editUrl = $output->getTitle()->getLocalURL( [ 'edit' => $slug ] );
 				$deleteUrl = $output->getTitle()->getLocalURL( [ 'delete' => $slug ] );
@@ -177,6 +180,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 					Html::openElement( 'tr', [ 'class' => $cssClass ] )
 					. Html::element( 'td', [], $slug )
 					. Html::element( 'td', [], $attribs['value'] )
+					. Html::element( 'td', [], in_array( $slug, $formattedSlugs ) ? $formattingLabel : '' )
 					. Html::rawElement( 'td', [],
 						Html::element( 'a', [ 'href' => $editUrl ], $editLabel )
 					)
@@ -207,6 +211,8 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	 * @return array
 	 */
 	private function getSlugForm( $editValues = [] ) {
+		$isFormatted = !empty( $editValues['slug'] ) &&
+			in_array( $editValues['slug'], Slugs::getFormattedSlugs() );
 		$form = [
 			'kzcSlug' => [
 				'type' => 'text',
@@ -228,6 +234,9 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				'default' => 'edit'
 			]
 		];
+		if ( $isFormatted ) {
+			$form['kzcText']['help-message'] = 'kzchatbot-slugs-formatting-help';
+		}
 		if ( !empty( $editValues ) ) {
 			$form['kzcSlug']['default'] = $editValues['slug'];
 			$form['kzcText']['default'] = $editValues['text'];

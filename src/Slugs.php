@@ -113,16 +113,17 @@ class Slugs {
 	/**
 	 * @param string $slug
 	 * @param string $text
-	 * @return true
-	 * @throws \MWException
+	 * @return \Status Good (with embedded success message) on success; Fatal on invalid slug name
 	 */
-	public static function saveSlug( string $slug, string $text ) {
-		$slugs = self::getDefaultSlugs();
+	public static function saveSlug( string $slug, string $text ): \Status {
 		if ( !self::isValidSlugName( $slug ) ) {
-			throw new \MWException( 'invalid slug name' );
+			return \Status::newFatal( new \RawMessage( 'invalid slug name' ) );
 		}
-		if ( $text === $slugs[$slug] ) {
-			throw new \MWException( 'same as default text' );
+		$defaultSlugs = self::getDefaultSlugs();
+		if ( $text === $defaultSlugs[$slug] ) {
+			// Text is identical to the default — remove any DB override and reset to default
+			self::deleteSlug( $slug );
+			return \Status::newGood( [ 'kzchatbot-slugs-status-reset-success', $slug ] );
 		}
 		$dbw = wfGetDB( DB_PRIMARY );
 		// Clear prior value if one exists.
@@ -143,7 +144,7 @@ class Slugs {
 			self::$slugsRaw[$slug] = $text;
 		}
 
-		return true;
+		return \Status::newGood( [ 'kzchatbot-slugs-status-save-success', $slug ] );
 	}
 
 	/**

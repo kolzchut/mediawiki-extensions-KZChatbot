@@ -96,28 +96,46 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 
 		// Successful operation? If so, show status message.
 		$session = $this->getRequest()->getSession();
-		$savedSlug = $session->get( 'kzSlugSaved' );
+		$slugStatus = $session->get( 'kzSlugStatus' );
 		$deletedSlug = $session->get( 'kzSlugDeleted' );
-		if ( !empty( $savedSlug ) || !empty( $deletedSlug ) ) {
-			// Remove session data for the success message
-			$session->remove( !empty( $savedSlug ) ? 'kzSlugSaved' : 'kzSlugDeleted' );
+		$slugError = $session->get( 'kzSlugError' );
+		if ( !empty( $slugStatus ) || !empty( $deletedSlug ) || !empty( $slugError ) ) {
+			$session->remove( 'kzSlugStatus' );
+			$session->remove( 'kzSlugDeleted' );
+			$session->remove( 'kzSlugError' );
 			$output->addModuleStyles( 'mediawiki.notification.convertmessagebox.styles' );
-			$message = !empty( $savedSlug ) ? 'kzchatbot-slugs-status-save-success'
-				: 'kzchatbot-slugs-status-delete-success';
-			$output->addHTML(
-				Html::rawElement(
-					'div',
-					[
-						'class' => 'mw-preferences-messagebox mw-notify-success successbox',
-						'id' => 'mw-preferences-success',
-						'data-mw-autohide' => 'false',
-					],
-					Html::element(
-						'p', [],
-						$this->msg( $message, !empty( $savedSlug ) ? $savedSlug : $deletedSlug )->text()
+			if ( !empty( $slugError ) ) {
+				$output->addHTML(
+					Html::rawElement(
+						'div',
+						[
+							'class' => 'mw-preferences-messagebox mw-notify-error errorbox',
+							'id' => 'mw-preferences-error',
+							'data-mw-autohide' => 'false',
+						],
+						Html::element( 'p', [], $slugError )
 					)
-				)
-			);
+				);
+			} else {
+				// $slugStatus is ['message-key', ...params] as set by Status::newGood( [...] )
+				$msgArgs = !empty( $slugStatus )
+					? $slugStatus
+					: [ 'kzchatbot-slugs-status-delete-success', $deletedSlug ];
+				$output->addHTML(
+					Html::rawElement(
+						'div',
+						[
+							'class' => 'mw-preferences-messagebox mw-notify-success successbox',
+							'id' => 'mw-preferences-success',
+							'data-mw-autohide' => 'false',
+						],
+						Html::element(
+							'p', [],
+							$this->msg( ...$msgArgs )->text()
+						)
+					)
+				);
+			}
 		}
 
 		// Provide links to other admin pages.
@@ -152,6 +170,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 
 		// Build table of existing slugs.
 		if ( !empty( $slugs ) ) {
+			$formattedSlugs = Slugs::getFormattedSlugs();
 			$output->addModuleStyles( 'jquery.tablesorter.styles' );
 			$output->addModules( 'jquery.tablesorter' );
 			$output->addHTML(
@@ -162,6 +181,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				. Html::openElement( 'thead' ) . Html::openElement( 'tr' )
 				. Html::element( 'th', [], $this->msg( 'kzchatbot-slugs-label-slug' )->text() )
 				. Html::element( 'th', [], $this->msg( 'kzchatbot-slugs-label-text' )->text() )
+				. Html::element( 'th', [], $this->msg( 'kzchatbot-slugs-label-formatting' )->text() )
 				. Html::element( 'th' )
 				. Html::element( 'th' )
 				. Html::closeElement( 'tr' ) . Html::closeElement( 'thead' )
@@ -169,6 +189,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 			);
 			$editLabel = $this->msg( 'kzchatbot-slugs-op-edit' )->text();
 			$deleteLabel = $this->msg( 'kzchatbot-slugs-op-delete' )->text();
+			$formattingLabel = $this->msg( 'kzchatbot-slugs-formatting-supported' )->text();
 			foreach ( $slugs as $slug => $attribs ) {
 				$editUrl = $output->getTitle()->getLocalURL( [ 'edit' => $slug ] );
 				$deleteUrl = $output->getTitle()->getLocalURL( [ 'delete' => $slug ] );
@@ -177,6 +198,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 					Html::openElement( 'tr', [ 'class' => $cssClass ] )
 					. Html::element( 'td', [], $slug )
 					. Html::element( 'td', [], $attribs['value'] )
+					. Html::element( 'td', [], in_array( $slug, $formattedSlugs ) ? $formattingLabel : '' )
 					. Html::rawElement( 'td', [],
 						Html::element( 'a', [ 'href' => $editUrl ], $editLabel )
 					)
@@ -207,6 +229,8 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	 * @return array
 	 */
 	private function getSlugForm( $editValues = [] ) {
+		$isFormatted = !empty( $editValues['slug'] ) &&
+			in_array( $editValues['slug'], Slugs::getFormattedSlugs() );
 		$form = [
 			'kzcSlug' => [
 				'type' => 'text',
@@ -228,6 +252,9 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				'default' => 'edit'
 			]
 		];
+		if ( $isFormatted ) {
+			$form['kzcText']['help-message'] = 'kzchatbot-slugs-formatting-help';
+		}
 		if ( !empty( $editValues ) ) {
 			$form['kzcSlug']['default'] = $editValues['slug'];
 			$form['kzcText']['default'] = $editValues['text'];
@@ -244,22 +271,19 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 		$slug = $postData['kzcSlug'];
 		$text = $postData['kzcText'];
 
-		// @TODO handle exceptions
-		try {
-			$result = Slugs::saveSlug( $slug, $text );
-		} catch ( \Exception $e ) {
-			$result = false;
-		}
+		$status = Slugs::saveSlug( $slug, $text );
 
-		if ( $result ) {
-			// Set session data for the success message
-			$this->getRequest()->getSession()->set( 'kzSlugSaved', $slug );
+		if ( $status->isOK() ) {
+			// Store the message data (key + params) from the Status value for display after redirect
+			$this->getRequest()->getSession()->set( 'kzSlugStatus', $status->getValue() );
+		} else {
+			$this->getRequest()->getSession()->set( 'kzSlugError', $status->getMessage()->plain() );
 		}
 
 		// Return to form.
 		$url = $this->getPageTitle()->getFullUrlForRedirect();
 		$this->getOutput()->redirect( $url );
-		return $result;
+		return $status->isOK();
 	}
 
 	/**

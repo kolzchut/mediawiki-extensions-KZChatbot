@@ -149,6 +149,27 @@ https://example.com/wiki/any_page?autoOpenChatbot
 | `Special:KZChatbotRagSettings` | RAG backend configuration                     |
 | `Special:KZChatbotRagTesting`  | Batch testing interface with retry logic and error handling |
 
+### Interface Text (Slugs)
+
+`Special:KZChatbotSlugs` lets admins override the default text strings displayed in the chatbot UI.
+
+#### Formatting support
+
+Some slugs support limited formatting in their text: **bold** and line breaks. The "Formatting" column in the slugs table shows which slugs have this capability, and the edit form displays a hint when editing one.
+
+Supported syntax:
+- Bold: surround text with `**`, e.g. `**important**`
+- Line break: press Enter (a newline in the saved text becomes a `<br>` in the UI)
+
+#### Adding a new formatted slug (developer)
+
+Formatting support is maintained in two places that must be kept in sync:
+
+1. **PHP** — `Slugs::getFormattedSlugs()` in `src/Slugs.php`: add the slug key to the returned array. This drives the admin UI hints.
+2. **TypeScript** — `FORMATTED_SLUGS` in `resources/ext.KZChatbot.react/src/i18n/index.ts`: add the same key to the `Set`. This drives the React renderer.
+
+The frontend is intentionally independent of the PHP backend, so the list is duplicated by design rather than passed through the config pipeline.
+
 ### Permissions
 The `chatbot-admin` group has these default permissions:
 

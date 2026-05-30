@@ -2,7 +2,6 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
-use GuzzleHttp\Exception\GuzzleException;
 use MediaWiki\Extension\ChatbotRagContent\ChatbotRagContent;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
@@ -78,7 +77,6 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		$uuid = $this->uuid;
 		KZChatbot::useQuestion( $uuid );
 		$apiUrl = $config->get( 'KZChatbotLlmApiUrl' ) . '/search';
-		$client = new \GuzzleHttp\Client();
 		$params = [
 			'query' => $question,
 			'asked_from' => $this->referrer
@@ -88,23 +86,27 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		if ( $sendPageId ) {
 			$relevantPageId = $this->getRelevantPageId();
 			if ( $relevantPageId !== null ) {
-				// Add page ID as additional context for RAG to improve answer relevance
 				$params['page_id'] = strval( $relevantPageId );
 			}
 		}
 
-		try {
-			$result = $client->post( $apiUrl, [
-				'headers' => [
-					'X-FORWARDED-FOR' => RequestContext::getMain()->getRequest()->getIP(),
-				],
-				'json' => $params
-			] );
-		} catch ( GuzzleException $e ) {
-			KZChatbot::getLogger()->error( 'RAG backend request failed (' . $e->getCode() . '): ' . $e->getMessage() );
+		$httpRequestFactory = MediaWikiServices::getInstance()->getHttpRequestFactory();
+		$req = $httpRequestFactory->create( $apiUrl, [
+			'method' => 'POST',
+			'postData' => json_encode( $params ),
+			'originalRequest' => RequestContext::getMain()->getRequest(),
+		], __METHOD__ );
+		$req->setHeader( 'Content-Type', 'application/json' );
+		$req->setHeader( 'X-Forwarded-For', RequestContext::getMain()->getRequest()->getIP() );
+
+		$status = $req->execute();
+		if ( !$status->isOK() ) {
+			KZChatbot::getLogger()->error(
+				'RAG backend request failed: ' . $status->getWikiText( false, false, 'en' )
+			);
 			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
 		}
-		$response = json_decode( $result->getBody()->getContents() );
+		$response = json_decode( $req->getContent() );
 		$docs = array_map( static function ( $doc ) {
 			return [
 				'title' => $doc->title,

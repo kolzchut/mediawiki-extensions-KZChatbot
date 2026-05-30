@@ -8,6 +8,7 @@ use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\Validator\JsonBodyValidator;
 use MediaWiki\Rest\Validator\Validator;
+use RequestContext;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -86,18 +87,22 @@ class ApiKZChatbotRateAnswer extends Handler {
 		$like = $body['like'];
 		$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'KZChatbot' );
 		$apiUrl = $config->get( 'KZChatbotLlmApiUrl' ) . '/rating';
-		$client = new \GuzzleHttp\Client();
-		$result = $client->post( $apiUrl, [
-			'headers' => [
-				'X-FORWARDED-FOR' => $_SERVER['REMOTE_ADDR'],
-			],
-			'json' => [
+
+		$httpRequestFactory = MediaWikiServices::getInstance()->getHttpRequestFactory();
+		$req = $httpRequestFactory->create( $apiUrl, [
+			'method' => 'POST',
+			'postData' => json_encode( [
 				'free_text' => $text,
 				'conversation_id' => $answerId,
 				'like' => $like,
-			]
-		] );
-		return $result->getStatusCode();
+			] ),
+			'originalRequest' => RequestContext::getMain()->getRequest(),
+		], __METHOD__ );
+		$req->setHeader( 'Content-Type', 'application/json' );
+		$req->setHeader( 'X-Forwarded-For', RequestContext::getMain()->getRequest()->getIP() );
+
+		$req->execute();
+		return $req->getStatus();
 	}
 
 }

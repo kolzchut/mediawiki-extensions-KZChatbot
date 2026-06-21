@@ -214,7 +214,9 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		}
 		$prefix = explode( ':', $clientThreadId, 2 )[0];
 		if ( $prefix !== $this->uuid ) {
-			throw new HttpException( 'Thread does not belong to this user', 403 );
+			// Localized + generic on purpose: this is effectively never reachable for
+			// a legitimate user, and the client renders 4xx messages verbatim.
+			throw new HttpException( Slugs::getSlug( 'general_error' ), 403 );
 		}
 		return $clientThreadId;
 	}

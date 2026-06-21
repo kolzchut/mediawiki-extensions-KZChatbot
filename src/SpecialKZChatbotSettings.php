@@ -140,7 +140,11 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			'kzcCookieExpiryDays' => 'cookie_expiry_days',
 			'kzcUUIDRequestLimit' => 'uuid_request_limit',
 			'kzcUsageHelpUrl' => 'usage_help_url',
-			'kzcTermsOfServiceUrl' => 'terms_of_service_url'
+			'kzcTermsOfServiceUrl' => 'terms_of_service_url',
+			'kzcMaxQuestionsPerConversation' => 'max_questions_per_conversation',
+			'kzcConversationSessionTtlHours' => 'conversation_session_ttl_hours',
+			'kzcEnableCrossTabSync' => 'enable_cross_tab_sync',
+			'kzcHistoryStorageMode' => 'history_storage_mode'
 		];
 	}
 
@@ -226,6 +230,43 @@ class SpecialKZChatbotSettings extends SpecialPage {
 				'section' => 'kzchatbot-settings-section-general',
 				'required' => true,
 			],
+			'kzcMaxQuestionsPerConversation' => [
+				'type' => 'int',
+				'label-message' => 'kzchatbot-settings-label-max-questions-per-conversation',
+				'help-message' => 'kzchatbot-settings-help-max-questions-per-conversation',
+				'section' => 'kzchatbot-settings-section-continuous-conversation',
+				'required' => true,
+				'min' => 1,
+				'default' => 8,
+			],
+			'kzcConversationSessionTtlHours' => [
+				'type' => 'int',
+				'label-message' => 'kzchatbot-settings-label-conversation-session-ttl-hours',
+				'help-message' => 'kzchatbot-settings-help-conversation-session-ttl-hours',
+				'section' => 'kzchatbot-settings-section-continuous-conversation',
+				'required' => true,
+				'min' => 1,
+				'default' => 24,
+			],
+			'kzcEnableCrossTabSync' => [
+				'type' => 'check',
+				'label-message' => 'kzchatbot-settings-label-enable-cross-tab-sync',
+				'help-message' => 'kzchatbot-settings-help-enable-cross-tab-sync',
+				'section' => 'kzchatbot-settings-section-continuous-conversation',
+				'default' => true,
+			],
+			'kzcHistoryStorageMode' => [
+				'type' => 'select',
+				'label-message' => 'kzchatbot-settings-label-history-storage-mode',
+				'help-message' => 'kzchatbot-settings-help-history-storage-mode',
+				'section' => 'kzchatbot-settings-section-continuous-conversation',
+				'options-messages' => [
+					'kzchatbot-settings-history-storage-mode-local' => 'local',
+					'kzchatbot-settings-history-storage-mode-redis' => 'redis',
+					'kzchatbot-settings-history-storage-mode-hybrid' => 'hybrid',
+				],
+				'default' => 'local',
+			],
 		];
 
 		// Determine form defaults from current settings.
@@ -235,7 +276,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 			$valueName = $formNameToDbName[ $inputName ] ?? null;
 			if ( isset( $settings[$valueName] ) ) {
 				$attribs['default'] = $settings[$valueName];
-			} elseif ( $attribs['type'] === 'int' ) {
+			} elseif ( $attribs['type'] === 'int' && !isset( $attribs['default'] ) ) {
 				$attribs['default'] = 0;
 			}
 

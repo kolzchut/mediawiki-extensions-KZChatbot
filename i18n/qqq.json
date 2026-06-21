@@ -3,6 +3,18 @@
 		"authors": [ "Joel R. ([https://www.kolzchut.org.il Kol-Zchut])" ]
 	},
 	"kolsherutlinks-desc": "{{desc|name=KZChatbot|url=https://github.com/kolzchut/mediawiki-extensions-KZChatbot}}",
+	"kzchatbot-settings-section-continuous-conversation": "Header for the continuous-conversation settings section on [[Special:KZChatbotSettings]]",
+	"kzchatbot-settings-label-max-questions-per-conversation": "Label for the maximum number of question/answer turns allowed in one conversation",
+	"kzchatbot-settings-help-max-questions-per-conversation": "Help text for the max-questions-per-conversation setting",
+	"kzchatbot-settings-label-conversation-session-ttl-hours": "Label for the conversation session lifetime, in hours",
+	"kzchatbot-settings-help-conversation-session-ttl-hours": "Help text for the conversation-session-ttl-hours setting",
+	"kzchatbot-settings-label-enable-cross-tab-sync": "Label for the checkbox enabling conversation sync across browser tabs",
+	"kzchatbot-settings-help-enable-cross-tab-sync": "Help text for the enable-cross-tab-sync setting",
+	"kzchatbot-settings-label-history-storage-mode": "Label for the conversation history storage mode selector",
+	"kzchatbot-settings-help-history-storage-mode": "Help text for the history-storage-mode setting",
+	"kzchatbot-settings-history-storage-mode-local": "Dropdown option: store conversation history in browser local storage",
+	"kzchatbot-settings-history-storage-mode-redis": "Dropdown option: store conversation history server-side in Redis",
+	"kzchatbot-settings-history-storage-mode-hybrid": "Dropdown option: store conversation history in both browser and server",
 
 	"kzchatbot-rag-settings-section-general": "Header for the general settings section in the LLM configuration interface",
 	"kzchatbot-rag-settings-section-model": "Header for the AI model configuration section in the LLM settings",

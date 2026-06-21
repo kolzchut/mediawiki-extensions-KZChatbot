@@ -175,7 +175,9 @@ class KZChatbot {
 		return [
 			'new_users_chatbot_rate', 'active_users_limit', 'active_users_limit_days', 'questions_daily_limit',
 			'question_character_limit', 'feedback_character_limit', 'cookie_expiry_days', 'uuid_request_limit',
-			'usage_help_url', 'terms_of_service_url'
+			'usage_help_url', 'terms_of_service_url',
+			'max_questions_per_conversation', 'conversation_session_ttl_hours', 'enable_cross_tab_sync',
+			'history_storage_mode'
 		];
 	}
 

@@ -88,9 +88,9 @@ class Hooks implements
 			// Continuous conversation settings consumed by the React app.
 			// maxQuestionsPerConversation must stay <= the RAG's
 			// max_conversation_history (default 8) so the client caps first.
-			'maxQuestionsPerConversation' => $chatbotSettings['max_questions_per_conversation'] ?? 8,
-			'conversationSessionTtlHours' => $chatbotSettings['conversation_session_ttl_hours'] ?? 24,
-			'enableCrossTabSync' => $chatbotSettings['enable_cross_tab_sync'] ?? true,
+			'maxQuestionsPerConversation' => (int)( $chatbotSettings['max_questions_per_conversation'] ?? 8 ),
+			'conversationSessionTtlHours' => (int)( $chatbotSettings['conversation_session_ttl_hours'] ?? 24 ),
+			'enableCrossTabSync' => (bool)( $chatbotSettings['enable_cross_tab_sync'] ?? true ),
 			'historyStorageMode' => $chatbotSettings['history_storage_mode'] ?? 'local',
 		];
 		$vars['KZChatbotAutoOpenParam'] = $config->get( 'KZChatbotAutoOpenParam' );

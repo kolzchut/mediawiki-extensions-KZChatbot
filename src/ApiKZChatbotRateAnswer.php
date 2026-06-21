@@ -33,9 +33,20 @@ class ApiKZChatbotRateAnswer extends Handler {
 				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_TYPE => 'string',
 			],
+			'thread_id' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_TYPE => 'string',
+			],
+			'conversation_id' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_REQUIRED => false,
+				ParamValidator::PARAM_TYPE => 'string',
+			],
+			// Legacy alias for conversation_id; the client still sends both.
 			'answerId' => [
 				self::PARAM_SOURCE => 'body',
-				ParamValidator::PARAM_REQUIRED => true,
+				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_TYPE => 'string',
 			],
 			'like' => [
@@ -51,7 +62,7 @@ class ApiKZChatbotRateAnswer extends Handler {
 		$feedbackCharacterLimit = KZChatbot::getGeneralSettings()['feedback_character_limit'];
 		parent::validate( $restValidator );
 		$validatedBody = $this->getValidatedBody();
-		if ( $validatedBody && mb_strlen( $validatedBody['text'] ) > $feedbackCharacterLimit ) {
+		if ( $validatedBody && mb_strlen( $validatedBody['text'] ?? '' ) > $feedbackCharacterLimit ) {
 			throw new LocalizedHttpException(
 				new MessageValue( 'apierror-maxchars', [ 'text', $feedbackCharacterLimit ] ),
 				400
@@ -76,24 +87,28 @@ class ApiKZChatbotRateAnswer extends Handler {
 
 	private function rateAnswer() {
 		$body = $this->getValidatedBody();
-		$answerClassification = $body['answerClassification'];
-		$text = $body['text'];
-		$answerId = $body['answerId'];
-		$like = $body['like'];
+		$text = $body['text'] ?? '';
+		$threadId = $body['thread_id'] ?? '';
+		// conversation_id is the per-turn id; answerId is the legacy alias.
+		$conversationId = $body['conversation_id'] ?? $body['answerId'] ?? '';
+		$like = $body['like'] ?? null;
+		// The RAG /rating endpoint expects a string score: '1' = like, '0' = dislike.
+		$score = $like === true ? '1' : ( $like === false ? '0' : '' );
 		$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'KZChatbot' );
-		$apiUrl = $config->get( 'KZChatbotLlmApiUrl' ) . '/rating';
+
+		// /rating takes its arguments as query parameters, not a JSON body.
+		$apiUrl = $config->get( 'KZChatbotLlmApiUrl' ) . '/rating?' . http_build_query( [
+			'thread_id' => $threadId,
+			'conversation_id' => $conversationId,
+			'score' => $score,
+			'text' => $text,
+		] );
 
 		$httpRequestFactory = MediaWikiServices::getInstance()->getHttpRequestFactory();
 		$req = $httpRequestFactory->create( $apiUrl, [
 			'method' => 'POST',
-			'postData' => json_encode( [
-				'free_text' => $text,
-				'conversation_id' => $answerId,
-				'like' => $like,
-			] ),
 			'originalRequest' => RequestContext::getMain()->getRequest(),
 		], __METHOD__ );
-		$req->setHeader( 'Content-Type', 'application/json' );
 		$req->setHeader( 'X-Forwarded-For', RequestContext::getMain()->getRequest()->getIP() );
 
 		$req->execute();

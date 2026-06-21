@@ -63,7 +63,23 @@ class Slugs {
 			'general_error' => 'אירעה שגיאה במערכת. אנא נסו שנית מאוחר יותר.',
 			'send_button' => 'שליחה',
 			'chat_description' => 'שאלו את ה-AI שלנו',
-			'by' => 'by'
+			'by' => 'by',
+			// Continuous conversation
+			'chat_description_when_active_conversation' => 'המשיכו את השיחה',
+			'new_conversation_button' => 'שיחה חדשה',
+			'previous_conversations_button' => 'שיחות קודמות',
+			'continue_conversation_placeholder' => 'המשך השיחה...',
+			'continue_conversation_mode_title' => 'מצב המשך שיחה',
+			'continue_conversation_mode_hint' => 'השיחה תמשיך מכאן עם ההקשר הקיים',
+			'return_to_conversation_button' => 'חזרה לשיחה',
+			'delete_history_button' => 'מחיקת היסטוריית השיחות',
+			'delete_history_modal_title' => 'למחוק את היסטוריית השיחות?',
+			'delete_history_modal_body' => 'כל היסטוריית הסשן תימחק לצמיתות ולא ניתן יהיה לשחזר אותה.',
+			'delete_history_confirm' => 'מחיקה',
+			'delete_history_cancel' => 'ביטול',
+			'quota_reached_message' => 'כרגע ניתן לשאול מספר מוגבל של שאלות בכל שיחה. כדי להמשיך אפשר לפתוח שיחה חדשה.',
+			'getting_answer' => 'מחפש תשובה...',
+			'chat_disclaimer' => 'הצ\'אט יכול לטעות. \'כל זכות\' לא אחראית לנכונות התשובות.',
 		];
         // phpcs:enable Generic.Files.LineLength.TooLong
 	}

@@ -20,6 +20,11 @@
 			"description": "LLM API URL",
 			"value": null
 		},
+		"KZChatbotLlmApiTimeout": {
+			"value": 120,
+			"description": "Timeout in seconds for requests to the RAG backend's /search endpoint. The LLM judge + answer steps can take well over the default HTTP timeout, so this is set higher to avoid premature timeouts while the backend is still answering.",
+			"public": false
+		},
 		"KZChatbotUserLimitBypassToken": {
 			"value": false,
 			"description": "Secret token that allows bypassing the active users limit when provided as a URL parameter. Set to false to disable the bypass feature.",

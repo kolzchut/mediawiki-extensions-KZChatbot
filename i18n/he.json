@@ -102,5 +102,7 @@
 	"right-kzchatbot-no-limits": "ללא הגבלות בשימוש בצ'טבוט",
 	"action-kzchatbot-no-limits": "להשתמש בצ'טבוט ללא הגבלות",
 	"kzchatbot-testing-nav-to-rag-settings": "הגדרות RAG",
+	"kzchatbot-testing-nav-to-batch": "בדיקת אצווה",
+	"kzchatbot-testing-nav-to-single": "בדיקת שאילתה בודדת",
 	"kzchatbot-rag-settings-nav-to-testing": "ממשק בדיקות"
 }

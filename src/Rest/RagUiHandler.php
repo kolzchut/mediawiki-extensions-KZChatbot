@@ -34,7 +34,7 @@ class RagUiHandler extends Handler {
 	private const PROXIED_PATHS = [
 		'get_config', 'set_config', 'clean_redis_history',
 		'ping/redis', 'ping/llm_manager', 'ping/es_docker',
-		'search/stream', 'search',
+		'search/stream', 'search', 'rating',
 	];
 
 	/** @inheritDoc */
@@ -143,7 +143,7 @@ class RagUiHandler extends Handler {
 (function () {
 	var P = window.KZ_PROXY || {};
 	var PROXIED = $paths;
-	var WRITES = { set_config: 1, clean_redis_history: 1, search: 1, 'search/stream': 1 };
+	var WRITES = { set_config: 1, clean_redis_history: 1, search: 1, 'search/stream': 1, rating: 1 };
 	var orig = window.fetch.bind( window );
 	window.fetch = function ( input, init ) {
 		init = init || {};

@@ -103,5 +103,7 @@
 	"right-kzchatbot-no-limits": "{{doc-right|kzchatbot-no-limits}}",
 	"action-kzchatbot-no-limits": "{{doc-action|kzchatbot-no-limits}}",
 	"kzchatbot-testing-nav-to-rag-settings": "Navigation link label from the testing interface to the RAG settings page.",
+	"kzchatbot-testing-nav-to-batch": "Navigation link label from the single-query tester to the batch runner.",
+	"kzchatbot-testing-nav-to-single": "Navigation link label from the batch runner to the single-query tester.",
 	"kzchatbot-rag-settings-nav-to-testing": "Navigation link label from the RAG settings page to the testing interface."
 }

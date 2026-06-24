@@ -150,6 +150,13 @@
 			"editRight": "kzchatbot-edit-rag-settings"
 		},
 		{
+			"path": "/kzchatbot/v0/ragui/index",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagUiHandler",
+			"backendFile": "index.html",
+			"viewRight": "kzchatbot-testing"
+		},
+		{
 			"path": "/kzchatbot/v0/ragui/batch",
 			"method": "GET",
 			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagUiHandler",
@@ -213,6 +220,14 @@
 			"method": "POST",
 			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagProxyHandler",
 			"backendPath": "search/stream",
+			"right": "kzchatbot-testing",
+			"write": true
+		},
+		{
+			"path": "/kzchatbot/v0/ragproxy/rating",
+			"method": "POST",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagProxyHandler",
+			"backendPath": "rating",
 			"right": "kzchatbot-testing",
 			"write": true
 		}

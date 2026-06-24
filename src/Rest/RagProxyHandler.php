@@ -69,6 +69,12 @@ class RagProxyHandler extends Handler {
 		$config = MediaWikiServices::getInstance()->getMainConfig();
 		$apiUrl = rtrim( $config->get( 'KZChatbotLlmApiUrl' ), '/' ) . '/' . ltrim( $backendPath, '/' );
 
+		// Preserve the query string (e.g. /rating?thread_id=…&score=…).
+		$query = $this->getRequest()->getUri()->getQuery();
+		if ( $query !== '' ) {
+			$apiUrl .= '?' . $query;
+		}
+
 		$method = strtoupper( $this->getRequest()->getMethod() );
 		$headers = [ 'Accept: application/json' ];
 

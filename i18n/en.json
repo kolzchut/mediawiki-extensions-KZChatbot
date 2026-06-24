@@ -103,5 +103,7 @@
 	"right-kzchatbot-no-limits": "No limits when using the chatbot",
 	"action-kzchatbot-no-limits": "use the chatbot without any limits",
 	"kzchatbot-testing-nav-to-rag-settings": "RAG Settings",
+	"kzchatbot-testing-nav-to-batch": "Batch testing",
+	"kzchatbot-testing-nav-to-single": "Single-query testing",
 	"kzchatbot-rag-settings-nav-to-testing": "Testing Interface"
 }

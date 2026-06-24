@@ -297,7 +297,7 @@ class SpecialKZChatbotSettings extends SpecialPage {
 		// Save new values to database.
 		$formNameToDbName = $this->getFormNameToDbNameMapping();
 		$data = array_map(
-			fn ( $formName ) => $postData[$formName],
+			static fn ( $formName ) => $postData[$formName],
 			array_flip( $formNameToDbName )
 		);
 		KZChatbot::saveGeneralSettings( $data );

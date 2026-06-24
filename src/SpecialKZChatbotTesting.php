@@ -2,103 +2,43 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use Html;
 use SpecialPage;
-use TemplateParser;
 
+/**
+ * Embeds the RAG backend's own batch-runner interface in an iframe.
+ *
+ * The interface itself is served (and its API calls proxied + permission-checked)
+ * by the REST handlers under /kzchatbot/v0/ragui and /kzchatbot/v0/ragproxy. This
+ * page only gates access and hosts the frame.
+ */
 class SpecialKZChatbotTesting extends SpecialPage {
-	/** @var TemplateParser */
-	private TemplateParser $templateParser;
 
 	public function __construct() {
 		parent::__construct( 'KZChatbotTesting', 'kzchatbot-testing' );
-		$this->templateParser = new TemplateParser( __DIR__ . '/../templates' );
 	}
 
 	/** @inheritDoc */
 	public function execute( $subPage ) {
 		parent::execute( $subPage );
 
-		$this->getOutput()->addModuleStyles( 'ext.KZChatbot.testing.styles' );
-		$this->getOutput()->addModules( 'ext.KZChatbot.testing.batch' );
+		$out = $this->getOutput();
+		$out->enableClientCache( false );
+		$out->addModuleStyles( 'ext.KZChatbot.ragui.styles' );
 
-		// Add navigation link to RAG Settings
+		// Navigation link to RAG Settings
 		$ragSettingsTitle = SpecialPage::getTitleFor( 'KZChatbotRagSettings' );
-		$linkRenderer = $this->getLinkRenderer();
-		$ragSettingsLink = $linkRenderer->makeLink( 
+		$out->addSubtitle( $this->getLinkRenderer()->makeLink(
 			$ragSettingsTitle,
 			$this->msg( 'kzchatbot-testing-nav-to-rag-settings' )->text()
-		);
-		$this->getOutput()->addSubtitle( $ragSettingsLink );
+		) );
 
-		// Fetch model information from the RAG backend
-		$modelsVersionStatus = KZChatbot::getModelsVersion();
-		$modelsVersion = '';
-		$modelsError = '';
-
-		if ( $modelsVersionStatus->isOK() ) {
-			$modelsVersion = $modelsVersionStatus->getValue();
-		} else {
-			$errors = $modelsVersionStatus->getErrors();
-			$modelsError = $errors ?
-				$this->msg( $errors[0] )->text() :
-				$this->msg( 'kzchatbot-testing-models-error-unknown' )->text();
-		}
-
-		// Fetch current RAG configuration to get the current model
-		$ragConfigStatus = KZChatbot::getRagConfig();
-		$currentModel = '';
-		$currentModelError = '';
-
-		if ( $ragConfigStatus->isOK() ) {
-			$config = $ragConfigStatus->getValue();
-			$currentModel = $config['model'] ?? '';
-		} else {
-			$errors = $ragConfigStatus->getErrors();
-			$currentModelError = $errors ?
-				$this->msg( $errors[0] )->text() :
-				$this->msg( 'kzchatbot-testing-current-model-error-unknown' )->text();
-		}
-
-		$templateData = [
-			'batchTitle' => $this->msg( 'kzchatbot-testing-batch-title' )->text(),
-			'inputLabel' => $this->msg( 'kzchatbot-testing-batch-input-label' )->text(),
-			'inputPlaceholder' => $this->msg( 'kzchatbot-testing-batch-placeholder' )->text(),
-			'processButtonText' => $this->msg( 'kzchatbot-testing-batch-process' )->text(),
-			'cancelButtonText' => $this->msg( 'kzchatbot-testing-batch-cancel' )->text(),
-			'downloadButtonText' => $this->msg( 'kzchatbot-testing-batch-download' )->text(),
-			'outputLabel' => $this->msg( 'kzchatbot-testing-batch-output-label' )->text(),
-			'totalQueriesLabel' => $this->msg( 'kzchatbot-testing-batch-total-queries' )->text(),
-			'numberColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-number' )->text(),
-			'queryColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-query' )->text(),
-			'contextPageColumnHeader' => $this->msg( 'kzchatbot-testing-batch-context-page-header' )->text(),
-			'responseColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-response' )->text(),
-			'documentsColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-documents' )->text(),
-			'filteredDocsColumnHeader' => $this->msg( 'kzchatbot-testing-batch-header-filtered-documents' )->text(),
-			'inputHint' => $this->msg( 'kzchatbot-testing-batch-input-hint' )->text(),
-			'deleteQueryLabel' => $this->msg( 'kzchatbot-testing-batch-delete-query' )->text(),
-			'addQueryLabel' => $this->msg( 'kzchatbot-testing-batch-add-query' )->text(),
-			'initialQuery' => $this->msg( 'kzchatbot-testing-batch-initial-query' )->text(),
-			'modelsVersionLabel' => $this->msg( 'kzchatbot-testing-models-version-label' )->text(),
-			'modelsVersion' => $modelsVersion,
-			'modelsError' => $modelsError,
-			'hasModelsError' => !empty( $modelsError ),
-			'currentModelLabel' => $this->msg( 'kzchatbot-testing-current-model-label' )->text(),
-			'currentModel' => $currentModel,
-			'currentModelError' => $currentModelError,
-			'hasCurrentModelError' => !empty( $currentModelError ),
-			'optionsLegend' => $this->msg( 'kzchatbot-testing-batch-options-legend' )->text(),
-			'rephraseLabel' => $this->msg( 'kzchatbot-testing-batch-rephrase-toggle-label' )->text(),
-			'includeDebugDataLabel' => $this->msg( 'kzchatbot-testing-batch-include-debug-data-toggle-label' )->text(),
-			'sendCompletePagesLabel' => $this->msg( 'kzchatbot-testing-batch-send-complete-pages-to-llm-toggle-label' )->text(),
-			'retrievalSizeLabel' => $this->msg( 'kzchatbot-testing-batch-retrieval-size-label' )->text(),
-			'retrievalSizeHelp' => $this->msg( 'kzchatbot-testing-batch-retrieval-size-help' )->text(),
-			'maxDocsPerPageLabel' => $this->msg( 'kzchatbot-testing-batch-max-docs-per-page-label' )->text(),
-			'maxDocsPerPageHelp' => $this->msg( 'kzchatbot-testing-batch-max-docs-per-page-help' )->text(),
-		];
-
-		$this->getOutput()->addHTML(
-			$this->templateParser->processTemplate( 'KZChatbotTestingBatch', $templateData )
-		);
+		$src = $this->getConfig()->get( 'RestPath' ) . '/kzchatbot/v0/ragui/batch';
+		$out->addHTML( Html::element( 'iframe', [
+			'src' => $src,
+			'class' => 'kzchatbot-rag-iframe',
+			'title' => $this->msg( 'kzchatbot-testing-title' )->text(),
+		] ) );
 	}
 
 	/** @inheritDoc */

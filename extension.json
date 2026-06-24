@@ -55,12 +55,15 @@
 		"kzchatbot-edit-rag-settings",
 		"kzchatbot-no-limits",
 		"kzchatbot-view-settings",
-		"kzchatbot-view-rag-settings"
+		"kzchatbot-view-rag-settings",
+		"kzchatbot-clean-redis-history"
 	],
 	"GroupPermissions": {
 		"chatbot-admin": {
 			"kzchatbot-edit-settings": true,
+			"kzchatbot-view-rag-settings": true,
 			"kzchatbot-edit-rag-settings": true,
+			"kzchatbot-clean-redis-history": true,
 			"kzchatbot-testing": true,
 			"kzchatbot-no-limits": true
 		},
@@ -116,71 +119,10 @@
 				"overrides.less"
 			]
 		},
-		"ext.KZChatbot.testing.styles": {
-			"styles": [
-				"resources/ext.KZChatbot.testing.styles/styles.css"
-			]
-		},
-		"ext.KZChatbot.testing.batch": {
-			"es6": true,
-			"scripts": "batch.js",
-			"styles": "batch.less",
-			"localBasePath": "resources/ext.KZChatbot.testing.batch",
-			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.testing.batch",
-			"dependencies": [
-				"mediawiki.api",
-				"mediawiki.ui.button",
-				"mediawiki.widgets",
-				"oojs-ui-widgets",
-				"oojs-ui-windows",
-				"jquery.spinner"
-			],
-			"messages": [
-				"kzchatbot-testing-batch-progress-status",
-				"kzchatbot-testing-batch-progress-cancelled",
-				"kzchatbot-testing-batch-result-error",
-				"kzchatbot-testing-batch-result-success",
-				"kzchatbot-testing-batch-result-separator",
-				"kzchatbot-testing-batch-download-filename",
-				"kzchatbot-testing-batch-header-query",
-				"kzchatbot-testing-batch-header-response",
-				"kzchatbot-testing-batch-header-documents",
-				"kzchatbot-testing-batch-header-filtered-documents",
-				"kzchatbot-testing-batch-header-error",
-				"kzchatbot-testing-batch-progress-error",
-				"kzchatbot-testing-batch-network-error",
-				"kzchatbot-testing-batch-unknown-error",
-				"kzchatbot-testing-batch-cancel",
-				"kzchatbot-testing-batch-clear-all",
-				"kzchatbot-testing-batch-clear-all-confirm",
-				"kzchatbot-testing-batch-placeholder",
-				"kzchatbot-testing-batch-delete-query",
-				"kzchatbot-testing-batch-rephrase-toggle-label",
-				"kzchatbot-testing-batch-header-number",
-				"kzchatbot-testing-batch-header-rephrase-time",
-				"kzchatbot-testing-batch-header-response-time",
-				"kzchatbot-testing-batch-header-rephrased-question",
-				"kzchatbot-testing-batch-header-original-question",
-				"kzchatbot-testing-batch-header-debug",
-				"kzchatbot-testing-batch-debug-dialog-title",
-				"kzchatbot-testing-batch-debug-copy-button",
-				"kzchatbot-testing-batch-debug-close-button",
-				"kzchatbot-testing-batch-debug-button-title",
-				"kzchatbot-testing-batch-debug-copied",
-				"kzchatbot-testing-batch-context-page-placeholder",
-				"kzchatbot-testing-batch-progress-retry",
-				"kzchatbot-testing-batch-retry-button",
-				"kzchatbot-testing-batch-retrying",
-				"kzchatbot-testing-batch-retrieval-size-label",
-				"kzchatbot-testing-batch-retrieval-size-help",
-				"kzchatbot-testing-batch-max-docs-per-page-label",
-				"kzchatbot-testing-batch-max-docs-per-page-help"
-			]
-		}
-	},
-	"APIModules": {
-		"kzchatbotsearch": {
-			"class": "MediaWiki\\Extension\\KZChatbot\\Api\\ApiKZChatbotSearch"
+		"ext.KZChatbot.ragui.styles": {
+			"localBasePath": "resources/ext.KZChatbot.ragui",
+			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.ragui",
+			"styles": [ "styles.css" ]
 		}
 	},
 	"RestRoutes": [
@@ -198,6 +140,81 @@
 			"path": "/kzchatbot/v0/rate",
 			"class": "MediaWiki\\Extension\\KZChatbot\\ApiKZChatbotRateAnswer",
 			"method": "POST"
+		},
+		{
+			"path": "/kzchatbot/v0/ragui/admin",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagUiHandler",
+			"backendFile": "admin.html",
+			"viewRight": "kzchatbot-view-rag-settings",
+			"editRight": "kzchatbot-edit-rag-settings"
+		},
+		{
+			"path": "/kzchatbot/v0/ragui/batch",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagUiHandler",
+			"backendFile": "batch-runner.html",
+			"viewRight": "kzchatbot-testing"
+		},
+		{
+			"path": "/kzchatbot/v0/ragproxy/get_config",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagProxyHandler",
+			"backendPath": "get_config",
+			"right": "kzchatbot-view-rag-settings"
+		},
+		{
+			"path": "/kzchatbot/v0/ragproxy/set_config",
+			"method": "POST",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagProxyHandler",
+			"backendPath": "set_config",
+			"right": "kzchatbot-edit-rag-settings",
+			"write": true
+		},
+		{
+			"path": "/kzchatbot/v0/ragproxy/clean_redis_history",
+			"method": "POST",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagProxyHandler",
+			"backendPath": "clean_redis_history",
+			"right": "kzchatbot-clean-redis-history",
+			"write": true
+		},
+		{
+			"path": "/kzchatbot/v0/ragproxy/ping/redis",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagProxyHandler",
+			"backendPath": "ping/redis",
+			"right": "kzchatbot-view-rag-settings"
+		},
+		{
+			"path": "/kzchatbot/v0/ragproxy/ping/llm_manager",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagProxyHandler",
+			"backendPath": "ping/llm_manager",
+			"right": "kzchatbot-view-rag-settings"
+		},
+		{
+			"path": "/kzchatbot/v0/ragproxy/ping/es_docker",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagProxyHandler",
+			"backendPath": "ping/es_docker",
+			"right": "kzchatbot-view-rag-settings"
+		},
+		{
+			"path": "/kzchatbot/v0/ragproxy/search",
+			"method": "POST",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagProxyHandler",
+			"backendPath": "search",
+			"right": "kzchatbot-testing",
+			"write": true
+		},
+		{
+			"path": "/kzchatbot/v0/ragproxy/search/stream",
+			"method": "POST",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagProxyHandler",
+			"backendPath": "search/stream",
+			"right": "kzchatbot-testing",
+			"write": true
 		}
 	],
 	"ExtensionMessagesFiles": {

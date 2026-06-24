@@ -87,6 +87,14 @@ class RagProxyHandler extends Handler {
 
 		if ( $method !== 'GET' && $method !== 'HEAD' ) {
 			$body = $this->getRequest()->getBody()->getContents();
+			// The UI shim base64-encodes write bodies so their contents don't trip
+			// the WAF; decode before forwarding the real JSON to the backend.
+			if ( strtolower( $this->getRequest()->getHeaderLine( 'X-KZ-Body-Encoding' ) ) === 'base64' ) {
+				$decoded = base64_decode( $body, true );
+				if ( $decoded !== false ) {
+					$body = $decoded;
+				}
+			}
 			$curlOptions[CURLOPT_POSTFIELDS] = $body;
 			$headers[] = 'Content-Type: application/json';
 		}

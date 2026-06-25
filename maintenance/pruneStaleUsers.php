@@ -54,27 +54,24 @@ class PruneStaleUsers extends Maintenance {
 		$cutoffTs = wfTimestamp( TS_MW, $cutoffUnix );
 		$cutoffHuman = wfTimestamp( TS_ISO_8601, $cutoffUnix );
 
-		$dbr = wfGetDB( DB_REPLICA );
-		$totalRows = (int)$dbr->selectField(
-			'kzchatbot_users', 'COUNT(*)', [], __METHOD__
-		);
-		$staleRows = (int)$dbr->selectField(
-			'kzchatbot_users',
-			'COUNT(*)',
-			[ 'kzcbu_last_active < ' . $dbr->addQuotes( $cutoffTs ) ],
-			__METHOD__
-		);
-
 		$this->output( "Cutoff: $cutoffHuman (last_active older than $cutoffDays days)\n" );
-		$this->output( "Stale rows: $staleRows of $totalRows total\n" );
 
+		// COUNT(*) on this table is a large index scan. Only pay for it when the
+		// figure is the whole point (dry runs); real runs report progress from
+		// the running delete tally instead.
 		if ( $this->hasOption( 'dry-run' ) ) {
+			$dbr = wfGetDB( DB_REPLICA );
+			$totalRows = (int)$dbr->selectField(
+				'kzchatbot_users', 'COUNT(*)', [], __METHOD__
+			);
+			$staleRows = (int)$dbr->selectField(
+				'kzchatbot_users',
+				'COUNT(*)',
+				[ 'kzcbu_last_active < ' . $dbr->addQuotes( $cutoffTs ) ],
+				__METHOD__
+			);
+			$this->output( "Stale rows: $staleRows of $totalRows total\n" );
 			$this->output( "Dry run — no rows deleted.\n" );
-			return;
-		}
-
-		if ( $staleRows === 0 ) {
-			$this->output( "Nothing to do.\n" );
 			return;
 		}
 
@@ -82,6 +79,7 @@ class PruneStaleUsers extends Maintenance {
 		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 		$batchSize = $this->getBatchSize();
 		$deleted = 0;
+		$batch = 0;
 
 		do {
 			$uuids = $dbw->selectFieldValues(
@@ -100,10 +98,17 @@ class PruneStaleUsers extends Maintenance {
 				__METHOD__
 			);
 			$deleted += count( $uuids );
-			$this->output( "  ...deleted $deleted / $staleRows\n" );
-			$lbFactory->waitForReplication();
+
+			// Blocking on replication after every batch dominates wall-clock on
+			// large purges. Throttle it: every 10 batches keeps replica lag
+			// bounded without the per-batch stall.
+			if ( ++$batch % 10 === 0 ) {
+				$this->output( "  ...deleted $deleted\n" );
+				$lbFactory->waitForReplication();
+			}
 		} while ( count( $uuids ) === $batchSize );
 
+		$lbFactory->waitForReplication();
 		$this->output( "Done. Deleted $deleted stale user row(s).\n" );
 	}
 

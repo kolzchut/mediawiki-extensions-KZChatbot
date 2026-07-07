@@ -1,5 +1,5 @@
 const initializeChatbot = () => {
-	const scriptVersion = 35;
+	const scriptVersion = 37;
 	const cookieName = 'kzchatbot-uuid';
 	const cookie = mw.cookie.get( cookieName );
 	const uuid = cookie !== null ? cookie : '';
@@ -93,4 +93,3 @@ const initializeChatbot = () => {
 
 // Execute the initialization
 initializeChatbot();
-

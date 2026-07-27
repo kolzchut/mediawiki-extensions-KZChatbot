@@ -60,7 +60,7 @@ class PruneStaleUsers extends Maintenance {
 		// figure is the whole point (dry runs); real runs report progress from
 		// the running delete tally instead.
 		if ( $this->hasOption( 'dry-run' ) ) {
-			$dbr = wfGetDB( DB_REPLICA );
+			$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 			$totalRows = (int)$dbr->selectField(
 				'kzchatbot_users', 'COUNT(*)', [], __METHOD__
 			);
@@ -75,7 +75,7 @@ class PruneStaleUsers extends Maintenance {
 			return;
 		}
 
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 		$batchSize = $this->getBatchSize();
 		$deleted = 0;

@@ -241,6 +241,36 @@ The `Special:KZChatbotRagTesting` page provides a robust batch testing interface
 - Enable debug data when investigating response quality issues
 - Use manual retry for queries that failed due to temporary issues
 
+## Maintenance Scripts
+
+### Pruning stale user records
+
+#### The issue
+Rows in `kzchatbot_users` are created when a visitor is selected to see the chatbot, but they are never deleted automatically. Once a row's `kzcbu_last_active` falls outside the **Active Users Limit Days** window, the row stops counting toward the active-users cap (`KZChatbot::getCurrentActiveUsersCount`) yet remains in the table indefinitely. Over time the table grows without bound, which slows down the active-users count query and bloats backups.
+
+Note: `kzcbu_cookie_expiry` is **not** the right signal for staleness — it tracks the client-side cookie lifetime, not server-side row liveness. The API recomputes the cookie expiry on every `getStatus` call (`ApiKZChatbotGetStatus::execute`), so the stored DB value is currently unused (see TODO under [Future Development](#future-development)).
+
+#### The solution
+`maintenance/pruneStaleUsers.php` deletes rows whose `kzcbu_last_active` is older than the cutoff, in replication-friendly batches.
+
+Run from the MediaWiki root:
+```bash
+php extensions/KZChatbot/maintenance/pruneStaleUsers.php [options]
+```
+
+| Option            | Description                                                                                                                                                            |
+|-------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--dry-run`       | Report the cutoff date and how many of the total rows would be removed, then exit without deleting.                                                                    |
+| `--cutoff-days N` | Override the inactivity threshold in days. Defaults to the saved `active_users_limit_days` setting, so the prune cutoff and the active-users count stay in lockstep.   |
+| `--batch-size N`  | Rows to delete per batch (default 1000). `waitForReplication()` is called between batches to bound replica lag.                                                        |
+
+Recommended cron (daily, off-peak):
+```cron
+30 3 * * * www-data php /path/to/mediawiki/extensions/KZChatbot/maintenance/pruneStaleUsers.php
+```
+
+The script refuses to run if the resolved cutoff is ≤ 0, so a missing or zeroed setting can't accidentally wipe the table.
+
 ## Future Development
 - Prevent users from sending unlimited rating requests: right now it's possible to switch indefinitely between 
   thumbs up and thumbs down, and each is sent and recorded by the RAG server. We need to decide on a limit, and save
@@ -248,4 +278,5 @@ The `Special:KZChatbotRagTesting` page provides a robust batch testing interface
 - Consider caching in memory the count of active users to avoid querying the database on every request
 - What is kzchatbot_users.kzcbu_ranking_eligible_answer_id?
 - Implement UUID request limit functionality
+- @TODO: `kzchatbot_users.kzcbu_cookie_expiry` (and its index) appears to be dead weight — it is written by `KZChatbot::newUser()` but never read anywhere in PHP, JS, or templates (the API recomputes the cookie expiry on every `getStatus` call). If further investigation confirms this, drop the column and its index in a schema update.
 

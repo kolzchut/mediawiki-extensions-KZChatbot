@@ -9,6 +9,7 @@ use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Validator\JsonBodyValidator;
 use MWException;
 use RequestContext;
+use Throwable;
 use Title;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -32,11 +33,45 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	/**
 	 * Pass user question to RAG backend, checking first that user hasn't exceeded daily limit.
 	 * Return answer from RAG backend.
+	 *
+	 * Acts as this endpoint's error boundary. An uncaught Throwable here would be
+	 * turned by MediaWiki's REST layer into a 500 whose body reads
+	 * `Error: exception of type <Class>` (core's wording when
+	 * $wgShowExceptionDetails is false), and the React client renders the response
+	 * message verbatim into the chat window — so a PHP bug reaches the reader as
+	 * an English class name. Everything unexpected is therefore logged on our own
+	 * channel and re-thrown as the operator-authored `general_error` slug.
+	 *
 	 * @return array
 	 * @throws HttpException
 	 * @throws MWException
 	 */
 	public function execute(): array {
+		try {
+			return $this->answerQuestion();
+		} catch ( HttpException $e ) {
+			// Deliberate: the message is an operator-authored slug, meant for the
+			// reader (daily limit, banned word, character limit, general error).
+			throw $e;
+		} catch ( Throwable $e ) {
+			KZChatbot::getLogger()->error(
+				'Unhandled error answering a chatbot question: {exception_class}: {exception_message}',
+				[
+					'exception' => $e,
+					'exception_class' => get_class( $e ),
+					'exception_message' => $e->getMessage(),
+				]
+			);
+			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
+		}
+	}
+
+	/**
+	 * @return array
+	 * @throws HttpException
+	 * @throws MWException
+	 */
+	private function answerQuestion(): array {
 		$body = $this->getValidatedBody();
 		$this->uuid = $body['uuid'];
 		$this->validateUser();
@@ -186,24 +221,41 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	 * @return int|null Page ID if relevant, null otherwise
 	 */
 	private function getRelevantPageId(): ?int {
-		$extensionRegistry = MediaWikiServices::getInstance()->getExtensionRegistry();
-		if ( !$extensionRegistry->isLoaded( 'ChatbotRagContent' ) ) {
+		$services = MediaWikiServices::getInstance();
+		if ( !$services->getExtensionRegistry()->isLoaded( 'ChatbotRagContent' ) ) {
 			return null;
 		}
 
-		$pageId = null;
-		$title = null;
-
 		// Check if referrer is a page ID
-		if ( is_numeric( $this->referrer ) && (int)$this->referrer > 0 ) {
-			$pageId = (int)$this->referrer;
-			$title = Title::newFromID( $pageId );
+		if ( !is_numeric( $this->referrer ) || (int)$this->referrer <= 0 ) {
+			return null;
+		}
+		$pageId = (int)$this->referrer;
+		$title = Title::newFromID( $pageId );
+		if ( !$title ) {
+			return null;
 		}
 
-		if ( $title && ChatbotRagContent::isRelevantTitle( $title ) ) {
-			return $pageId;
+		// Page context is an optional enrichment for the RAG backend, and
+		// ChatbotRagContent is a separate extension whose signature we do not
+		// control. Never let it take the answer down with it: log and ask the
+		// question without page context.
+		try {
+			$isRelevant = ChatbotRagContent::isRelevantTitle(
+				$title,
+				$services->getPageProps(),
+				$services->getMainConfig(),
+				$services->getContentLanguage()
+			);
+		} catch ( Throwable $e ) {
+			KZChatbot::getLogger()->error(
+				'ChatbotRagContent::isRelevantTitle() failed for page {page_id}; '
+					. 'asking without page context',
+				[ 'exception' => $e, 'page_id' => $pageId ]
+			);
+			return null;
 		}
 
-		return null;
+		return $isRelevant ? $pageId : null;
 	}
 }

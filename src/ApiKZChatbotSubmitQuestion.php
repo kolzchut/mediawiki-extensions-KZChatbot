@@ -85,7 +85,15 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 				return $slug;
 			}
 		} catch ( Throwable $e ) {
-			// Fall through to the compiled-in default.
+			// Log rather than fall through in silence. This helper is reached on
+			// paths that previously let the fault escape to the catch-all in
+			// execute(), which logged it; swallowing it here would trade a
+			// reader-facing bug for an invisible operator-facing one, and a
+			// failing slug lookup means the database is in trouble.
+			KZChatbot::getLogger()->warning(
+				'general_error slug lookup failed; using the compiled-in default',
+				[ 'exception' => $e ]
+			);
 		}
 
 		return Slugs::getDefaultSlugs()['general_error'];

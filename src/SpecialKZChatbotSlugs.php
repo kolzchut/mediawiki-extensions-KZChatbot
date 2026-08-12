@@ -293,17 +293,19 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	 */
 	public function handleSlugDelete( $slug ): bool {
 		// Delete word/pattern.
-		$result = Slugs::deleteSlug( $slug );
+		$status = Slugs::deleteSlug( $slug );
 
-		if ( $result ) {
+		if ( $status->isOK() ) {
 			// Set session data for the success message
 			$this->getRequest()->getSession()->set( 'kzSlugDeleted', $slug );
+		} else {
+			$this->getRequest()->getSession()->set( 'kzSlugError', $status->getMessage()->plain() );
 		}
 
 		// Return to form.
 		$url = $this->getPageTitle()->getFullUrlForRedirect();
 		$this->getOutput()->redirect( $url );
-		return $result;
+		return $status->isOK();
 	}
 
 }

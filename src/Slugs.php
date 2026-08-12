@@ -93,22 +93,29 @@ class Slugs {
 
 	/**
 	 * @param string $slug
-	 * @return bool
-	 * @throws \MWException
+	 * @return \Status Good (with embedded success message) on success; Fatal on unknown slug name
 	 */
-	public static function deleteSlug( string $slug ): bool {
-		if ( !self::isValidSlugName( $slug ) ) {
-			throw new \MWException( 'invalid slug name' );
+	public static function deleteSlug( string $slug ): \Status {
+		// An override row can outlive the default it was named after: slugs get
+		// renamed and retired, but nothing migrates or drops the rows saved under
+		// the old keys. Special:KZChatbotSlugs lists those orphans and offers a
+		// delete link for them, so validating against the current defaults alone
+		// would reject the one operation that clears them up.
+		if ( !self::isValidSlugName( $slug ) && !array_key_exists( $slug, self::getSlugsFromDB() ) ) {
+			return \Status::newFatal( new \RawMessage( 'invalid slug name' ) );
 		}
 
 		// Reset the static cache, so it is refreshed next time
 		self::$slugsRaw = null;
 
 		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
-		return $dbw->delete(
+		$dbw->delete(
 			'kzchatbot_text',
-			[ 'kzcbt_slug' => $slug ]
+			[ 'kzcbt_slug' => $slug ],
+			__METHOD__
 		);
+
+		return \Status::newGood( [ 'kzchatbot-slugs-status-delete-success', $slug ] );
 	}
 
 	/**

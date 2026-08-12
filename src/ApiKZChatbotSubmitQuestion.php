@@ -62,8 +62,41 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 					'exception_message' => $e->getMessage(),
 				]
 			);
-			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
+			throw new HttpException( $this->generalErrorMessage(), 500 );
 		}
+	}
+
+	/**
+	 * The reader-facing text for an error we did not plan for.
+	 *
+	 * Deliberately does not trust the database. `Slugs::getSlug()` reads
+	 * `kzchatbot_text` and the general settings, so on the one fault most likely
+	 * to reach the catch-all above — a database failure — looking the slug up
+	 * would throw a second time, escape execute(), and hand the reader the raw
+	 * `Error: exception of type DBQueryError` this boundary exists to prevent.
+	 * `Slugs::getDefaultSlugs()` is a compiled-in array, so it always answers.
+	 *
+	 * @return string
+	 */
+	private function generalErrorMessage(): string {
+		try {
+			$slug = Slugs::getSlug( 'general_error' );
+			if ( is_string( $slug ) && $slug !== '' ) {
+				return $slug;
+			}
+		} catch ( Throwable $e ) {
+			// Log rather than fall through in silence. This helper is reached on
+			// paths that previously let the fault escape to the catch-all in
+			// execute(), which logged it; swallowing it here would trade a
+			// reader-facing bug for an invisible operator-facing one, and a
+			// failing slug lookup means the database is in trouble.
+			KZChatbot::getLogger()->warning(
+				'general_error slug lookup failed; using the compiled-in default',
+				[ 'exception' => $e ]
+			);
+		}
+
+		return Slugs::getDefaultSlugs()['general_error'];
 	}
 
 	/**
@@ -97,7 +130,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 			$logMsg = 'RAG backend returned null. Question: ' . $this->question
 				. "\nAnswer: " . print_r( $answer, true );
 			KZChatbot::getLogger()->error( $logMsg );
-			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
+			throw new HttpException( $this->generalErrorMessage(), 500 );
 		}
 		return $answer;
 	}
@@ -139,7 +172,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 			KZChatbot::getLogger()->error(
 				'RAG backend request failed: ' . $status->getWikiText( false, false, 'en' )
 			);
-			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
+			throw new HttpException( $this->generalErrorMessage(), 500 );
 		}
 		$response = json_decode( $req->getContent() );
 		$docs = array_map( static function ( $doc ) {

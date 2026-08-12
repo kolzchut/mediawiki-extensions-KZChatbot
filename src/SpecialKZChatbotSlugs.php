@@ -60,6 +60,21 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 			return;
 		}
 
+		// Obsolete override rows are listed so they can be deleted, but there is
+		// nothing to edit: the key is gone from the defaults, so Slugs::saveSlug()
+		// would reject any change anyway. The table omits their edit link, but
+		// both the form URL and a hand-made POST stay reachable, so the refusal
+		// belongs here rather than in the markup.
+		$editSlug = $this->getRequestedEditSlug();
+		if ( $editSlug !== null && !Slugs::isValidSlugName( $editSlug ) ) {
+			$this->getRequest()->getSession()->set(
+				'kzSlugError',
+				$this->msg( 'kzchatbot-slugs-error-obsolete', $editSlug )->text()
+			);
+			$this->getOutput()->redirect( $this->getPageTitle()->getFullUrlForRedirect() );
+			return;
+		}
+
 		// Edit operation?
 		if ( !empty( $queryParams['edit'] ) || $request->getVal( 'wpkzcAction' ) === 'edit' ) {
 			if ( $request->wasPosted() ) {
@@ -176,7 +191,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 			$output->addHTML(
 				Html::openElement(
 					'table',
-					[ 'class' => 'mw-datatable sortable', 'id' => 'kzchatbot-slugs-table' ]
+					[ 'class' => 'mw-datatable sortable kzc-slugs-table', 'id' => 'kzchatbot-slugs-table' ]
 				)
 				. Html::openElement( 'thead' ) . Html::openElement( 'tr' )
 				. Html::element( 'th', [], $this->msg( 'kzchatbot-slugs-label-slug' )->text() )
@@ -190,17 +205,36 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 			$editLabel = $this->msg( 'kzchatbot-slugs-op-edit' )->text();
 			$deleteLabel = $this->msg( 'kzchatbot-slugs-op-delete' )->text();
 			$formattingLabel = $this->msg( 'kzchatbot-slugs-formatting-supported' )->text();
+			$obsoleteLabel = $this->msg( 'kzchatbot-slugs-obsolete' )->text();
+			$obsoleteTooltip = $this->msg( 'kzchatbot-slugs-obsolete-tooltip' )->text();
 			foreach ( $slugs as $slug => $attribs ) {
+				// A row the chatbot no longer has any use for: it exists only because
+				// an override was saved under a slug that has since been renamed or
+				// retired. Deleting it is the only thing left to do with it.
+				$isObsolete = !Slugs::isValidSlugName( $slug );
 				$editUrl = $output->getTitle()->getLocalURL( [ 'edit' => $slug ] );
 				$deleteUrl = $output->getTitle()->getLocalURL( [ 'delete' => $slug ] );
-				$cssClass = $attribs['changed'] ? '' : 'default-value';
+				if ( $isObsolete ) {
+					$cssClass = 'obsolete-value';
+				} else {
+					$cssClass = $attribs['changed'] ? '' : 'default-value';
+				}
 				$output->addHTML(
 					Html::openElement( 'tr', [ 'class' => $cssClass ] )
-					. Html::element( 'td', [], $slug )
+					. Html::rawElement( 'td', [],
+						Html::element( 'span', [], $slug )
+						. ( $isObsolete
+							? ' ' . Html::element(
+								'span',
+								[ 'class' => 'kzc-obsolete-badge', 'title' => $obsoleteTooltip ],
+								$obsoleteLabel
+							)
+							: '' )
+					)
 					. Html::element( 'td', [], $attribs['value'] )
 					. Html::element( 'td', [], in_array( $slug, $formattedSlugs ) ? $formattingLabel : '' )
 					. Html::rawElement( 'td', [],
-						Html::element( 'a', [ 'href' => $editUrl ], $editLabel )
+						$isObsolete ? '' : Html::element( 'a', [ 'href' => $editUrl ], $editLabel )
 					)
 					. Html::rawElement( 'td', [],
 						$attribs['changed'] ? Html::element( 'a', [ 'href' => $deleteUrl ], $deleteLabel ) : ''
@@ -221,6 +255,21 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				)
 			);
 		}
+	}
+
+	/**
+	 * The slug an edit request is targeting, whether it arrived as a query
+	 * parameter (opening the form) or as a form submission (saving it).
+	 *
+	 * @return string|null Null when the request is not an edit
+	 */
+	private function getRequestedEditSlug(): ?string {
+		$request = $this->getRequest();
+		if ( $request->wasPosted() && $request->getVal( 'wpkzcAction' ) === 'edit' ) {
+			return $request->getVal( 'wpkzcSlug' );
+		}
+		$slug = $request->getQueryValues()['edit'] ?? null;
+		return empty( $slug ) ? null : $slug;
 	}
 
 	/**

@@ -274,10 +274,13 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	 */
 	private function getRequestedEditSlug(): ?string {
 		$request = $this->getRequest();
-		if ( $request->wasPosted() && $request->getVal( 'wpkzcAction' ) === 'edit' ) {
-			return $request->getVal( 'wpkzcSlug' );
-		}
-		$slug = $request->getQueryValues()['edit'] ?? null;
+		$slug = $request->wasPosted() && $request->getVal( 'wpkzcAction' ) === 'edit'
+			? $request->getVal( 'wpkzcSlug' )
+			: ( $request->getQueryValues()['edit'] ?? null );
+
+		// Both sources normalise the same way, so a blank slug is never mistaken
+		// for an obsolete one: an absent name is the form's own required-field
+		// error to report, not something to explain as retired.
 		return empty( $slug ) ? null : $slug;
 	}
 

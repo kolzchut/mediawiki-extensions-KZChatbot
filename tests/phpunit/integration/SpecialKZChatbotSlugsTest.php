@@ -160,6 +160,24 @@ class SpecialKZChatbotSlugsTest extends SpecialPageTestBase {
 		);
 	}
 
+	/**
+	 * A submission carrying no slug name is a missing required field, which the
+	 * form reports for itself. It must not be explained as an obsolete slug —
+	 * the two sources an edit can arrive from have to normalise the same way.
+	 */
+	public function testBlankSlugIsNotReportedAsObsolete() {
+		$request = new FauxRequest( [
+			'wpkzcAction' => 'edit',
+			'wpkzcSlug' => '',
+			'wpkzcText' => 'whatever',
+			'wpFormIdentifier' => 'KZChatbotSlugForm',
+		], true, [] );
+
+		$this->executeAsAdmin( $request );
+
+		$this->assertNull( $request->getSession()->get( 'kzSlugError' ) );
+	}
+
 	private function obsoleteEditSubmission(): FauxRequest {
 		return new FauxRequest( [
 			'wpkzcAction' => 'edit',

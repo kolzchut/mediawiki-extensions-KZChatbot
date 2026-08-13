@@ -10,6 +10,7 @@ use Html;
 use HTMLForm;
 use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Message;
 use PermissionsError;
 use Status;
 
@@ -113,8 +114,8 @@ class SpecialKZChatbotRagSettings extends FormSpecialPage {
 	/**
 	 * @inheritDoc
 	 */
-	public function getDescription(): string {
-		return $this->msg( 'kzchatbot-rag-settings' )->text();
+	public function getDescription(): Message {
+		return $this->msg( 'kzchatbot-rag-settings' );
 	}
 
 	/**

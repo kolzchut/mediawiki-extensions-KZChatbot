@@ -4,6 +4,7 @@ namespace MediaWiki\Extension\KZChatbot;
 
 use Html;
 use HTMLForm;
+use MediaWiki\Message\Message;
 use SpecialPage;
 
 /**
@@ -23,8 +24,8 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	/**
 	 * @inheritDoc
 	 */
-	public function getDescription() {
-		return $this->msg( 'kzchatbot-slugs-title' )->text();
+	public function getDescription(): Message {
+		return $this->msg( 'kzchatbot-slugs-title' );
 	}
 
 	/**

@@ -6,9 +6,17 @@ use MediaWiki\MediaWikiServices;
 
 class Slugs {
 	/**
+	 * Memoised merge of the defaults and the database overrides, so a request
+	 * that asks for several slugs runs one SELECT rather than one per slug.
+	 * Null means "not loaded", which is also how deleteSlug() invalidates it.
+	 *
+	 * The `= null` default matters: a typed static property declared without one
+	 * is *uninitialized* rather than null, and reading it outside an isset()
+	 * guard would be a fatal instead of a null.
+	 *
 	 * @var array|null of texts
 	 */
-	protected static ?array $slugsRaw;
+	protected static ?array $slugsRaw = null;
 
 	/**
 	 * @param string $slugName

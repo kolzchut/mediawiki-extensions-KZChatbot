@@ -6,6 +6,7 @@ use ErrorPageError;
 use Exception;
 use Html;
 use HTMLForm;
+use MediaWiki\Message\Message;
 use MediaWiki\Session\CsrfTokenSet;
 use SpecialPage;
 
@@ -26,8 +27,8 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 	/**
 	 * @inheritDoc
 	 */
-	public function getDescription() {
-		return $this->msg( 'kzchatbot-desc' )->text();
+	public function getDescription(): Message {
+		return $this->msg( 'kzchatbot-desc' );
 	}
 
 	/**

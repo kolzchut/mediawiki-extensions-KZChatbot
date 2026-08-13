@@ -2,9 +2,11 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use ErrorPageError;
 use Html;
 use HTMLForm;
 use MediaWiki\Message\Message;
+use MediaWiki\Session\CsrfTokenSet;
 use SpecialPage;
 
 /**
@@ -26,6 +28,19 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	 */
 	public function getDescription(): Message {
 		return $this->msg( 'kzchatbot-slugs-title' );
+	}
+
+	/**
+	 * CSRF tokens for the request being handled.
+	 *
+	 * Deliberately not $this->getContext()->getCsrfTokenSet(): DerivativeContext
+	 * does not override that method, so it delegates to the context it wraps and
+	 * reads whatever request is global rather than the one this page was given.
+	 *
+	 * @return CsrfTokenSet
+	 */
+	private function getCsrfTokenSet(): CsrfTokenSet {
+		return new CsrfTokenSet( $this->getRequest() );
 	}
 
 	/**
@@ -57,6 +72,13 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 		// Delete operation?
 		$queryParams = $this->getRequest()->getQueryValues();
 		if ( !empty( $queryParams['delete'] ) ) {
+			// Deleting is reached by following a link, so it arrives as a GET that
+			// changes state. Any page an admin merely visits could otherwise fire
+			// one off by embedding this URL. The token ties the request to the
+			// session that was shown the link; core's rollback links do the same.
+			if ( !$this->getCsrfTokenSet()->matchTokenField( 'token' ) ) {
+				throw new ErrorPageError( 'sessionfailure-title', 'sessionfailure' );
+			}
 			$this->handleSlugDelete( $queryParams['delete'] );
 			return;
 		}
@@ -217,13 +239,17 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 			$formattingLabel = $this->msg( 'kzchatbot-slugs-formatting-supported' )->text();
 			$obsoleteLabel = $this->msg( 'kzchatbot-slugs-obsolete' )->text();
 			$obsoleteTooltip = $this->msg( 'kzchatbot-slugs-obsolete-tooltip' )->text();
+			// One token for every row: it authenticates the session, not the slug.
+			$csrfToken = $this->getCsrfTokenSet()->getToken()->toString();
 			foreach ( $slugs as $slug => $attribs ) {
 				// A row the chatbot no longer has any use for: it exists only because
 				// an override was saved under a slug that has since been renamed or
 				// retired. Deleting it is the only thing left to do with it.
 				$isObsolete = !Slugs::isValidSlugName( $slug );
 				$editUrl = $output->getTitle()->getLocalURL( [ 'edit' => $slug ] );
-				$deleteUrl = $output->getTitle()->getLocalURL( [ 'delete' => $slug ] );
+				$deleteUrl = $output->getTitle()->getLocalURL(
+					[ 'delete' => $slug, 'token' => $csrfToken ]
+				);
 				if ( $isObsolete ) {
 					$cssClass = 'obsolete-value';
 				} else {

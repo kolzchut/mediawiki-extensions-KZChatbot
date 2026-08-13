@@ -2,9 +2,11 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use ErrorPageError;
 use Exception;
 use Html;
 use HTMLForm;
+use MediaWiki\Session\CsrfTokenSet;
 use SpecialPage;
 
 /**
@@ -29,6 +31,19 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 	}
 
 	/**
+	 * CSRF tokens for the request being handled.
+	 *
+	 * Deliberately not $this->getContext()->getCsrfTokenSet(): DerivativeContext
+	 * does not override that method, so it delegates to the context it wraps and
+	 * reads whatever request is global rather than the one this page was given.
+	 *
+	 * @return CsrfTokenSet
+	 */
+	private function getCsrfTokenSet(): CsrfTokenSet {
+		return new CsrfTokenSet( $this->getRequest() );
+	}
+
+	/**
 	 * Special page: Banned words/patterns in the Kol-Zchut chatbot.
 	 * @param string|null $subPage Parameters passed to the page
 	 */
@@ -44,6 +59,13 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 		if ( isset( $params['delete'] ) && is_numeric( $params['delete'] )
 			&& $params['delete'] == intval( $params['delete'] )
 		) {
+			// Deleting is reached by following a link, so it arrives as a GET that
+			// changes state. Any page an admin merely visits could otherwise fire
+			// one off by embedding this URL. The token ties the request to the
+			// session that was shown the link; core's rollback links do the same.
+			if ( !$this->getCsrfTokenSet()->matchTokenField( 'token' ) ) {
+				throw new ErrorPageError( 'sessionfailure-title', 'sessionfailure' );
+			}
 			$this->handleBannedWordDelete( $params['delete'] );
 			return;
 		}
@@ -124,9 +146,13 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 			);
 			$deleteLabel = $this->msg( 'kzchatbot-banned-words-op-delete' )->text();
 			$editLabel = $this->msg( 'kzchatbot-banned-words-op-edit' )->text();
+			// One token for every row: it authenticates the session, not the word.
+			$csrfToken = $this->getCsrfTokenSet()->getToken()->toString();
 			for ( $i = 0; $i < count( $bannedWords ); $i++ ) {
 				$word = $bannedWords[$i];
-				$deleteUrl = $output->getTitle()->getLocalURL( [ 'delete' => $word->getId() ] );
+				$deleteUrl = $output->getTitle()->getLocalURL(
+					[ 'delete' => $word->getId(), 'token' => $csrfToken ]
+				);
 				$editUrl = $output->getTitle()->getLocalURL( [ 'edit' => $word->getId() ] );
 				$output->addHTML(
 					Html::openElement( 'tr' )

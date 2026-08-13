@@ -2,10 +2,12 @@
 
 namespace MediaWiki\Extension\KZChatbot\Tests\Integration;
 
+use ErrorPageError;
 use MediaWiki\Extension\KZChatbot\Slugs;
 use MediaWiki\Extension\KZChatbot\SpecialKZChatbotSlugs;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Request\FauxRequest;
+use MediaWiki\Session\CsrfTokenSet;
 use ReflectionProperty;
 use SpecialPageTestBase;
 
@@ -215,7 +217,7 @@ class SpecialKZChatbotSlugsTest extends SpecialPageTestBase {
 	 */
 	public function testDeletingAnObsoleteRowSucceedsAndReportsItself() {
 		$this->insertOverride( self::RETIRED_SLUG, 'text left behind by a rename' );
-		$request = new FauxRequest( [ 'delete' => self::RETIRED_SLUG ], false, [] );
+		$request = $this->deleteRequest( self::RETIRED_SLUG );
 
 		$this->executeAsAdmin( $request );
 
@@ -224,5 +226,76 @@ class SpecialKZChatbotSlugsTest extends SpecialPageTestBase {
 			self::RETIRED_SLUG,
 			$request->getSession()->get( 'kzSlugDeleted' )
 		);
+	}
+
+	/**
+	 * Deleting is a state change reached by following a link, so it arrives as a
+	 * GET. Without a token, any page an admin visits could delete their slugs by
+	 * embedding the URL.
+	 */
+	public function testDeletingWithoutATokenIsRefused() {
+		$this->insertOverride( self::RETIRED_SLUG, 'text left behind by a rename' );
+		$request = new FauxRequest( [ 'delete' => self::RETIRED_SLUG ], false, [] );
+
+		$this->expectException( ErrorPageError::class );
+		try {
+			$this->executeAsAdmin( $request );
+		} finally {
+			$this->assertSame(
+				'text left behind by a rename',
+				$this->storedText( self::RETIRED_SLUG ),
+				'An untokened delete must not reach the database'
+			);
+		}
+	}
+
+	public function testDeletingWithSomeoneElsesTokenIsRefused() {
+		$this->insertOverride( self::RETIRED_SLUG, 'text left behind by a rename' );
+		$request = new FauxRequest(
+			[ 'delete' => self::RETIRED_SLUG, 'token' => 'not-the-right-token+\\' ],
+			false,
+			[]
+		);
+
+		$this->expectException( ErrorPageError::class );
+		try {
+			$this->executeAsAdmin( $request );
+		} finally {
+			$this->assertSame(
+				'text left behind by a rename',
+				$this->storedText( self::RETIRED_SLUG )
+			);
+		}
+	}
+
+	public function testDeleteLinksCarryAToken() {
+		$this->insertOverride( self::RETIRED_SLUG, 'text left behind by a rename' );
+
+		[ $html ] = $this->executeAsAdmin( new FauxRequest() );
+
+		$this->assertMatchesRegularExpression(
+			'/delete=' . preg_quote( self::RETIRED_SLUG, '/' ) . '&(amp;)?token=/',
+			$html
+		);
+	}
+
+	/**
+	 * A delete request carrying the token the page would have put in the link.
+	 * The token comes from the session, so it has to be minted before the
+	 * request that will present it.
+	 */
+	private function deleteRequest( string $slug ): FauxRequest {
+		$request = new FauxRequest( [ 'delete' => $slug ], false, [] );
+
+		// The token has to be minted the way the page will verify it.
+		// CsrfTokenSet short-circuits to the constant logged-out token unless the
+		// *session's* user is registered — setting the performer on the context is
+		// not enough — so the session gets a real user before the token is taken.
+		$request->getSession()->setUser( $this->admin() );
+		$request->setVal(
+			'token',
+			( new CsrfTokenSet( $request ) )->getToken()->toString()
+		);
+		return $request;
 	}
 }

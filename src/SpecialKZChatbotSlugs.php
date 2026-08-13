@@ -100,6 +100,15 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				if ( $this->getRequest()->getVal( 'wpkzcAction' ) === 'edit' ) {
 					$htmlForm->prepareForm()
 						->trySubmit();
+					// A submission that got as far as handleSlugSave() has stored its
+					// outcome in the session and set a redirect. Carrying on would run
+					// the status block below, which reads that message and clears it —
+					// rendering it into a response the browser discards, and leaving
+					// nothing for the redirected page to show. Validation failures set
+					// no redirect and still fall through.
+					if ( $output->getRedirect() !== '' ) {
+						return;
+					}
 				}
 			} elseif ( !empty( $queryParams['edit'] ) ) {
 				if ( isset( $slugs[$queryParams['edit']] ) ) {

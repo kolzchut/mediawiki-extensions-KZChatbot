@@ -2,8 +2,8 @@
 
 namespace MediaWiki\Extension\KZChatbot\Maintenance;
 
-use Maintenance;
 use MediaWiki\Extension\KZChatbot\KZChatbot;
+use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\MediaWikiServices;
 
 $IP = getenv( 'MW_INSTALL_PATH' );

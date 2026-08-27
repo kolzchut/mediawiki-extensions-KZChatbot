@@ -2,8 +2,8 @@
 
 namespace MediaWiki\Extension\KZChatbot\Maintenance;
 
-use Maintenance;
 use MediaWiki\Extension\ChatbotRagContent\ChatbotRagContent;
+use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 

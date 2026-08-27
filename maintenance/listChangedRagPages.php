@@ -120,8 +120,14 @@ class ListChangedRagPages extends Maintenance {
 		$config = $services->getMainConfig();
 		$contentLanguage = $services->getContentLanguage();
 
-		// PageProps caches per title, and getProperties() takes a batch. Warming
-		// it up front turns one query per candidate into one query per batch.
+		// Pre-warm the caches the relevance checks below read. This does not
+		// batch away the exclude_from_rag lookups: PageProps caches only rows it
+		// finds, so a page without the property is re-queried by every
+		// isRelevantTitle() call. The saving comes from the LinkBatch inside
+		// PageProps::getGoodIDs(), which warms LinkCache for the existence and
+		// redirect checks -- 6,355 candidates cost 22,976 selects at
+		// --batch-size=1 against 10,293 at 500. Keep the pre-warm, but do not
+		// justify it by the property lookup.
 		foreach ( array_chunk( $titles, $this->getBatchSize() ) as $chunk ) {
 			$pageProps->getProperties( $chunk, 'exclude_from_rag' );
 		}

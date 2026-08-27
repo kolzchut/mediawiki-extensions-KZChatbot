@@ -271,6 +271,46 @@ Recommended cron (daily, off-peak):
 
 The script refuses to run if the resolved cutoff is ≤ 0, so a missing or zeroed setting can't accidentally wipe the table.
 
+### Listing changed RAG-relevant pages
+
+#### The issue
+Answering "which pages changed recently and belong in the RAG index?" needs both halves of the question at once. The time half is easy — a `rev_timestamp` window — but the relevance half is not expressible in SQL: four of `ChatbotRagContent::isRelevantTitle()`'s checks live outside the `page`/`revision` tables (the page's language, the `exclude_from_rag` page property, the `ChatbotRagContentTitleAllowlist` config, and the `ArticleType` blocklist, itself a `page_props` lookup). A hand-written query therefore over-reports, silently.
+
+This comes up when re-ingesting a backlog — after a RAG endpoint outage, or when handing another developer the set of pages to reprocess.
+
+#### The solution
+`maintenance/listChangedRagPages.php` narrows by time in SQL, then applies `isRelevantTitle()` per candidate in PHP. Page IDs go to **stdout**, one per line; the window and counts go to **stderr**, so the output pipes directly into a re-ingest run.
+
+Run from the MediaWiki root:
+```bash
+php extensions/KZChatbot/maintenance/listChangedRagPages.php [options]
+```
+
+| Option         | Description                                                                                                                                                                                              |
+|----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--from`       | Start of the window. Relative shorthand (`-30d`, `-2m`, `-1y`, `-6h`, `-90min`), anything `strtotime()` parses (`"-2 months"`, `2026-06-01`), or a 14-digit MediaWiki timestamp. Defaults to `-2m`.       |
+| `--to`         | End of the window, same formats as `--from`. Defaults to now.                                                                                                                                             |
+| `--titles`     | Append a tab and the prefixed page title to each line, producing a TSV for human review.                                                                                                                  |
+| `--stats-only` | Report the candidate and relevant counts without listing any IDs.                                                                                                                                         |
+| `--batch-size N` | Titles per `PageProps` pre-warm batch (default 500). The pre-warm turns one `exclude_from_rag` query per candidate into one per batch.                                                                   |
+
+In the shorthand, **`m` means months and `min` means minutes** — `--from=-2m` is two months, not two minutes.
+
+```bash
+# Page IDs changed in the last 30 days, up to yesterday
+php extensions/KZChatbot/maintenance/listChangedRagPages.php --from=-30d --to=-1d
+
+# TSV with titles, for review
+php extensions/KZChatbot/maintenance/listChangedRagPages.php --from=-2m --titles > changed.tsv
+
+# IDs only — stats still go to the terminal via stderr
+php extensions/KZChatbot/maintenance/listChangedRagPages.php --from=-2m > pages.list
+```
+
+The script refuses to run if `--from` is not before `--to`, and requires both `KZChatbot` and `ChatbotRagContent` to be loaded.
+
+Note that no bot filter is applied: `isRelevantTitle()` has no notion of who made an edit, and `RagUpdateJob` fires on any edit. If a human-edits-only list is wanted, that is a separate filter on the revision query.
+
 ## Future Development
 - Prevent users from sending unlimited rating requests: right now it's possible to switch indefinitely between 
   thumbs up and thumbs down, and each is sent and recorded by the RAG server. We need to decide on a limit, and save

@@ -134,9 +134,19 @@ class ListChangedRagPages extends Maintenance {
 		// finds, so a page without the property is re-queried by every
 		// isRelevantTitle() call. The saving comes from the LinkBatch inside
 		// PageProps::getGoodIDs(), which warms LinkCache for the existence and
-		// redirect checks -- 6,355 candidates cost 22,976 selects at
-		// --batch-size=1 against 10,293 at 500. Keep the pre-warm, but do not
-		// justify it by the property lookup.
+		// redirect checks.
+		//
+		// Measure that against *no* pre-warm, never across --batch-size: the
+		// relevance loop costs the same at every batch size, so a --batch-size
+		// sweep only prices the pre-warm's own queries. Total selects over 6,350
+		// candidates -- 16,606 with no pre-warm, 10,280 here, and 22,958 at
+		// --batch-size=1, which is worse than not pre-warming at all.
+		//
+		// The saving is gone above LinkCache::MAX_SIZE (10,000): a sequential
+		// scan over a larger working set thrashes the LRU, and 10,218 candidates
+		// cost 26,120 with against 26,107 without. Left unconditional because the
+		// windows this is built for are far smaller -- prod's default -2m window
+		// was 670 pages -- but a wide re-ingest is where it stops paying.
 		foreach ( array_chunk( $titles, $batchSize ) as $chunk ) {
 			$pageProps->getProperties( $chunk, 'exclude_from_rag' );
 		}

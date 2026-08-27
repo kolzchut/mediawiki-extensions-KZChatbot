@@ -2,8 +2,8 @@
 
 namespace MediaWiki\Extension\KZChatbot\Maintenance;
 
-use Maintenance;
 use MediaWiki\Extension\KZChatbot\KZChatbot;
+use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\MediaWikiServices;
 
 $IP = getenv( 'MW_INSTALL_PATH' );
@@ -42,6 +42,15 @@ class PruneStaleUsers extends Maintenance {
 	}
 
 	public function execute() {
+		// Validated before any output: an unusable value must not reach the
+		// LIMIT below, where it deletes nothing and still reports success.
+		$batchSize = $this->getBatchSize();
+		if ( $batchSize < 1 ) {
+			// getBatchSize() has already cast, so report what was actually typed.
+			$raw = $this->getOption( 'batch-size', (string)$batchSize );
+			$this->fatalError( "Refusing to run: --batch-size must be a positive integer, got '$raw'" );
+		}
+
 		$cutoffDays = $this->resolveCutoffDays();
 		if ( $cutoffDays <= 0 ) {
 			$this->fatalError(
@@ -77,7 +86,6 @@ class PruneStaleUsers extends Maintenance {
 
 		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
-		$batchSize = $this->getBatchSize();
 		$deleted = 0;
 		$batch = 0;
 

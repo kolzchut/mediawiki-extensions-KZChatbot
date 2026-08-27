@@ -292,7 +292,7 @@ php extensions/KZChatbot/maintenance/listChangedRagPages.php [options]
 | `--to`         | End of the window, same formats as `--from`. Defaults to now.                                                                                                                                             |
 | `--titles`     | Append a tab and the prefixed page title to each line, producing a TSV for human review.                                                                                                                  |
 | `--stats-only` | Report the candidate and relevant counts without listing any IDs.                                                                                                                                         |
-| `--batch-size N` | Titles per `PageProps` pre-warm batch (default 500). The pre-warm turns one `exclude_from_rag` query per candidate into one per batch.                                                                   |
+| `--batch-size N` | Titles per `PageProps` pre-warm batch (default 500). The pre-warm saves queries by warming `LinkCache` for the existence and redirect checks, not by batching the `exclude_from_rag` lookups — `PageProps` does not cache misses, so pages without the property are re-queried regardless.                                                                   |
 
 In the shorthand, **`m` means months and `min` means minutes** — `--from=-2m` is two months, not two minutes.
 

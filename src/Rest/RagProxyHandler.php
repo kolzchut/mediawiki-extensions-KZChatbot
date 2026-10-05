@@ -113,10 +113,33 @@ class RagProxyHandler extends Handler {
 
 		$response = $this->getResponseFactory()->create();
 		$response->setStatus( $httpCode ?: 200 );
-		$response->setHeader( 'Content-Type', $contentType );
+		$response->setHeader( 'Content-Type', $this->safeContentType( $contentType ) );
+		$response->setHeader( 'X-Content-Type-Options', 'nosniff' );
 		$this->addNoStoreHeaders( $response );
 		$response->setBody( new StringStream( $responseBody === false ? '' : $responseBody ) );
 		return $response;
+	}
+
+	/**
+	 * The backend's Content-Type, if it is one the proxied endpoints legitimately
+	 * return; text/plain otherwise.
+	 *
+	 * This response is served from the wiki's origin to users holding chatbot admin
+	 * rights, so relaying an arbitrary type would let backend output that came back
+	 * as text/html (an echoed query, a stored config value, an error page from
+	 * anything in between) run as a wiki page with the admin's session. Every
+	 * proxied route returns JSON, except search/stream, which is an event stream.
+	 * The UIs read bodies without checking the type, so relabelling is harmless.
+	 *
+	 * @param string $contentType
+	 * @return string
+	 */
+	private function safeContentType( string $contentType ): string {
+		$mimeType = strtolower( trim( explode( ';', $contentType, 2 )[0] ) );
+		if ( $mimeType === 'application/json' || $mimeType === 'text/event-stream' ) {
+			return $contentType;
+		}
+		return 'text/plain; charset=utf-8';
 	}
 
 	/**

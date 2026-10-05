@@ -4,9 +4,7 @@ namespace MediaWiki\Extension\KZChatbot;
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
-use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\LocalizedHttpException;
-use MediaWiki\Rest\Validator\JsonBodyValidator;
 use MediaWiki\Rest\Validator\Validator;
 use RequestContext;
 use Wikimedia\Message\MessageValue;
@@ -15,19 +13,15 @@ use Wikimedia\ParamValidator\ParamValidator;
 class ApiKZChatbotRateAnswer extends Handler {
 
 	/**
-	 * @param string $contentType
-	 * @return JsonBodyValidator
+	 * Body schema. JSON-only, which is the core default for
+	 * getSupportedRequestTypes(), so core answers any other Content-Type with 415.
+	 * MediaWiki 1.43 rejects undeclared body fields, so every field the client
+	 * sends must be listed here.
+	 *
+	 * @return array[]
 	 */
-	public function getBodyValidator( $contentType ) {
-		if ( $contentType !== 'application/json' ) {
-			throw new HttpException(
-				"Unsupported Content-Type",
-				415,
-				[ 'content_type' => $contentType ]
-			);
-		}
-
-		return new JsonBodyValidator( [
+	public function getBodyParamSettings(): array {
+		return [
 			'text' => [
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_REQUIRED => false,
@@ -54,7 +48,7 @@ class ApiKZChatbotRateAnswer extends Handler {
 				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_TYPE => 'boolean',
 			],
-		] );
+		];
 	}
 
 	/** @inheritDoc */

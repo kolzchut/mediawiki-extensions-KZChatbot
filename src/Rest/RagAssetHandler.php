@@ -52,6 +52,7 @@ class RagAssetHandler extends Handler {
 		$response = $this->getResponseFactory()->create();
 		$response->setStatus( 200 );
 		$response->setHeader( 'Content-Type', $contentType );
+		$response->setHeader( 'X-Content-Type-Options', 'nosniff' );
 		// Same as the HTML that loads it: the backend's files are versionless, and a
 		// cached stale script against fresh HTML would be a confusing mismatch.
 		$response->setHeader( 'Cache-Control', 'no-store, max-age=0, must-revalidate' );

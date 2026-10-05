@@ -6,7 +6,6 @@ use MediaWiki\Extension\ChatbotRagContent\ChatbotRagContent;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\HttpException;
-use MediaWiki\Rest\Validator\JsonBodyValidator;
 use MWException;
 use RequestContext;
 use Throwable;
@@ -243,20 +242,21 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	}
 
 	/**
-	 * @param string $contentType MIME Type
-	 * @return JsonBodyValidator
-	 * @throws HttpException
+	 * Body schema. JSON-only, which is the core default for
+	 * getSupportedRequestTypes(), so core answers any other Content-Type with 415.
+	 *
+	 * MediaWiki 1.43 rejects a request whose body carries a field not declared
+	 * here (rest-extraneous-body-fields, HTTP 400) — 1.35 ignored them. The React
+	 * client sends three fields this handler does not act on, so they are declared
+	 * as optional and then deliberately ignored: generateAnswer() sets
+	 * include_debug_data and send_complete_pages_to_llm itself and omits
+	 * execution_flags, so the server — not the reader's browser — decides whether
+	 * the RAG returns debug data or full pages.
+	 *
+	 * @return array[]
 	 */
-	public function getBodyValidator( $contentType ): JsonBodyValidator {
-		if ( $contentType !== 'application/json' ) {
-			throw new HttpException(
-				"Unsupported Content-Type",
-				415,
-				[ 'content_type' => $contentType ]
-			);
-		}
-
-		return new JsonBodyValidator( [
+	public function getBodyParamSettings(): array {
+		return [
 			'query' => [
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'string',
@@ -270,14 +270,30 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 			'referrer' => [
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'integer',
-				ParamValidator::PARAM_REQUIRED => true
+				ParamValidator::PARAM_REQUIRED => true,
 			],
 			'thread_id' => [
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => false,
 			],
-		] );
+			// Accepted from the client and ignored; see the docblock.
+			'include_debug_data' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'boolean',
+				ParamValidator::PARAM_REQUIRED => false,
+			],
+			'send_complete_pages_to_llm' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'boolean',
+				ParamValidator::PARAM_REQUIRED => false,
+			],
+			'execution_flags' => [
+				self::PARAM_SOURCE => 'body',
+				ParamValidator::PARAM_TYPE => 'array',
+				ParamValidator::PARAM_REQUIRED => false,
+			],
+		];
 	}
 
 	/** @inheritDoc */

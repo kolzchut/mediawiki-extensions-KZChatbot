@@ -1,3 +1,25 @@
 .mw-datatable {
 	margin-bottom: 1em;
 }
+
+/* Rows still serving the extension's built-in text: nothing was customised
+ * here, which is why they carry no delete link. */
+.kzc-slugs-table tr.default-value td {
+	color: #54595d;
+}
+
+/* Override rows whose slug no longer exists in the extension's defaults,
+ * left behind when a slug was renamed or retired. The chatbot never reads
+ * them, so deleting is the only useful action and the edit link is omitted. */
+.kzc-slugs-table tr.obsolete-value td {
+	background-color: #fef6e7;
+}
+
+.kzc-slugs-table .kzc-obsolete-badge {
+	background-color: #f8e2ab;
+	border-radius: 2px;
+	color: #573b00;
+	font-size: 0.85em;
+	padding: 0 0.4em;
+	white-space: nowrap;
+}

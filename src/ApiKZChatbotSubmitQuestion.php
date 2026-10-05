@@ -7,7 +7,10 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\Validator\JsonBodyValidator;
+use MWException;
 use RequestContext;
+use Throwable;
+use Title;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ApiKZChatbotSubmitQuestion extends Handler {
@@ -15,17 +18,17 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	/**
 	 * @var string The UUID associated with the user.
 	 */
-	private $uuid;
+	private string $uuid;
 
 	/**
 	 * @var string The question to be submitted to the RAG backend.
 	 */
-	private $question;
+	private string $question;
 
 	/**
 	 * @var string currently the referring page
 	 */
-	private $referrer;
+	private string $referrer;
 
 	/**
 	 * @var string The continuous-conversation thread id (uuid-prefixed).
@@ -35,9 +38,78 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	/**
 	 * Pass user question to RAG backend, checking first that user hasn't exceeded daily limit.
 	 * Return answer from RAG backend.
+	 *
+	 * Acts as this endpoint's error boundary. An uncaught Throwable here would be
+	 * turned by MediaWiki's REST layer into a 500 whose body reads
+	 * `Error: exception of type <Class>` (core's wording when
+	 * $wgShowExceptionDetails is false), and the React client renders the response
+	 * message verbatim into the chat window — so a PHP bug reaches the reader as
+	 * an English class name. Everything unexpected is therefore logged on our own
+	 * channel and re-thrown as the operator-authored `general_error` slug.
+	 *
 	 * @return array
+	 * @throws HttpException
+	 * @throws MWException
 	 */
-	public function execute() {
+	public function execute(): array {
+		try {
+			return $this->answerQuestion();
+		} catch ( HttpException $e ) {
+			// Deliberate: the message is an operator-authored slug, meant for the
+			// reader (daily limit, banned word, character limit, general error).
+			throw $e;
+		} catch ( Throwable $e ) {
+			KZChatbot::getLogger()->error(
+				'Unhandled error answering a chatbot question: {exception_class}: {exception_message}',
+				[
+					'exception' => $e,
+					'exception_class' => get_class( $e ),
+					'exception_message' => $e->getMessage(),
+				]
+			);
+			throw new HttpException( $this->generalErrorMessage(), 500 );
+		}
+	}
+
+	/**
+	 * The reader-facing text for an error we did not plan for.
+	 *
+	 * Deliberately does not trust the database. `Slugs::getSlug()` reads
+	 * `kzchatbot_text` and the general settings, so on the one fault most likely
+	 * to reach the catch-all above — a database failure — looking the slug up
+	 * would throw a second time, escape execute(), and hand the reader the raw
+	 * `Error: exception of type DBQueryError` this boundary exists to prevent.
+	 * `Slugs::getDefaultSlugs()` is a compiled-in array, so it always answers.
+	 *
+	 * @return string
+	 */
+	private function generalErrorMessage(): string {
+		try {
+			$slug = Slugs::getSlug( 'general_error' );
+			if ( is_string( $slug ) && $slug !== '' ) {
+				return $slug;
+			}
+		} catch ( Throwable $e ) {
+			// Log rather than fall through in silence. This helper is reached on
+			// paths that previously let the fault escape to the catch-all in
+			// execute(), which logged it; swallowing it here would trade a
+			// reader-facing bug for an invisible operator-facing one, and a
+			// failing slug lookup means the database is in trouble.
+			KZChatbot::getLogger()->warning(
+				'general_error slug lookup failed; using the compiled-in default',
+				[ 'exception' => $e ]
+			);
+		}
+
+		return Slugs::getDefaultSlugs()['general_error'];
+	}
+
+	/**
+	 * @return array
+	 * @throws HttpException
+	 * @throws MWException
+	 */
+	private function answerQuestion(): array {
 		$body = $this->getValidatedBody();
 		$this->uuid = $body['uuid'];
 		$this->validateUser();
@@ -72,7 +144,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 				'RAG backend returned null. Question: {question}; answer: {answer}',
 				[ 'question' => $this->question, 'answer' => print_r( $answer, true ) ]
 			);
-			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
+			throw new HttpException( $this->generalErrorMessage(), 500 );
 		}
 		return $answer;
 	}
@@ -80,9 +152,9 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	/**
 	 * @return array
 	 * @throws HttpException
-	 * @throws \MWException
+	 * @throws MWException
 	 */
-	private function generateAnswer() {
+	private function generateAnswer(): array {
 		$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'KZChatbot' );
 		$question = $this->question;
 		$uuid = $this->uuid;
@@ -130,7 +202,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 					'body' => mb_substr( (string)$rawBody, 0, 500 ),
 				]
 			);
-			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
+			throw new HttpException( $this->generalErrorMessage(), 500 );
 		}
 
 		// Guard against an unparseable body so a malformed RAG response is logged
@@ -144,7 +216,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 					'body' => mb_substr( (string)$rawBody, 0, 500 ),
 				]
 			);
-			throw new HttpException( Slugs::getSlug( 'general_error' ), 500 );
+			throw new HttpException( $this->generalErrorMessage(), 500 );
 		}
 
 		$rawDocs = is_array( $response->docs ?? null ) ? $response->docs : [];
@@ -173,8 +245,9 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	/**
 	 * @param string $contentType MIME Type
 	 * @return JsonBodyValidator
+	 * @throws HttpException
 	 */
-	public function getBodyValidator( $contentType ) {
+	public function getBodyValidator( $contentType ): JsonBodyValidator {
 		if ( $contentType !== 'application/json' ) {
 			throw new HttpException(
 				"Unsupported Content-Type",
@@ -216,10 +289,10 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	 * Validate the request parameters.
 	 * @throws HttpException
 	 */
-	private function validateUser() {
+	private function validateUser(): void {
 		$uuid = $this->uuid;
 		$userData = KZChatbot::getUserData( $uuid );
-		if ( $userData === null ) {
+		if ( $userData === false ) {
 			throw new HttpException( 'User not found', 404 );
 		}
 
@@ -249,7 +322,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		if ( $prefix !== $this->uuid ) {
 			// Localized + generic on purpose: this is effectively never reachable for
 			// a legitimate user, and the client renders 4xx messages verbatim.
-			throw new HttpException( Slugs::getSlug( 'general_error' ), 403 );
+			throw new HttpException( $this->generalErrorMessage(), 403 );
 		}
 		return $clientThreadId;
 	}
@@ -259,23 +332,41 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	 * @return int|null Page ID if relevant, null otherwise
 	 */
 	private function getRelevantPageId(): ?int {
-		if ( !\ExtensionRegistry::getInstance()->isLoaded( 'ChatbotRagContent' ) ) {
+		$services = MediaWikiServices::getInstance();
+		if ( !$services->getExtensionRegistry()->isLoaded( 'ChatbotRagContent' ) ) {
 			return null;
 		}
 
-		$pageId = null;
-		$title = null;
-
 		// Check if referrer is a page ID
-		if ( is_numeric( $this->referrer ) && (int)$this->referrer > 0 ) {
-			$pageId = (int)$this->referrer;
-			$title = \Title::newFromID( $pageId );
+		if ( !is_numeric( $this->referrer ) || (int)$this->referrer <= 0 ) {
+			return null;
+		}
+		$pageId = (int)$this->referrer;
+		$title = Title::newFromID( $pageId );
+		if ( !$title ) {
+			return null;
 		}
 
-		if ( $title && ChatbotRagContent::isRelevantTitle( $title ) ) {
-			return $pageId;
+		// Page context is an optional enrichment for the RAG backend, and
+		// ChatbotRagContent is a separate extension whose signature we do not
+		// control. Never let it take the answer down with it: log and ask the
+		// question without page context.
+		try {
+			$isRelevant = ChatbotRagContent::isRelevantTitle(
+				$title,
+				$services->getPageProps(),
+				$services->getMainConfig(),
+				$services->getContentLanguage()
+			);
+		} catch ( Throwable $e ) {
+			KZChatbot::getLogger()->error(
+				'ChatbotRagContent::isRelevantTitle() failed for page {page_id}; '
+					. 'asking without page context',
+				[ 'exception' => $e, 'page_id' => $pageId ]
+			);
+			return null;
 		}
 
-		return null;
+		return $isRelevant ? $pageId : null;
 	}
 }

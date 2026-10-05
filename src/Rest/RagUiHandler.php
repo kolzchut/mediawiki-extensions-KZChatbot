@@ -126,7 +126,6 @@ class RagUiHandler extends Handler {
 		] );
 		$body = curl_exec( $ch );
 		$failed = curl_errno( $ch ) || curl_getinfo( $ch, CURLINFO_HTTP_CODE ) >= 400;
-		curl_close( $ch );
 		if ( $body === false || $failed ) {
 			return null;
 		}

@@ -81,10 +81,15 @@ class ApiKZChatbotRateAnswer extends Handler {
 		return $response;
 	}
 
+	/** @inheritDoc */
 	public function needsWriteAccess() {
 		return false;
 	}
 
+	/**
+	 * Send the user's rating for an answer to the RAG backend.
+	 * @return int HTTP status code from the backend
+	 */
 	private function rateAnswer() {
 		$body = $this->getValidatedBody();
 		$text = $body['text'] ?? '';

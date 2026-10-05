@@ -104,14 +104,12 @@ class RagProxyHandler extends Handler {
 		$responseBody = curl_exec( $ch );
 		if ( curl_errno( $ch ) ) {
 			$err = curl_error( $ch );
-			curl_close( $ch );
 			wfLogWarning( 'KZChatbot RAG proxy error for ' . $backendPath . ': ' . $err );
 			return $this->errorResponse( 502, 'apiunreachable', 'The RAG backend is unreachable.' );
 		}
 
 		$httpCode = (int)curl_getinfo( $ch, CURLINFO_HTTP_CODE );
 		$contentType = curl_getinfo( $ch, CURLINFO_CONTENT_TYPE ) ?: 'application/json';
-		curl_close( $ch );
 
 		$response = $this->getResponseFactory()->create();
 		$response->setStatus( $httpCode ?: 200 );

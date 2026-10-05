@@ -2,11 +2,21 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use MediaWiki\MediaWikiServices;
+
 class Slugs {
 	/**
+	 * Memoised merge of the defaults and the database overrides, so a request
+	 * that asks for several slugs runs one SELECT rather than one per slug.
+	 * Null means "not loaded", which is also how deleteSlug() invalidates it.
+	 *
+	 * The `= null` default matters: a typed static property declared without one
+	 * is *uninitialized* rather than null, and reading it outside an isset()
+	 * guard would be a fatal instead of a null.
+	 *
 	 * @var array|null of texts
 	 */
-	protected static ?array $slugsRaw;
+	protected static ?array $slugsRaw = null;
 
 	/**
 	 * @param string $slugName
@@ -31,7 +41,6 @@ class Slugs {
 	 * Get the default slugs
 	 * @return array
 	 * @todo move these to MW i18n json format?
-	 *
 	 */
 	public static function getDefaultSlugs(): array {
         // phpcs:disable Generic.Files.LineLength.TooLong
@@ -108,22 +117,29 @@ class Slugs {
 
 	/**
 	 * @param string $slug
-	 * @return bool
-	 * @throws \MWException
+	 * @return \Status Good (with embedded success message) on success; Fatal on unknown slug name
 	 */
-	public static function deleteSlug( string $slug ): bool {
-		if ( !self::isValidSlugName( $slug ) ) {
-			throw new \MWException( 'invalid slug name' );
+	public static function deleteSlug( string $slug ): \Status {
+		// An override row can outlive the default it was named after: slugs get
+		// renamed and retired, but nothing migrates or drops the rows saved under
+		// the old keys. Special:KZChatbotSlugs lists those orphans and offers a
+		// delete link for them, so validating against the current defaults alone
+		// would reject the one operation that clears them up.
+		if ( !self::isValidSlugName( $slug ) && !array_key_exists( $slug, self::getSlugsFromDB() ) ) {
+			return \Status::newFatal( new \RawMessage( 'invalid slug name' ) );
 		}
 
 		// Reset the static cache, so it is refreshed next time
 		self::$slugsRaw = null;
 
-		$dbw = wfGetDB( DB_PRIMARY );
-		return $dbw->delete(
+		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
+		$dbw->delete(
 			'kzchatbot_text',
-			[ 'kzcbt_slug' => $slug ]
+			[ 'kzcbt_slug' => $slug ],
+			__METHOD__
 		);
+
+		return \Status::newGood( [ 'kzchatbot-slugs-status-delete-success', $slug ] );
 	}
 
 	/**
@@ -141,7 +157,7 @@ class Slugs {
 			self::deleteSlug( $slug );
 			return \Status::newGood( [ 'kzchatbot-slugs-status-reset-success', $slug ] );
 		}
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 		// Clear prior value if one exists.
 		$dbw->upsert(
 			'kzchatbot_text',
@@ -168,7 +184,7 @@ class Slugs {
 	 *
 	 * @return array
 	 */
-	public static function getSlugs() {
+	public static function getSlugs(): array {
 		$slugs = self::getSlugsRaw();
 		$settings = KZChatbot::getGeneralSettings();
 
@@ -186,8 +202,8 @@ class Slugs {
 	/**
 	 * @return array
 	 */
-	public static function getSlugsFromDB() {
-		$dbr = wfGetDB( DB_REPLICA );
+	public static function getSlugsFromDB(): array {
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 		$res = $dbr->select(
 			[ 'text' => 'kzchatbot_text' ],
 			[ 'kzcbt_slug', 'kzcbt_text' ],
@@ -207,7 +223,7 @@ class Slugs {
 	 * @param string $slugName
 	 * @return string|null
 	 */
-	public static function getSlug( string $slugName ) {
+	public static function getSlug( string $slugName ): ?string {
 		$slugs = self::getSlugs();
 		return $slugs[$slugName] ?? null;
 	}

@@ -12,7 +12,7 @@ use RequestContext;
 use Wikimedia\Rdbms\DBQueryError;
 
 /**
- * @TODO general class description
+ * @todo general class description
  */
 class KZChatbot {
 
@@ -47,7 +47,7 @@ class KZChatbot {
 	/**
 	 * @return array|false The new user data, or false if the user should not be shown the chatbot
 	 */
-	public static function newUser() {
+	public static function newUser(): false|array {
 		$settings = self::getGeneralSettings();
 		$cookieExpiry = time() + ( $settings['cookie_expiry_days'] ?? 365 ) * 24 * 60 * 60;
 
@@ -104,7 +104,7 @@ class KZChatbot {
 			'kzcbu_questions_last_active_day' => 0,
 		];
 
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 		try {
 			$dbw->insert( 'kzchatbot_users', $userData, __METHOD__ );
 
@@ -121,11 +121,11 @@ class KZChatbot {
 	 * - Formatted UUIDs (with hyphens) for client responses
 	 *
 	 * @param string $uuid The formatted or raw UUID
-	 * @return array|bool
+	 * @return array|false The user data array with formatted UUID and IP as string, or false if not found
 	 */
-	public static function getUserData( string $uuid ) {
+	public static function getUserData( string $uuid ): bool|array {
 		$rawUuid = self::rawUuidFromFormatted( $uuid );
-		$dbr = wfGetDB( DB_REPLICA );
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 		$res = $dbr->select(
 			[ 'kzchatbot_users' ],
 			'*',
@@ -148,11 +148,11 @@ class KZChatbot {
 	/**
 	 * @return array|bool
 	 */
-	public static function getGeneralSettings() {
+	public static function getGeneralSettings(): bool|array {
 		static $settings;
 		if ( !isset( $settings ) ) {
 			$settings = [];
-			$dbr = wfGetDB( DB_REPLICA );
+			$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 			$generalSettingsNames = self::getGeneralSettingsNames();
 			$res = $dbr->select(
 				[ 'settings' => 'kzchatbot_settings' ],
@@ -211,7 +211,7 @@ class KZChatbot {
 	 * @param string $uuid The UUID of the user (either formatted or raw).
 	 * @return void
 	 */
-	public static function useQuestion( string $uuid ) {
+	public static function useQuestion( string $uuid ): void {
 		$userData = self::getUserData( $uuid );
 		if ( !$userData ) {
 			return;
@@ -229,7 +229,7 @@ class KZChatbot {
 			? $userQuestionsLastActiveDay
 			: 0;
 
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 		$dbw->update(
 			'kzchatbot_users',
 			[
@@ -246,7 +246,7 @@ class KZChatbot {
 	 * @return bool
 	 */
 	public static function saveGeneralSettings( array $data ): bool {
-		$dbw = wfGetDB( DB_PRIMARY );
+		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 		$generalSettingsNames = self::getGeneralSettingsNames();
 
 		// Clear prior values.
@@ -275,7 +275,7 @@ class KZChatbot {
 	 * @return int
 	 */
 	public static function getCurrentActiveUsersCount(): int {
-		$dbr = wfGetDB( DB_REPLICA );
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 		$activeUsersLimitDays = self::getGeneralSettings()['active_users_limit_days'] ?? 30;
 		$activeUsersCount = $dbr->select(
 			[ 'kzchatbot_users' ],

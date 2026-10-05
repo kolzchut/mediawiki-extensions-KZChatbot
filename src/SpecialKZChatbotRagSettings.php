@@ -3,6 +3,7 @@
 namespace MediaWiki\Extension\KZChatbot;
 
 use Html;
+use MediaWiki\Message\Message;
 use SpecialPage;
 
 /**
@@ -46,7 +47,7 @@ class SpecialKZChatbotRagSettings extends SpecialPage {
 	}
 
 	/** @inheritDoc */
-	public function getDescription(): string {
-		return $this->msg( 'kzchatbot-rag-settings' )->text();
+	public function getDescription(): Message {
+		return $this->msg( 'kzchatbot-rag-settings' );
 	}
 }

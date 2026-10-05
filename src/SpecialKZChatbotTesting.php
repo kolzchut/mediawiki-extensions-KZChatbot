@@ -3,6 +3,7 @@
 namespace MediaWiki\Extension\KZChatbot;
 
 use Html;
+use MediaWiki\Message\Message;
 use SpecialPage;
 
 /**
@@ -21,7 +22,7 @@ class SpecialKZChatbotTesting extends SpecialPage {
 	}
 
 	/** @inheritDoc */
-	public function execute( $subPage ) {
+	public function execute( $subPage ): void {
 		parent::execute( $subPage );
 
 		$out = $this->getOutput();
@@ -72,7 +73,7 @@ class SpecialKZChatbotTesting extends SpecialPage {
 	}
 
 	/** @inheritDoc */
-	public function getDescription(): string {
-		return $this->msg( 'kzchatbot-testing-title' )->text();
+	public function getDescription(): Message {
+		return $this->msg( 'kzchatbot-testing-title' );
 	}
 }

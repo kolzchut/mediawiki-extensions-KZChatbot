@@ -2,8 +2,11 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use ErrorPageError;
 use Html;
 use HTMLForm;
+use MediaWiki\Message\Message;
+use MediaWiki\Session\CsrfTokenSet;
 use SpecialPage;
 
 /**
@@ -23,16 +26,29 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	/**
 	 * @inheritDoc
 	 */
-	public function getDescription() {
-		return $this->msg( 'kzchatbot-slugs-title' )->text();
+	public function getDescription(): Message {
+		return $this->msg( 'kzchatbot-slugs-title' );
+	}
+
+	/**
+	 * CSRF tokens for the request being handled.
+	 *
+	 * Deliberately not $this->getContext()->getCsrfTokenSet(): DerivativeContext
+	 * does not override that method, so it delegates to the context it wraps and
+	 * reads whatever request is global rather than the one this page was given.
+	 *
+	 * @return CsrfTokenSet
+	 */
+	private function getCsrfTokenSet(): CsrfTokenSet {
+		return new CsrfTokenSet( $this->getRequest() );
 	}
 
 	/**
 	 * Special page: Text slugs in the Kol-Zchut chatbot.
-	 * @param string|null $par Parameters passed to the page
+	 * @param string|null $subPage Parameters passed to the page
 	 */
-	public function execute( $par ) {
-		parent::execute( $par );
+	public function execute( $subPage ) {
+		parent::execute( $subPage );
 		$output = $this->getOutput();
 		$request = $this->getRequest();
 
@@ -56,7 +72,29 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 		// Delete operation?
 		$queryParams = $this->getRequest()->getQueryValues();
 		if ( !empty( $queryParams['delete'] ) ) {
+			// Deleting is reached by following a link, so it arrives as a GET that
+			// changes state. Any page an admin merely visits could otherwise fire
+			// one off by embedding this URL. The token ties the request to the
+			// session that was shown the link; core's rollback links do the same.
+			if ( !$this->getCsrfTokenSet()->matchTokenField( 'token' ) ) {
+				throw new ErrorPageError( 'sessionfailure-title', 'sessionfailure' );
+			}
 			$this->handleSlugDelete( $queryParams['delete'] );
+			return;
+		}
+
+		// Obsolete override rows are listed so they can be deleted, but there is
+		// nothing to edit: the key is gone from the defaults, so Slugs::saveSlug()
+		// would reject any change anyway. The table omits their edit link, but
+		// both the form URL and a hand-made POST stay reachable, so the refusal
+		// belongs here rather than in the markup.
+		$editSlug = $this->getRequestedEditSlug();
+		if ( $editSlug !== null && !Slugs::isValidSlugName( $editSlug ) ) {
+			$this->getRequest()->getSession()->set(
+				'kzSlugError',
+				$this->msg( 'kzchatbot-slugs-error-obsolete', $editSlug )->text()
+			);
+			$this->getOutput()->redirect( $this->getPageTitle()->getFullUrlForRedirect() );
 			return;
 		}
 
@@ -85,6 +123,15 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				if ( $this->getRequest()->getVal( 'wpkzcAction' ) === 'edit' ) {
 					$htmlForm->prepareForm()
 						->trySubmit();
+					// A submission that got as far as handleSlugSave() has stored its
+					// outcome in the session and set a redirect. Carrying on would run
+					// the status block below, which reads that message and clears it —
+					// rendering it into a response the browser discards, and leaving
+					// nothing for the redirected page to show. Validation failures set
+					// no redirect and still fall through.
+					if ( $output->getRedirect() !== '' ) {
+						return;
+					}
 				}
 			} elseif ( !empty( $queryParams['edit'] ) ) {
 				if ( isset( $slugs[$queryParams['edit']] ) ) {
@@ -176,7 +223,7 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 			$output->addHTML(
 				Html::openElement(
 					'table',
-					[ 'class' => 'mw-datatable sortable', 'id' => 'kzchatbot-slugs-table' ]
+					[ 'class' => 'mw-datatable sortable kzc-slugs-table', 'id' => 'kzchatbot-slugs-table' ]
 				)
 				. Html::openElement( 'thead' ) . Html::openElement( 'tr' )
 				. Html::element( 'th', [], $this->msg( 'kzchatbot-slugs-label-slug' )->text() )
@@ -190,17 +237,40 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 			$editLabel = $this->msg( 'kzchatbot-slugs-op-edit' )->text();
 			$deleteLabel = $this->msg( 'kzchatbot-slugs-op-delete' )->text();
 			$formattingLabel = $this->msg( 'kzchatbot-slugs-formatting-supported' )->text();
+			$obsoleteLabel = $this->msg( 'kzchatbot-slugs-obsolete' )->text();
+			$obsoleteTooltip = $this->msg( 'kzchatbot-slugs-obsolete-tooltip' )->text();
+			// One token for every row: it authenticates the session, not the slug.
+			$csrfToken = $this->getCsrfTokenSet()->getToken()->toString();
 			foreach ( $slugs as $slug => $attribs ) {
+				// A row the chatbot no longer has any use for: it exists only because
+				// an override was saved under a slug that has since been renamed or
+				// retired. Deleting it is the only thing left to do with it.
+				$isObsolete = !Slugs::isValidSlugName( $slug );
 				$editUrl = $output->getTitle()->getLocalURL( [ 'edit' => $slug ] );
-				$deleteUrl = $output->getTitle()->getLocalURL( [ 'delete' => $slug ] );
-				$cssClass = $attribs['changed'] ? '' : 'default-value';
+				$deleteUrl = $output->getTitle()->getLocalURL(
+					[ 'delete' => $slug, 'token' => $csrfToken ]
+				);
+				if ( $isObsolete ) {
+					$cssClass = 'obsolete-value';
+				} else {
+					$cssClass = $attribs['changed'] ? '' : 'default-value';
+				}
 				$output->addHTML(
 					Html::openElement( 'tr', [ 'class' => $cssClass ] )
-					. Html::element( 'td', [], $slug )
+					. Html::rawElement( 'td', [],
+						Html::element( 'span', [], $slug )
+						. ( $isObsolete
+							? ' ' . Html::element(
+								'span',
+								[ 'class' => 'kzc-obsolete-badge', 'title' => $obsoleteTooltip ],
+								$obsoleteLabel
+							)
+							: '' )
+					)
 					. Html::element( 'td', [], $attribs['value'] )
 					. Html::element( 'td', [], in_array( $slug, $formattedSlugs ) ? $formattingLabel : '' )
 					. Html::rawElement( 'td', [],
-						Html::element( 'a', [ 'href' => $editUrl ], $editLabel )
+						$isObsolete ? '' : Html::element( 'a', [ 'href' => $editUrl ], $editLabel )
 					)
 					. Html::rawElement( 'td', [],
 						$attribs['changed'] ? Html::element( 'a', [ 'href' => $deleteUrl ], $deleteLabel ) : ''
@@ -221,6 +291,24 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 				)
 			);
 		}
+	}
+
+	/**
+	 * The slug an edit request is targeting, whether it arrived as a query
+	 * parameter (opening the form) or as a form submission (saving it).
+	 *
+	 * @return string|null Null when the request is not an edit
+	 */
+	private function getRequestedEditSlug(): ?string {
+		$request = $this->getRequest();
+		$slug = $request->wasPosted() && $request->getVal( 'wpkzcAction' ) === 'edit'
+			? $request->getVal( 'wpkzcSlug' )
+			: ( $request->getQueryValues()['edit'] ?? null );
+
+		// Both sources normalise the same way, so a blank slug is never mistaken
+		// for an obsolete one: an absent name is the form's own required-field
+		// error to report, not something to explain as retired.
+		return empty( $slug ) ? null : $slug;
 	}
 
 	/**
@@ -293,17 +381,19 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	 */
 	public function handleSlugDelete( $slug ): bool {
 		// Delete word/pattern.
-		$result = Slugs::deleteSlug( $slug );
+		$status = Slugs::deleteSlug( $slug );
 
-		if ( $result ) {
+		if ( $status->isOK() ) {
 			// Set session data for the success message
 			$this->getRequest()->getSession()->set( 'kzSlugDeleted', $slug );
+		} else {
+			$this->getRequest()->getSession()->set( 'kzSlugError', $status->getMessage()->plain() );
 		}
 
 		// Return to form.
 		$url = $this->getPageTitle()->getFullUrlForRedirect();
 		$this->getOutput()->redirect( $url );
-		return $result;
+		return $status->isOK();
 	}
 
 }

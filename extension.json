@@ -164,6 +164,30 @@
 			"viewRight": "kzchatbot-testing"
 		},
 		{
+			"path": "/kzchatbot/v0/ragui/prompt-parser.js",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagAssetHandler",
+			"backendFile": "prompt-parser.js",
+			"contentType": "application/javascript; charset=utf-8",
+			"viewRight": "kzchatbot-testing"
+		},
+		{
+			"path": "/kzchatbot/v0/ragui/prompt-view.js",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagAssetHandler",
+			"backendFile": "prompt-view.js",
+			"contentType": "application/javascript; charset=utf-8",
+			"viewRight": "kzchatbot-testing"
+		},
+		{
+			"path": "/kzchatbot/v0/ragui/prompt-view.css",
+			"method": "GET",
+			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagAssetHandler",
+			"backendFile": "prompt-view.css",
+			"contentType": "text/css; charset=utf-8",
+			"viewRight": "kzchatbot-testing"
+		},
+		{
 			"path": "/kzchatbot/v0/ragproxy/get_config",
 			"method": "GET",
 			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagProxyHandler",

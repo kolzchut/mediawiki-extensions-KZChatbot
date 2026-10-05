@@ -54,7 +54,7 @@ class RagUiHandler extends Handler {
 			return $this->errorResponse( 403, 'You are not allowed to view this interface.' );
 		}
 
-		$html = $this->fetchBackendFile( $mainConfig->get( 'KZChatbotLlmApiUrl' ), $backendFile );
+		$html = self::fetchBackendFile( $mainConfig->get( 'KZChatbotLlmApiUrl' ), $backendFile );
 		if ( $html === null ) {
 			return $this->errorResponse( 502, 'The RAG backend is unreachable.' );
 		}
@@ -73,6 +73,11 @@ class RagUiHandler extends Handler {
 		// instead of the backend's hard-coded production URL.
 		$localApi = $mainConfig->get( 'ScriptPath' ) . '/api.php';
 		$html = str_replace( 'https://www.kolzchut.org.il/w/he/api.php', $localApi, $html );
+
+		// The backend's own JS/CSS files are served by RagAssetHandler as siblings of
+		// this route, so relative references already resolve there. Make root-absolute
+		// ones (src="/x.js") relative too; they would otherwise hit the wiki's root.
+		$html = preg_replace( '/(\s(?:src|href)=["\'])\/(?=[\w.-]+\.(?:js|css)["\'])/', '$1', $html );
 
 		$kzProxy = [
 			'base' => $proxyBase,
@@ -115,9 +120,9 @@ class RagUiHandler extends Handler {
 	/**
 	 * @param string $apiUrl
 	 * @param string $file
-	 * @return string|null HTML, or null on failure
+	 * @return string|null File contents, or null on failure
 	 */
-	private function fetchBackendFile( string $apiUrl, string $file ): ?string {
+	public static function fetchBackendFile( string $apiUrl, string $file ): ?string {
 		$url = rtrim( $apiUrl, '/' ) . '/' . ltrim( $file, '/' );
 		$ch = curl_init( $url );
 		curl_setopt_array( $ch, [

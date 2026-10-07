@@ -4,9 +4,12 @@ namespace MediaWiki\Extension\KZChatbot\Rest;
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
+use MediaWiki\Rest\LocalizedHttpException;
+use MediaWiki\Rest\RequestInterface;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\StringStream;
 use RequestContext;
+use Wikimedia\Message\MessageValue;
 
 /**
  * Authenticating reverse proxy for the RAG backend's own admin/testing endpoints.
@@ -168,6 +171,34 @@ class RagProxyHandler extends Handler {
 	private function addNoStoreHeaders( Response $response ): void {
 		$response->setHeader( 'Cache-Control', 'no-store, max-age=0, must-revalidate' );
 		$response->setHeader( 'Pragma', 'no-cache' );
+	}
+
+	/**
+	 * The UI shim sends write bodies base64-encoded as text/plain (see RagUiHandler);
+	 * other callers send JSON. Core accepts only JSON by default and answers anything
+	 * else with 415 before execute() runs.
+	 *
+	 * @inheritDoc
+	 */
+	public function getSupportedRequestTypes(): array {
+		return [ RequestInterface::JSON_CONTENT_TYPE, 'text/plain' ];
+	}
+
+	/**
+	 * The body is relayed to the backend as-is and never read as parameters, so
+	 * accept it unparsed; only the content type is checked.
+	 *
+	 * @inheritDoc
+	 */
+	public function parseBodyData( RequestInterface $request ): ?array {
+		$contentType = $request->getBodyType();
+		if ( $contentType !== null && !in_array( $contentType, $this->getSupportedRequestTypes(), true ) ) {
+			throw new LocalizedHttpException(
+				new MessageValue( 'rest-unsupported-content-type', [ $contentType ] ),
+				415
+			);
+		}
+		return null;
 	}
 
 	/** @inheritDoc */

@@ -4,6 +4,7 @@ namespace MediaWiki\Extension\KZChatbot\Rest;
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
+use MediaWiki\Rest\RequestInterface;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\StringStream;
 use RequestContext;
@@ -20,6 +21,9 @@ use RequestContext;
  *   "backendPath" - path appended to $wgKZChatbotLlmApiUrl (e.g. "set_config")
  *   "right"       - the user right required to call it
  *   "write"       - true for state-changing endpoints (require CSRF token)
+ *
+ * Request bodies are JSON, parsed and validated by core like any other REST body,
+ * and relayed to the backend as sent.
  */
 class RagProxyHandler extends Handler {
 
@@ -51,7 +55,13 @@ class RagProxyHandler extends Handler {
 			}
 		}
 
-		return $this->forward( $backendPath, $isWrite );
+		// The raw body rather than the parsed array, which would turn an empty JSON
+		// object into an empty list.
+		$body = $this->getRequest()->getParsedBody() === null
+			? null
+			: (string)$this->getRequest()->getBody();
+
+		return $this->forward( $backendPath, $body );
 	}
 
 	/**
@@ -62,10 +72,10 @@ class RagProxyHandler extends Handler {
 	 * rendering is lost. Streaming is opt-in and off by default in that UI.
 	 *
 	 * @param string $backendPath
-	 * @param bool $isWrite
+	 * @param string|null $body JSON to send, or null if the request had no body
 	 * @return Response
 	 */
-	private function forward( string $backendPath, bool $isWrite ): Response {
+	private function forward( string $backendPath, ?string $body ): Response {
 		$config = MediaWikiServices::getInstance()->getMainConfig();
 		$apiUrl = rtrim( $config->get( 'KZChatbotLlmApiUrl' ), '/' ) . '/' . ltrim( $backendPath, '/' );
 
@@ -86,16 +96,7 @@ class RagProxyHandler extends Handler {
 		];
 
 		if ( $method !== 'GET' && $method !== 'HEAD' ) {
-			$body = $this->getRequest()->getBody()->getContents();
-			// The UI shim base64-encodes write bodies so their contents don't trip
-			// the WAF; decode before forwarding the real JSON to the backend.
-			if ( strtolower( $this->getRequest()->getHeaderLine( 'X-KZ-Body-Encoding' ) ) === 'base64' ) {
-				$decoded = base64_decode( $body, true );
-				if ( $decoded !== false ) {
-					$body = $decoded;
-				}
-			}
-			$curlOptions[CURLOPT_POSTFIELDS] = $body;
+			$curlOptions[CURLOPT_POSTFIELDS] = $body ?? '';
 			$headers[] = 'Content-Type: application/json';
 		}
 		$curlOptions[CURLOPT_HTTPHEADER] = $headers;
@@ -168,6 +169,19 @@ class RagProxyHandler extends Handler {
 	private function addNoStoreHeaders( Response $response ): void {
 		$response->setHeader( 'Cache-Control', 'no-store, max-age=0, must-revalidate' );
 		$response->setHeader( 'Pragma', 'no-cache' );
+	}
+
+	/**
+	 * rating and clean_redis_history POST with no body, but browsers still send
+	 * Content-Length: 0, which core counts as a body and its JSON parser rejects.
+	 *
+	 * @inheritDoc
+	 */
+	public function parseBodyData( RequestInterface $request ): ?array {
+		if ( $request->getHeaderLine( 'Content-Length' ) === '0' ) {
+			return null;
+		}
+		return parent::parseBodyData( $request );
 	}
 
 	/** @inheritDoc */

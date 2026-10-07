@@ -159,9 +159,6 @@ class RagUiHandler extends Handler {
 		}
 		init.headers = h;
 	}
-	function utf8ToBase64( str ) {
-		return btoa( unescape( encodeURIComponent( str ) ) );
-	}
 	window.fetch = function ( input, init ) {
 		init = init || {};
 		var url = ( typeof input === 'string' ) ? input : ( input && input.url ) || '';
@@ -172,15 +169,6 @@ class RagUiHandler extends Handler {
 			init.credentials = 'same-origin';
 			if ( WRITES[path] ) {
 				setHeader( init, 'X-Csrf-Token', P.csrf );
-				// Base64-encode the request body so prompt text (which contains
-				// dollar-brace placeholder syntax) does not trip WAF managed rules.
-				// The proxy decodes it before forwarding to the backend; text/plain
-				// keeps the WAF from trying to parse the opaque payload as JSON.
-				if ( typeof init.body === 'string' && init.body.length ) {
-					init.body = utf8ToBase64( init.body );
-					setHeader( init, 'X-KZ-Body-Encoding', 'base64' );
-					setHeader( init, 'Content-Type', 'text/plain; charset=utf-8' );
-				}
 			}
 			input = ( typeof input === 'string' ) ? target : new Request( target, init );
 		}

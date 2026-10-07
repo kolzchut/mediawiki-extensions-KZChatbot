@@ -8,9 +8,6 @@ use MediaWiki\Rest\RequestInterface;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\StringStream;
 use RequestContext;
-use stdClass;
-use UnexpectedValueException;
-use UtfNormal\Validator as UtfNormalValidator;
 
 /**
  * Authenticating reverse proxy for the RAG backend's own admin/testing endpoints.
@@ -25,12 +22,8 @@ use UtfNormal\Validator as UtfNormalValidator;
  *   "right"       - the user right required to call it
  *   "write"       - true for state-changing endpoints (require CSRF token)
  *
- * Request bodies are JSON, parsed and validated by core like any other REST body.
- * The UI shim (see RagUiHandler) base64-encodes every string VALUE inside that JSON
- * and says so with "X-KZ-Body-Encoding: base64-values": prompt templates contain
- * dollar-brace placeholders, which Cloudflare's managed rules read as Log4Shell
- * probes. Keys and non-string values stay readable. kolzchut/kz-infrastructure#1618
- * tracks replacing this with a WAF skip rule scoped to this route.
+ * Request bodies are JSON, parsed and validated by core like any other REST body,
+ * and relayed to the backend as sent.
  */
 class RagProxyHandler extends Handler {
 
@@ -62,68 +55,13 @@ class RagProxyHandler extends Handler {
 			}
 		}
 
-		$body = null;
-		if ( $this->getRequest()->getParsedBody() !== null ) {
-			$body = $this->relayBody();
-			if ( $body === null ) {
-				return $this->errorResponse( 400, 'badbody', 'The request body is not valid base64-encoded JSON.' );
-			}
-		}
+		// The raw body rather than the parsed array, which would turn an empty JSON
+		// object into an empty list.
+		$body = $this->getRequest()->getParsedBody() === null
+			? null
+			: (string)$this->getRequest()->getBody();
 
 		return $this->forward( $backendPath, $body );
-	}
-
-	/**
-	 * The JSON body to send to the backend, with any base64-encoded string values
-	 * decoded.
-	 *
-	 * Re-reads the raw body rather than using the parsed array, because decoding to
-	 * an array would turn an empty JSON object into an empty list. Core has already
-	 * rejected anything that is not a JSON object.
-	 *
-	 * @return string|null Null if a value that should be base64 is not
-	 */
-	private function relayBody(): ?string {
-		$raw = (string)$this->getRequest()->getBody();
-		$encoding = strtolower( $this->getRequest()->getHeaderLine( 'X-KZ-Body-Encoding' ) );
-		if ( $encoding !== 'base64-values' ) {
-			return $raw;
-		}
-		try {
-			$data = $this->decodeStrings( json_decode( $raw ) );
-		} catch ( UnexpectedValueException $e ) {
-			return null;
-		}
-		return json_encode( $data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION );
-	}
-
-	/**
-	 * Base64-decode every string value in a decoded JSON structure, keys untouched.
-	 *
-	 * @param mixed $value
-	 * @return mixed
-	 * @throws UnexpectedValueException If a string value is not strict base64
-	 */
-	private function decodeStrings( $value ) {
-		if ( is_string( $value ) ) {
-			$decoded = base64_decode( $value, true );
-			if ( $decoded === false ) {
-				throw new UnexpectedValueException( 'Not base64' );
-			}
-			// Core normalises a JSON body's UTF-8; these values bypassed that.
-			return UtfNormalValidator::cleanUp( $decoded );
-		}
-		if ( is_array( $value ) ) {
-			return array_map( [ $this, 'decodeStrings' ], $value );
-		}
-		if ( $value instanceof stdClass ) {
-			$out = new stdClass();
-			foreach ( get_object_vars( $value ) as $key => $item ) {
-				$out->$key = $this->decodeStrings( $item );
-			}
-			return $out;
-		}
-		return $value;
 	}
 
 	/**

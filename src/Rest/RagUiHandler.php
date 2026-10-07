@@ -159,25 +159,6 @@ class RagUiHandler extends Handler {
 		}
 		init.headers = h;
 	}
-	function utf8ToBase64( str ) {
-		return btoa( unescape( encodeURIComponent( str ) ) );
-	}
-	function encodeStrings( v ) {
-		if ( typeof v === 'string' ) {
-			return utf8ToBase64( v );
-		}
-		if ( Array.isArray( v ) ) {
-			return v.map( encodeStrings );
-		}
-		if ( v && typeof v === 'object' ) {
-			var o = {};
-			Object.keys( v ).forEach( function ( k ) {
-				o[k] = encodeStrings( v[k] );
-			} );
-			return o;
-		}
-		return v;
-	}
 	window.fetch = function ( input, init ) {
 		init = init || {};
 		var url = ( typeof input === 'string' ) ? input : ( input && input.url ) || '';
@@ -188,21 +169,6 @@ class RagUiHandler extends Handler {
 			init.credentials = 'same-origin';
 			if ( WRITES[path] ) {
 				setHeader( init, 'X-Csrf-Token', P.csrf );
-				// Prompt templates contain dollar-brace placeholders, which WAF
-				// managed rules read as Log4Shell probes. Base64-encode each string
-				// value, keeping the body JSON so MediaWiki still parses and
-				// validates it; the proxy decodes the values before forwarding.
-				// kolzchut/kz-infrastructure#1618 tracks replacing this with a WAF
-				// skip rule scoped to the proxy route.
-				if ( typeof init.body === 'string' && init.body.length ) {
-					try {
-						init.body = JSON.stringify( encodeStrings( JSON.parse( init.body ) ) );
-						setHeader( init, 'X-KZ-Body-Encoding', 'base64-values' );
-						setHeader( init, 'Content-Type', 'application/json' );
-					} catch ( e ) {
-						// Not JSON: send it as-is and let the proxy reject it.
-					}
-				}
 			}
 			input = ( typeof input === 'string' ) ? target : new Request( target, init );
 		}

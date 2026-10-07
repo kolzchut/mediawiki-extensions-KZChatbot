@@ -4,9 +4,13 @@ namespace MediaWiki\Extension\KZChatbot\Rest;
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
+use MediaWiki\Rest\RequestInterface;
 use MediaWiki\Rest\Response;
 use MediaWiki\Rest\StringStream;
 use RequestContext;
+use stdClass;
+use UnexpectedValueException;
+use UtfNormal\Validator as UtfNormalValidator;
 
 /**
  * Authenticating reverse proxy for the RAG backend's own admin/testing endpoints.
@@ -20,6 +24,13 @@ use RequestContext;
  *   "backendPath" - path appended to $wgKZChatbotLlmApiUrl (e.g. "set_config")
  *   "right"       - the user right required to call it
  *   "write"       - true for state-changing endpoints (require CSRF token)
+ *
+ * Request bodies are JSON, parsed and validated by core like any other REST body.
+ * The UI shim (see RagUiHandler) base64-encodes every string VALUE inside that JSON
+ * and says so with "X-KZ-Body-Encoding: base64-values": prompt templates contain
+ * dollar-brace placeholders, which Cloudflare's managed rules read as Log4Shell
+ * probes. Keys and non-string values stay readable. kolzchut/kz-infrastructure#1618
+ * tracks replacing this with a WAF skip rule scoped to this route.
  */
 class RagProxyHandler extends Handler {
 
@@ -51,7 +62,68 @@ class RagProxyHandler extends Handler {
 			}
 		}
 
-		return $this->forward( $backendPath, $isWrite );
+		$body = null;
+		if ( $this->getRequest()->getParsedBody() !== null ) {
+			$body = $this->relayBody();
+			if ( $body === null ) {
+				return $this->errorResponse( 400, 'badbody', 'The request body is not valid base64-encoded JSON.' );
+			}
+		}
+
+		return $this->forward( $backendPath, $body );
+	}
+
+	/**
+	 * The JSON body to send to the backend, with any base64-encoded string values
+	 * decoded.
+	 *
+	 * Re-reads the raw body rather than using the parsed array, because decoding to
+	 * an array would turn an empty JSON object into an empty list. Core has already
+	 * rejected anything that is not a JSON object.
+	 *
+	 * @return string|null Null if a value that should be base64 is not
+	 */
+	private function relayBody(): ?string {
+		$raw = (string)$this->getRequest()->getBody();
+		$encoding = strtolower( $this->getRequest()->getHeaderLine( 'X-KZ-Body-Encoding' ) );
+		if ( $encoding !== 'base64-values' ) {
+			return $raw;
+		}
+		try {
+			$data = $this->decodeStrings( json_decode( $raw ) );
+		} catch ( UnexpectedValueException $e ) {
+			return null;
+		}
+		return json_encode( $data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION );
+	}
+
+	/**
+	 * Base64-decode every string value in a decoded JSON structure, keys untouched.
+	 *
+	 * @param mixed $value
+	 * @return mixed
+	 * @throws UnexpectedValueException If a string value is not strict base64
+	 */
+	private function decodeStrings( $value ) {
+		if ( is_string( $value ) ) {
+			$decoded = base64_decode( $value, true );
+			if ( $decoded === false ) {
+				throw new UnexpectedValueException( 'Not base64' );
+			}
+			// Core normalises a JSON body's UTF-8; these values bypassed that.
+			return UtfNormalValidator::cleanUp( $decoded );
+		}
+		if ( is_array( $value ) ) {
+			return array_map( [ $this, 'decodeStrings' ], $value );
+		}
+		if ( $value instanceof stdClass ) {
+			$out = new stdClass();
+			foreach ( get_object_vars( $value ) as $key => $item ) {
+				$out->$key = $this->decodeStrings( $item );
+			}
+			return $out;
+		}
+		return $value;
 	}
 
 	/**
@@ -62,10 +134,10 @@ class RagProxyHandler extends Handler {
 	 * rendering is lost. Streaming is opt-in and off by default in that UI.
 	 *
 	 * @param string $backendPath
-	 * @param bool $isWrite
+	 * @param string|null $body JSON to send, or null if the request had no body
 	 * @return Response
 	 */
-	private function forward( string $backendPath, bool $isWrite ): Response {
+	private function forward( string $backendPath, ?string $body ): Response {
 		$config = MediaWikiServices::getInstance()->getMainConfig();
 		$apiUrl = rtrim( $config->get( 'KZChatbotLlmApiUrl' ), '/' ) . '/' . ltrim( $backendPath, '/' );
 
@@ -86,16 +158,7 @@ class RagProxyHandler extends Handler {
 		];
 
 		if ( $method !== 'GET' && $method !== 'HEAD' ) {
-			$body = $this->getRequest()->getBody()->getContents();
-			// The UI shim base64-encodes write bodies so their contents don't trip
-			// the WAF; decode before forwarding the real JSON to the backend.
-			if ( strtolower( $this->getRequest()->getHeaderLine( 'X-KZ-Body-Encoding' ) ) === 'base64' ) {
-				$decoded = base64_decode( $body, true );
-				if ( $decoded !== false ) {
-					$body = $decoded;
-				}
-			}
-			$curlOptions[CURLOPT_POSTFIELDS] = $body;
+			$curlOptions[CURLOPT_POSTFIELDS] = $body ?? '';
 			$headers[] = 'Content-Type: application/json';
 		}
 		$curlOptions[CURLOPT_HTTPHEADER] = $headers;
@@ -168,6 +231,19 @@ class RagProxyHandler extends Handler {
 	private function addNoStoreHeaders( Response $response ): void {
 		$response->setHeader( 'Cache-Control', 'no-store, max-age=0, must-revalidate' );
 		$response->setHeader( 'Pragma', 'no-cache' );
+	}
+
+	/**
+	 * rating and clean_redis_history POST with no body, but browsers still send
+	 * Content-Length: 0, which core counts as a body and its JSON parser rejects.
+	 *
+	 * @inheritDoc
+	 */
+	public function parseBodyData( RequestInterface $request ): ?array {
+		if ( $request->getHeaderLine( 'Content-Length' ) === '0' ) {
+			return null;
+		}
+		return parent::parseBodyData( $request );
 	}
 
 	/** @inheritDoc */

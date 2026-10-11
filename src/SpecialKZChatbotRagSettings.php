@@ -2,7 +2,7 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
-use Html;
+use MediaWiki\Extension\KZChatbot\Rest\RagUiHandler;
 use MediaWiki\Message\Message;
 use SpecialPage;
 
@@ -11,8 +11,9 @@ use SpecialPage;
  *
  * The interface is served (and its API calls proxied + permission-checked) by the
  * REST handlers under /kzchatbot/v0/ragui and /kzchatbot/v0/ragproxy. This page
- * only gates access and hosts the frame; edit-level and destructive controls are
- * hidden by the UI handler for users who lack the corresponding right.
+ * gates access, hosts the sandboxed frame and relays its endpoint calls
+ * (ext.KZChatbot.ragui). Edit-level and destructive controls are hidden by the
+ * UI handler for users who lack the corresponding right.
  */
 class SpecialKZChatbotRagSettings extends SpecialPage {
 
@@ -38,12 +39,12 @@ class SpecialKZChatbotRagSettings extends SpecialPage {
 			$this->msg( 'kzchatbot-rag-settings-nav-to-testing' )->text()
 		) );
 
-		$src = $this->getConfig()->get( 'RestPath' ) . '/kzchatbot/v0/ragui/admin';
-		$out->addHTML( Html::element( 'iframe', [
-			'src' => $src,
-			'class' => 'kzchatbot-rag-iframe',
-			'title' => $this->msg( 'kzchatbot-rag-settings' )->text(),
-		] ) );
+		$out->addModules( 'ext.KZChatbot.ragui' );
+		$out->addHTML( RagUiHandler::buildIframe(
+			'admin',
+			$this->getConfig()->get( 'RestPath' ),
+			$this->msg( 'kzchatbot-rag-settings' )->text()
+		) );
 	}
 
 	/** @inheritDoc */

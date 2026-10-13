@@ -281,10 +281,13 @@ class KZChatbot {
 			[ 'kzchatbot_users' ],
 			[ 'COUNT(*) as count' ],
 			[
-				'kzcbu_last_active >= ' . wfTimestamp(
-					TS_MW, time() - ( $activeUsersLimitDays * 24 * 60 * 60 )
+				$dbr->expr(
+					'kzcbu_last_active',
+					'>=',
+					$dbr->timestamp( time() - ( $activeUsersLimitDays * 24 * 60 * 60 ) )
 				)
-			]
+			],
+			__METHOD__
 		)->fetchRow();
 		return $activeUsersCount['count'] ?? 0;
 	}

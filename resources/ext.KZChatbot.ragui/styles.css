@@ -1,0 +1,14 @@
+.kzchatbot-rag-iframe {
+	display: block;
+	width: 100%;
+	height: 85vh;
+	min-height: 600px;
+	border: 0;
+}
+
+/* These pages embed a full-width app; let the content area use the viewport.
+ * Scoping by the special-page body class out-specifies the skin's `.wrapper-sm`. */
+.mw-special-KZChatbotRagSettings .wrapper-sm,
+.mw-special-KZChatbotTesting .wrapper-sm {
+	max-width: none;
+}

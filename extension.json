@@ -119,6 +119,12 @@
 				"overrides.less"
 			]
 		},
+		"ext.KZChatbot.ragui": {
+			"localBasePath": "resources/ext.KZChatbot.ragui",
+			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.ragui",
+			"scripts": [ "relay.js" ],
+			"dependencies": [ "mediawiki.user" ]
+		},
 		"ext.KZChatbot.ragui.styles": {
 			"localBasePath": "resources/ext.KZChatbot.ragui",
 			"remoteExtPath": "KZChatbot/resources/ext.KZChatbot.ragui",
@@ -145,7 +151,7 @@
 			"path": "/kzchatbot/v0/ragui/admin",
 			"method": "GET",
 			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagUiHandler",
-			"backendFile": "admin.html",
+			"interface": "admin",
 			"viewRight": "kzchatbot-view-rag-settings",
 			"editRight": "kzchatbot-edit-rag-settings"
 		},
@@ -153,38 +159,14 @@
 			"path": "/kzchatbot/v0/ragui/index",
 			"method": "GET",
 			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagUiHandler",
-			"backendFile": "index.html",
+			"interface": "index",
 			"viewRight": "kzchatbot-testing"
 		},
 		{
 			"path": "/kzchatbot/v0/ragui/batch",
 			"method": "GET",
 			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagUiHandler",
-			"backendFile": "batch-runner.html",
-			"viewRight": "kzchatbot-testing"
-		},
-		{
-			"path": "/kzchatbot/v0/ragui/prompt-parser.js",
-			"method": "GET",
-			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagAssetHandler",
-			"backendFile": "prompt-parser.js",
-			"contentType": "application/javascript; charset=utf-8",
-			"viewRight": "kzchatbot-testing"
-		},
-		{
-			"path": "/kzchatbot/v0/ragui/prompt-view.js",
-			"method": "GET",
-			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagAssetHandler",
-			"backendFile": "prompt-view.js",
-			"contentType": "application/javascript; charset=utf-8",
-			"viewRight": "kzchatbot-testing"
-		},
-		{
-			"path": "/kzchatbot/v0/ragui/prompt-view.css",
-			"method": "GET",
-			"class": "MediaWiki\\Extension\\KZChatbot\\Rest\\RagAssetHandler",
-			"backendFile": "prompt-view.css",
-			"contentType": "text/css; charset=utf-8",
+			"interface": "batch",
 			"viewRight": "kzchatbot-testing"
 		},
 		{

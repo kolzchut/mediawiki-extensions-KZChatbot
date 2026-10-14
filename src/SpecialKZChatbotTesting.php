@@ -2,7 +2,7 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
-use Html;
+use MediaWiki\Extension\KZChatbot\Rest\RagUiHandler;
 use MediaWiki\Message\Message;
 use SpecialPage;
 
@@ -13,7 +13,8 @@ use SpecialPage;
  *
  * The interfaces themselves are served (and their API calls proxied +
  * permission-checked) by the REST handlers under /kzchatbot/v0/ragui and
- * /kzchatbot/v0/ragproxy. This page only gates access and hosts the frame.
+ * /kzchatbot/v0/ragproxy. This page gates access, hosts the sandboxed frame and
+ * relays its endpoint calls (ext.KZChatbot.ragui).
  */
 class SpecialKZChatbotTesting extends SpecialPage {
 
@@ -34,12 +35,12 @@ class SpecialKZChatbotTesting extends SpecialPage {
 
 		$out->addSubtitle( $this->buildNavLinks( $isBatch ) );
 
-		$src = $this->getConfig()->get( 'RestPath' ) . '/kzchatbot/v0/ragui/' . $iface;
-		$out->addHTML( Html::element( 'iframe', [
-			'src' => $src,
-			'class' => 'kzchatbot-rag-iframe',
-			'title' => $this->msg( 'kzchatbot-testing-title' )->text(),
-		] ) );
+		$out->addModules( 'ext.KZChatbot.ragui' );
+		$out->addHTML( RagUiHandler::buildIframe(
+			$iface,
+			$this->getConfig()->get( 'RestPath' ),
+			$this->msg( 'kzchatbot-testing-title' )->text()
+		) );
 	}
 
 	/**

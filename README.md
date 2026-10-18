@@ -52,7 +52,7 @@ These settings can be configured in `LocalSettings.php`.
 | Setting                                | Default           | Description                                                                                                                             |
 |----------------------------------------|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
 | `$wgKZChatbotLlmApiUrl`                | null              | LLM API URL                                                                                                                             |
-| `$wgKZChatbotUserLimitBypassToken`     | false             | Secret token that allows bypassing the active users limit when provided as a URL parameter. Set to false to disable the bypass feature. |
+| `$wgKZChatbotLimitBypassToken`         | false             | Secret token that allows bypassing the active users limit when provided as a URL parameter. Only a non-empty string enables it.          |
 | `$wgKZChatbotAutoOpenParam`            | "autoOpenChatbot" | URL parameter that triggers the chatbot to open automatically. Set to an empty string to disable this feature.                          |
 | `$wgKZChatbotSendPageId`               | true              | Whether to send page_id as additional context to the RAG backend. Set to false to disable sending page context.                         |
 | `$wgKZChatbotReplaceAnswerWhenNoLinks` | false             | If true and no links returned, the rag's answer is replaced by a stock one.                                                             |
@@ -127,7 +127,10 @@ You can enable a bypass mechanism for the active users limit:
    https://example.com/wiki/any_page?kzchatbot_access=your_secret_token_here
    ```
 
-To disable bypassing, set `$wgKZChatbotLimitBypassToken = false`
+To disable bypassing, set `$wgKZChatbotLimitBypassToken = false` (the default).
+An empty string, or any value that is not a non-empty string, also disables it,
+so a token read from an unset environment variable does not let a bare
+`?kzchatbot_access=` through.
 
 ⚠️ **Security Note**: Treat the bypass token as sensitive information.
 

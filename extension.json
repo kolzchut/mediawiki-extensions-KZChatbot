@@ -25,9 +25,9 @@
 			"description": "Timeout in seconds for requests to the RAG backend's /search endpoint. The LLM judge + answer steps can take well over the default HTTP timeout, so this is set higher to avoid premature timeouts while the backend is still answering.",
 			"public": false
 		},
-		"KZChatbotUserLimitBypassToken": {
+		"KZChatbotLimitBypassToken": {
 			"value": false,
-			"description": "Secret token that allows bypassing the active users limit when provided as a URL parameter. Set to false to disable the bypass feature.",
+			"description": "Secret token that allows bypassing the new-users rate and the active users limit when provided as the kzchatbot_access URL parameter. Only a non-empty string enables the bypass; false, an empty string or any other non-string value disables it.",
 			"public": false
 		},
 		"KZChatbotAutoOpenParam": {

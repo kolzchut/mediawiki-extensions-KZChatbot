@@ -30,6 +30,13 @@ use RequestContext;
  * So the worst a hostile script in the frame can do is call this interface's own
  * allowlisted RAG endpoints with the rights the viewer already has there.
  *
+ * The single tester and the batch runner also resolve a source page given by title
+ * to its page ID with the wiki's action API. From the opaque origin that request
+ * would be cross-origin with `Origin: null`, which the wiki does not answer with
+ * CORS headers, so the shim relays it too, as a separate "pageLookup" message. The
+ * embedding page performs it only for interfaces flagged 'pageLookup', and only
+ * as a single-title action=query read.
+ *
  * Route config (extension.json):
  *   "interface"  - key into self::INTERFACES
  *   "viewRight"  - right required to load this interface at all
@@ -38,10 +45,11 @@ use RequestContext;
 class RagUiHandler extends Handler {
 
 	/**
-	 * Per interface: the backend file it is, and the backend endpoints (under
-	 * /kzchatbot/v0/ragproxy/) the embedding page may call on its behalf. Keep the
-	 * endpoint lists to what each page's code actually calls: they bound what a
-	 * compromised page can do.
+	 * Per interface: the backend file it is, the backend endpoints (under
+	 * /kzchatbot/v0/ragproxy/) the embedding page may call on its behalf, and
+	 * whether it may have the embedding page look up a page ID by title in the
+	 * wiki's action API (its WikiAPI.getPageId()). Keep both to what each page's
+	 * code actually calls: they bound what a compromised page can do.
 	 */
 	public const INTERFACES = [
 		'admin' => [
@@ -50,14 +58,17 @@ class RagUiHandler extends Handler {
 				'get_config', 'set_config', 'clean_redis_history',
 				'ping/redis', 'ping/llm_manager', 'ping/es_docker',
 			],
+			'pageLookup' => false,
 		],
 		'index' => [
 			'file' => 'index.html',
 			'proxyPaths' => [ 'get_config', 'search', 'search/stream', 'rating' ],
+			'pageLookup' => true,
 		],
 		'batch' => [
 			'file' => 'batch-runner.html',
 			'proxyPaths' => [ 'get_config', 'search', 'search/stream', 'clean_redis_history' ],
+			'pageLookup' => true,
 		],
 	];
 
@@ -105,6 +116,8 @@ class RagUiHandler extends Handler {
 			'sandbox' => self::SANDBOX_FLAGS,
 			'data-kzchatbot-proxy-base' => $restPath . '/kzchatbot/v0/ragproxy/',
 			'data-kzchatbot-proxy-paths' => json_encode( self::INTERFACES[$iface]['proxyPaths'] ),
+			// Read by ext.KZChatbot.ragui; absent (null) means page lookups are refused.
+			'data-kzchatbot-page-lookup' => self::INTERFACES[$iface]['pageLookup'] ? '1' : null,
 		] );
 	}
 
@@ -141,9 +154,13 @@ class RagUiHandler extends Handler {
 		$canEdit = $hasEditConcept && $pm->userHasRight( $user, $editRight );
 		$canCleanRedis = $hasEditConcept && $pm->userHasRight( $user, 'kzchatbot-clean-redis-history' );
 
-		// Point the batch runner's page-title autocomplete at the local wiki API
-		// instead of the backend's hard-coded production URL. Its calls carry
-		// origin=*, i.e. anonymous CORS, which works from the sandboxed frame.
+		// Point the testers' title-to-page-ID lookup (WikiAPI.getPageId) at the
+		// local wiki API instead of the backend's hard-coded production URL. It
+		// cannot be called directly from the sandboxed frame: from an opaque origin
+		// it is a CORS request with `Origin: null`, which the wiki does not answer
+		// with Access-Control-Allow-Origin, whatever `origin=*` says. The shim
+		// therefore relays calls to this URL to the embedding page, which performs
+		// them same-origin (see ext.KZChatbot.ragui).
 		$localApi = $mainConfig->get( 'ScriptPath' ) . '/api.php';
 		$html = str_replace( 'https://www.kolzchut.org.il/w/he/api.php', $localApi, $html );
 
@@ -151,6 +168,9 @@ class RagUiHandler extends Handler {
 
 		$kzProxy = [
 			'paths' => $iface['proxyPaths'],
+			// Path of the wiki API whose calls the shim relays as page lookups;
+			// null for an interface that has none to make.
+			'wikiApi' => $iface['pageLookup'] ? $localApi : null,
 			'canEdit' => $canEdit,
 			'canCleanRedis' => $canCleanRedis,
 		];
@@ -174,8 +194,10 @@ class RagUiHandler extends Handler {
 		// when the URL is opened directly rather than through the special page's
 		// iframe. The rest of the policy allows the backend HTML's CDN deps and
 		// inline/eval (Babel standalone); inside the sandbox they no longer run
-		// with the wiki's origin. 'self' still matches the wiki host for the
-		// anonymous api.php calls, as CSP compares it against the document's URL.
+		// with the wiki's origin. Nothing in the frame reaches the wiki directly:
+		// RAG endpoint calls and page lookups both go through the relay, because
+		// from the opaque origin a direct call is cross-origin, which CSP's 'self'
+		// (matched against the document's URL) does not change.
 		$response->setHeader( 'Content-Security-Policy',
 			'sandbox ' . self::SANDBOX_FLAGS . '; '
 			. "default-src 'self'; "
@@ -285,9 +307,11 @@ class RagUiHandler extends Handler {
 	 *
 	 * - fetch(): the interface's allowlisted root-relative endpoint calls become
 	 *   postMessage requests to the embedding page (ext.KZChatbot.ragui), which
-	 *   performs them and answers with status, content type and body. Requests
-	 *   wait for the page's "ready" message, since the iframe can start before
-	 *   that module has loaded.
+	 *   performs them and answers with status, content type and body. Calls to
+	 *   the wiki API URL (KZ_PROXY.wikiApi) are relayed the same way as a
+	 *   separate "pageLookup" message, which the page validates on its own terms.
+	 *   Requests wait for the page's "ready" message, since the iframe can start
+	 *   before that module has loaded.
 	 * - localStorage / sessionStorage: an opaque origin has none, and touching
 	 *   them throws. The single tester keeps its chat history there, so give it an
 	 *   in-memory store that lasts as long as the page.
@@ -299,6 +323,7 @@ class RagUiHandler extends Handler {
 (function () {
 	var P = window.KZ_PROXY || {};
 	var PROXIED = P.paths || [];
+	var WIKI_API = P.wikiApi || null;
 	// This document's origin is opaque, but its URL is still the wiki's.
 	var parentOrigin = new URL( window.location.href ).origin;
 	var embedded = window.parent !== window;
@@ -341,11 +366,29 @@ class RagUiHandler extends Handler {
 		send( { kzRag: 'hello' } );
 	}
 
+	// The query string of a call to the wiki API URL, or null for any other URL.
+	function wikiApiQuery( url ) {
+		if ( !WIKI_API || !url ) {
+			return null;
+		}
+		var u;
+		try {
+			u = new URL( url, window.location.href );
+		} catch ( e ) {
+			return null;
+		}
+		if ( u.origin !== parentOrigin || u.pathname !== WIKI_API ) {
+			return null;
+		}
+		return u.search.replace( /^\?/, '' );
+	}
+
 	var orig = window.fetch.bind( window );
 	window.fetch = function ( input, init ) {
 		var url = ( typeof input === 'string' ) ? input : '';
+		var lookupQuery = wikiApiQuery( url );
 		var m = /^\/([a-z_]+(?:\/[a-z_]+)?)(?:\?([^#]*))?$/i.exec( url );
-		if ( !m || PROXIED.indexOf( m[ 1 ] ) === -1 ) {
+		if ( lookupQuery === null && ( !m || PROXIED.indexOf( m[ 1 ] ) === -1 ) ) {
 			return orig( input, init );
 		}
 		init = init || {};
@@ -358,14 +401,11 @@ class RagUiHandler extends Handler {
 		}
 		return new Promise( function ( resolve, reject ) {
 			var id = nextId++;
-			var msg = {
-				kzRag: 'request',
-				id: id,
-				path: m[ 1 ],
-				query: m[ 2 ] || '',
-				method: String( init.method || 'GET' ).toUpperCase(),
-				body: body
-			};
+			var method = String( init.method || 'GET' ).toUpperCase();
+			// What a lookup may be is decided by the embedding page, not here.
+			var msg = lookupQuery !== null ?
+				{ kzRag: 'pageLookup', id: id, query: lookupQuery, method: method, body: body } :
+				{ kzRag: 'request', id: id, path: m[ 1 ], query: m[ 2 ] || '', method: method, body: body };
 			pending[ id ] = { resolve: resolve, reject: reject };
 			if ( ready ) {
 				send( msg );

@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Interface</title>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        // Override Babel standalone's react preset to use classic JSX runtime.
+        // This avoids "import statement outside a module" errors caused by the
+        // automatic runtime (which generates import statements in transpiled code).
+        if (typeof Babel !== 'undefined') {
+            var origReactPreset = Babel.availablePresets.react;
+            Babel.availablePresets.react = function (api, opts) {
+                return origReactPreset(api, Object.assign({}, opts || {}, { runtime: 'classic' }));
+            };
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --bg-color: #f4f6f9;
+            --sidebar-bg: #2c3e50;
+            --sidebar-text: #ecf0f1;
+            --border-color: #dee2e6;
+            --success-color: #2ecc71;
+            --input-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            color: #333;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.3); }
+
+        #root { width: 100%; height: 100%; display: flex; }
+
+        .app-container { display: flex; width: 100%; height: 100%; }
+
+        .sidebar {
+            width: 320px;
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 1rem;
+            flex-shrink: 0;
+            overflow-y: auto;
+            border-left: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar h2 { font-size: 1.2rem; margin-bottom: 1.5rem; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+
+        .summary-item {
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            color: #bdc3c7;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 8px;
+        }
+        .summary-item strong { color: #ecf0f1; display: block; margin-bottom: 2px; }
+
+        .ping-item {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .ping-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .ping-item-name {
+            font-weight: bold;
+            color: #ecf0f1;
+            font-size: 0.95rem;
+        }
+        .ping-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .ping-status.online {
+            background: #2ecc71;
+            color: white;
+        }
+        .ping-status.offline {
+            background: #e74c3c;
+            color: white;
+        }
+        .ping-status.loading {
+            background: #f39c12;
+            color: white;
+        }
+        .ping-details {
+            font-size: 0.85rem;
+            color: #95a5a6;
+        }
+
+        .danger-zone {
+            margin-top: auto;
+            padding-top: 20px;
+            border-top: 2px solid rgba(231, 76, 60, 0.3);
+        }
+
+        .danger-zone h3 {
+            color: #e74c3c;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .danger-btn {
+            width: 100%;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .danger-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .danger-btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            color: #e74c3c;
+        }
+
+        .modal-header i {
+            font-size: 2rem;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .modal-body {
+            margin-bottom: 25px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .modal-body p {
+            margin-bottom: 10px;
+        }
+
+        .modal-body strong {
+            color: #e74c3c;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .modal-btn-cancel {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #7f8c8d;
+        }
+
+        .modal-btn-confirm {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .modal-btn-confirm:hover {
+            background: #c0392b;
+        }
+
+        .modal-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-color);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .header-bar {
+            background-color: white;
+            padding: 15px 25px;
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .header-title { font-size: 1.5rem; color: #2c3e50; font-weight: bold; }
+        .header-version { font-size: 0.9rem; color: #7f8c8d; margin-right: 15px; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .section-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .section-title {
+            grid-column: 1 / -1;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            margin: 20px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 2px solid var(--primary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 6px; color: #555; font-weight: 500; font-size: 0.9rem; }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--input-bg);
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary-color); outline: none; }
+        .form-textarea { resize: vertical; min-height: 80px; }
+
+        .toggle-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 15px;
+        }
+        .toggle-wrapper label { margin-bottom: 0; cursor: pointer; }
+        .toggle-wrapper input { width: auto; transform: scale(1.2); }
+
+        .save-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+        .save-btn:hover { background-color: #0056b3; }
+        .save-btn:active { transform: scale(0.97); }
+        .save-btn:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        .field-hint {
+            display: block;
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        .field-disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .sub-section-title {
+            font-size: 1rem;
+            color: #555;
+            margin: 20px 0 12px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: 600;
+        }
+
+        .placeholder-note {
+            font-size: 0.85rem;
+            color: #aaa;
+            font-style: italic;
+            padding: 8px 0;
+        }
+
+        .llm-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) auto;
+            gap: 12px;
+            align-items: end;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+        .llm-row .input-group { margin-bottom: 0; }
+
+        .collapsible-header {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+        }
+        .collapsible-header .chevron { margin-right: auto; font-size: 0.9rem; }
+        .collapsible-header.closed { margin: 0; }
+
+        .llm-item {
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+        .llm-item-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .llm-item-name { font-weight: 600; }
+        .llm-item-name.empty { color: #aaa; font-style: italic; font-weight: normal; }
+        .llm-item-meta { font-size: 0.8rem; color: #888; }
+        .llm-item-header .llm-remove-btn { margin-right: auto; padding: 5px 10px; }
+        .llm-item .llm-row {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            margin: 0;
+            border: none;
+            border-top: 1px solid var(--border-color);
+            border-radius: 0 0 6px 6px;
+        }
+
+        .llm-remove-btn {
+            background: none;
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+            border-radius: 6px;
+            padding: 9px 12px;
+            cursor: pointer;
+        }
+        .llm-remove-btn:hover { background: #e74c3c; color: white; }
+
+        .llm-add-btn {
+            background: none;
+            border: 1px dashed var(--primary-color);
+            color: var(--primary-color);
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .llm-add-btn:hover { background: var(--input-bg); }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+
+    const INITIAL_STATE = {
+        paragraphs_per_page: '',
+        paragraph_identifier: '',
+        additional_page_identifier: '',
+        best_paragraph_from_page_identifier: '',
+        banned_fields: '',
+        content_threshold: '',
+        title_threshold: '',
+        summary_threshold: '',
+        paragraph_relevance_threshold: '',
+        retrieval_size: '',
+        page_identifier: '',
+        add_current_page_to_judge: false,
+        avoid_repeating_documents: false,
+        add_current_page_to_llm: false,
+        add_best_paragraph_from_page_to_llm: false,
+        send_full_pages_to_llm: false,
+        use_page_based_prompt: false,
+        IS_SAVING_PARAGRAPHS_OF_PROMPT_IN_REDIS: false,
+        max_conversation_history: '',
+        LLMS_LIST: [],
+        ASK_LLM: '',
+        JUDGE_LLM: '',
+        ASK_PROVIDER: '',
+        JUDGE_PROVIDER: '',
+        JUDGE_MODEL: '',
+        JUDGE_MAX_TOKENS: '',
+        JUDGE_TEMPERATURE: '',
+        JUDGE_USER_PROMPT: '',
+        JUDGE_SYSTEM_PROMPT: '',
+        JUDGE_DECIDE_RETRIEVAL: false,
+        CONVERSATION_HISTORY_PREFIX_MACRO: '',
+        OPENAI_MODEL: '',
+        OPENAI_TEMPERATURE: '',
+        OPENAI_MAX_TOKENS: '',
+        OPENAI_SYSTEM_PROMPT: '',
+        GOOGLE_MODEL: '',
+        GOOGLE_TEMPERATURE: '',
+        GOOGLE_MAX_TOKENS: '',
+        GOOGLE_THINKING_BUDGET: '',
+        GOOGLE_SYSTEM_PROMPT: ''
+    };
+
+    function parseConfigFromApi(data) {
+        if (!data) return INITIAL_STATE;
+        const banned = Array.isArray(data.banned_fields)
+            ? data.banned_fields.join(', ')
+            : (data.banned_fields || '');
+
+        const paragraphsPerPage = Array.isArray(data.paragraphs_per_page)
+            ? data.paragraphs_per_page.join(', ')
+            : (data.paragraphs_per_page || '');
+
+        return {
+            ...INITIAL_STATE,
+            ...data,
+            banned_fields: banned,
+            paragraphs_per_page: paragraphsPerPage,
+            LLMS_LIST: llmsToList(data.LLMS)
+        };
+    }
+
+    // The LLMS registry is an object keyed by name; the form edits it as a list so names can be renamed
+    function llmsToList(llms) {
+        if (!llms || typeof llms !== 'object') return [];
+        // Numbers are kept as strings, so a value of 0 still shows in FormInput
+        const str = (v) => (v === null || v === undefined) ? '' : String(v);
+        return Object.entries(llms).map(([name, llm]) => ({
+            name,
+            provider: str(llm.provider),
+            model: str(llm.model),
+            temperature: str(llm.temperature),
+            maxTokens: str(llm.maxTokens),
+            thinkingBudget: str(llm.thinkingBudget)
+        }));
+    }
+
+    function listToLlms(list) {
+        const numOrNull = (v) => (v === '' || v === null || v === undefined) ? null : Number(v);
+        const llms = {};
+        (list || []).forEach(llm => {
+            const name = (llm.name || '').trim();
+            if (!name) return;
+            llms[name] = {
+                provider: llm.provider,
+                model: (llm.model || '').trim(),
+                temperature: numOrNull(llm.temperature),
+                maxTokens: numOrNull(llm.maxTokens),
+                thinkingBudget: numOrNull(llm.thinkingBudget)
+            };
+        });
+        return llms;
+    }
+
+    function findDuplicateLlmName(list) {
+        const seen = new Set();
+        for (const llm of list || []) {
+            const name = (llm.name || '').trim();
+            if (!name) continue;
+            if (seen.has(name)) return name;
+            seen.add(name);
+        }
+        return null;
+    }
+
+    function preparePayloadForApi(formData) {
+        const numOrNull = (v) => (v === '' || v === null) ? null : Number(v);
+        const strOrNull = (v) => (v === '' || v === null) ? null : String(v);
+
+        return JSON.stringify({
+            ...formData,
+            LLMS_LIST: undefined,
+            LLMS: listToLlms(formData.LLMS_LIST),
+            paragraphs_per_page: formData.paragraphs_per_page
+                ? formData.paragraphs_per_page.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
+                : null,
+            content_threshold: numOrNull(formData.content_threshold),
+            title_threshold: numOrNull(formData.title_threshold),
+            summary_threshold: numOrNull(formData.summary_threshold),
+            paragraph_relevance_threshold: numOrNull(formData.paragraph_relevance_threshold),
+            retrieval_size: numOrNull(formData.retrieval_size),
+            max_conversation_history: numOrNull(formData.max_conversation_history),
+
+            JUDGE_MAX_TOKENS: numOrNull(formData.JUDGE_MAX_TOKENS),
+            JUDGE_TEMPERATURE: numOrNull(formData.JUDGE_TEMPERATURE),
+            OPENAI_TEMPERATURE: numOrNull(formData.OPENAI_TEMPERATURE),
+            OPENAI_MAX_TOKENS: numOrNull(formData.OPENAI_MAX_TOKENS),
+            GOOGLE_TEMPERATURE: numOrNull(formData.GOOGLE_TEMPERATURE),
+            GOOGLE_MAX_TOKENS: numOrNull(formData.GOOGLE_MAX_TOKENS),
+            GOOGLE_THINKING_BUDGET: numOrNull(formData.GOOGLE_THINKING_BUDGET),
+
+            banned_fields: formData.banned_fields
+                ? formData.banned_fields.split(',').map(s => s.trim()).filter(Boolean)
+                : null
+        });
+    }
+
+    function useConfiguration() {
+        const [formData, setFormData] = React.useState(INITIAL_STATE);
+        const [loading, setLoading] = React.useState(true);
+        const [serverConfig, setServerConfig] = React.useState({});
+        const [version, setVersion] = React.useState('');
+
+        const fetchConfig = React.useCallback(async () => {
+            try {
+                const res = await fetch('/get_config');
+                const data = await res.json();
+                setServerConfig(data || {});
+                setFormData(parseConfigFromApi(data));
+                setVersion(data.version || '');
+            } catch (e) {
+                console.error("Fetch error:", e);
+            } finally {
+                setLoading(false);
+            }
+        }, []);
+
+        const saveConfig = async () => {
+            const duplicateLlmName = findDuplicateLlmName(formData.LLMS_LIST);
+            if (duplicateLlmName) {
+                alert(`השם "${duplicateLlmName}" מופיע יותר מפעם אחת ב-Named LLMs`);
+                return;
+            }
+            setLoading(true);
+            try {
+                const res = await fetch('/set_config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: preparePayloadForApi(formData)
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert(`שמירה נכשלה: ${err.detail || res.status}`);
+                    setLoading(false);
+                    return;
+                }
+                await fetchConfig();
+            } catch (e) {
+                console.error("Save error:", e);
+                setLoading(false);
+            }
+        };
+
+        const handleChange = (field, value) => {
+            setFormData(prev => ({ ...prev, [field]: value }));
+        };
+
+        React.useEffect(() => {
+            fetchConfig();
+        }, [fetchConfig]);
+
+        return { formData, serverConfig, loading, handleChange, saveConfig, version };
+    }
+
+    function useEnterPress(callback) {
+        React.useEffect(() => {
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    callback();
+                }
+            };
+            document.addEventListener('keydown', handleKeyPress);
+            return () => document.removeEventListener('keydown', handleKeyPress);
+        }, [callback]);
+    }
+
+    function useMicroservicesPing() {
+        const [pings, setPings] = React.useState({
+            redis: { status: 'loading', message: '' },
+            llm_manager: { status: 'loading', message: '' },
+            es_docker: { status: 'loading', message: '' }
+        });
+
+        const pingService = async (name, endpoint) => {
+            try {
+                const response = await fetch(endpoint);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    setPings(prev => ({
+                        ...prev,
+                        [name]: { status: 'online', message: data.message || 'Connected' }
+                    }));
+                } else {
+                    setPings(prev => ({
+                        ...prev,
+                        [name]: { status: 'offline', message: data.message || 'Service error' }
+                    }));
+                }
+            } catch (error) {
+                setPings(prev => ({
+                    ...prev,
+                    [name]: { status: 'offline', message: 'Connection failed' }
+                }));
+            }
+        };
+
+        React.useEffect(() => {
+            pingService('redis', '/ping/redis');
+            pingService('llm_manager', '/ping/llm_manager');
+            pingService('es_docker', '/ping/es_docker');
+
+            const interval = setInterval(() => {
+                pingService('redis', '/ping/redis');
+                pingService('llm_manager', '/ping/llm_manager');
+                pingService('es_docker', '/ping/es_docker');
+            }, 30000);
+
+            return () => clearInterval(interval);
+        }, []);
+
+        return pings;
+    }
+
+    function LoadingView() {
+        return (
+            <div className="loading-container">
+                <i className="fas fa-spinner fa-spin"></i> &nbsp; טוען הגדרות...
+            </div>
+        );
+    }
+
+    function SidebarSummary() {
+        const pings = useMicroservicesPing();
+        const [showModal, setShowModal] = React.useState(false);
+        const [isDeleting, setIsDeleting] = React.useState(false);
+
+        const serviceNames = {
+            redis: 'Redis',
+            llm_manager: 'LLM Manager',
+            es_docker: 'ES Docker'
+        };
+
+        const handleDeleteHistory = async () => {
+            setIsDeleting(true);
+            try {
+                const response = await fetch('/clean_redis_history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    alert('היסטוריית Redis נמחקה בהצלחה!');
+                } else {
+                    alert('שגיאה במחיקת ההיסטוריה');
+                }
+            } catch (error) {
+                console.error('Error deleting history:', error);
+                alert('שגיאה בתקשורת עם השרת');
+            } finally {
+                setIsDeleting(false);
+                setShowModal(false);
+            }
+        };
+
+        return (
+            <aside className="sidebar">
+                <h2>מצב שירותים</h2>
+                {Object.entries(pings).map(([key, value]) => (
+                    <div key={key} className="ping-item">
+                        <div className="ping-item-header">
+                            <span className="ping-item-name">{serviceNames[key]}</span>
+                            <span className={`ping-status ${value.status}`}>
+                                    {value.status === 'online' ? 'Online' : value.status === 'loading' ? 'Checking...' : 'Offline'}
+                                </span>
+                        </div>
+                        <div className="ping-details">{value.message}</div>
+                    </div>
+                ))}
+
+                <div className="danger-zone">
+                    <h3><i className="fas fa-exclamation-triangle"></i> אזור מסוכן</h3>
+                    <button
+                        className="danger-btn"
+                        onClick={() => setShowModal(true)}
+                        disabled={isDeleting}
+                    >
+                        <i className="fas fa-trash-alt"></i>
+                        <span>מחק היסטוריית Redis</span>
+                    </button>
+                </div>
+
+                {showModal && (
+                    <div className="modal-overlay" onClick={() => !isDeleting && setShowModal(false)}>
+                        <div className="modal-content" onClick={e => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <i className="fas fa-exclamation-triangle"></i>
+                                <h3>אישור מחיקה</h3>
+                            </div>
+                            <div className="modal-body">
+                                <p>האם אתה בטוח שברצונך למחוק את <strong>כל</strong> היסטוריית Redis?</p>
+                                <p>פעולה זו <strong>בלתי הפיכה</strong> ותמחק את כל נתוני ההיסטוריה של המשתמשים.</p>
+                            </div>
+                            <div className="modal-actions">
+                                <button
+                                    className="modal-btn modal-btn-cancel"
+                                    onClick={() => setShowModal(false)}
+                                    disabled={isDeleting}
+                                >
+                                    ביטול
+                                </button>
+                                <button
+                                    className="modal-btn modal-btn-confirm"
+                                    onClick={handleDeleteHistory}
+                                    disabled={isDeleting}
+                                >
+                                    {isDeleting ? (
+                                        <>
+                                            <i className="fas fa-spinner fa-spin"></i> מוחק...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="fas fa-trash-alt"></i> מחק
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </aside>
+        );
+    }
+
+    function FormInput({ label, value, onChange, type = "text", placeholder = "", hint = "", disabled = false }) {
+        return (
+            <div className={`input-group ${disabled ? 'field-disabled' : ''}`}>
+                <label>{label}</label>
+                <input
+                    type={type}
+                    className="form-input"
+                    dir="ltr"
+                    value={value || ''}
+                    onChange={e => onChange(e.target.value)}
+                    placeholder={placeholder}
+                    disabled={disabled}
+                />
+                {hint && <span className="field-hint">{hint}</span>}
+            </div>
+        );
+    }
+
+    function FormSelect({ label, value, onChange, options, emptyLabel = "Select...", hint = "" }) {
+        return (
+            <div className="input-group">
+                <label>{label}</label>
+                <select
+                    className="form-select"
+                    value={value || ''}
+                    onChange={e => onChange(e.target.value)}
+                >
+                    <option value="">{emptyLabel}</option>
+                    {options.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                </select>
+                {hint && <span className="field-hint">{hint}</span>}
+            </div>
+        );
+    }
+
+    function FormTextArea({ label, value, onChange, rows = 3 }) {
+        return (
+            <div className="input-group">
+                <label>{label}</label>
+                <textarea
+                    className="form-textarea"
+                    rows={rows}
+                    value={value || ''}
+                    onChange={e => onChange(e.target.value)}
+                />
+            </div>
+        );
+    }
+
+    function FormCheckbox({ label, checked, onChange, hint = "", disabled = false }) {
+        return (
+            <div className={`toggle-wrapper ${disabled ? 'field-disabled' : ''}`}>
+                <input
+                    type="checkbox"
+                    checked={!!checked}
+                    onChange={e => onChange(e.target.checked)}
+                    disabled={disabled}
+                />
+                <label>{label}</label>
+                {hint && <span className="field-hint" style={{flexBasis: '100%', width: '100%'}}>{hint}</span>}
+            </div>
+        );
+    }
+
+    function CollapsibleSection({ title, icon, children, defaultOpen = false, style }) {
+        const [open, setOpen] = React.useState(defaultOpen);
+        return (
+            <div className="section-card" style={style}>
+                <h3 className={`section-title collapsible-header ${open ? '' : 'closed'}`} onClick={() => setOpen(o => !o)}>
+                    <i className={`fas ${icon}`}></i> {title}
+                    <i className={`fas ${open ? 'fa-chevron-up' : 'fa-chevron-down'} chevron`}></i>
+                </h3>
+                {open && children}
+            </div>
+        );
+    }
+
+    function UpdateProcessSection({ data, onChange }) {
+        return (
+            <CollapsibleSection title="הגדרות לתהליך העדכונים" icon="fa-sync-alt">
+                <div className="form-grid">
+                    <FormInput label="Banned Fields (comma separated)" value={data.banned_fields} onChange={v => onChange('banned_fields', v)} />
+                    <FormInput label="Paragraph Identifier" value={data.paragraph_identifier} onChange={v => onChange('paragraph_identifier', v)} />
+                    <FormInput label="Additional Page Identifier" value={data.additional_page_identifier} onChange={v => onChange('additional_page_identifier', v)} />
+                    <FormInput label="Best Paragraph From Page Identifier" value={data.best_paragraph_from_page_identifier} onChange={v => onChange('best_paragraph_from_page_identifier', v)} hint="הכותרת של מקטע הפסקה הנבחרת שמתווסף בסוף הפרומפט. אם ריק - ייעשה שימוש בערך ברירת המחדל" />
+                    <FormInput label="Page Identifier" value={data.page_identifier} onChange={v => onChange('page_identifier', v)} />
+                </div>
+            </CollapsibleSection>
+        );
+    }
+
+    function RetrievalModelSection({ data, onChange }) {
+        return (
+            <CollapsibleSection title="מודל האחזור" icon="fa-search" style={{marginTop: '20px'}}>
+                <div className="form-grid">
+                    <FormInput label="Content Threshold" value={data.content_threshold} onChange={v => onChange('content_threshold', v)} type="number" />
+                    <FormInput label="Title Threshold" value={data.title_threshold} onChange={v => onChange('title_threshold', v)} type="number" />
+                    <FormInput label="Summary Threshold" value={data.summary_threshold} onChange={v => onChange('summary_threshold', v)} type="number" />
+                    <FormInput label="Paragraph Relevance Threshold" value={data.paragraph_relevance_threshold} onChange={v => onChange('paragraph_relevance_threshold', v)} type="number" hint="מאפשר לא להעביר למודל השפה פסקאות עם ציון נמוך (לשימוש עתידי)" />
+                    <FormInput label="Retrieval Size" value={data.retrieval_size} onChange={v => onChange('retrieval_size', v)} type="number" />
+                </div>
+            </CollapsibleSection>
+        );
+    }
+
+    const NAMED_LLM_HINT = "בחר LLM מוגדר, או 'הזנה ידנית' להגדרה ידנית של ספק ומודל";
+
+    function getLlmNames(data) {
+        return (data.LLMS_LIST || []).map(llm => (llm.name || '').trim()).filter(Boolean);
+    }
+
+    function NamedLlmsSection({ data, onChange }) {
+        const list = data.LLMS_LIST || [];
+        // Indices of the LLMs whose fields are shown; all start collapsed
+        const [expanded, setExpanded] = React.useState(new Set());
+
+        const updateLlm = (index, field, value) => {
+            const oldName = (list[index].name || '').trim();
+            onChange('LLMS_LIST', list.map((llm, i) => i === index ? { ...llm, [field]: value } : llm));
+            // Keep the judge / answer selection pointing at a renamed LLM
+            if (field === 'name' && oldName) {
+                if (data.JUDGE_LLM === oldName) onChange('JUDGE_LLM', value.trim());
+                if (data.ASK_LLM === oldName) onChange('ASK_LLM', value.trim());
+            }
+        };
+
+        const removeLlm = (index) => {
+            const name = (list[index].name || '').trim();
+            onChange('LLMS_LIST', list.filter((_, i) => i !== index));
+            if (name && data.JUDGE_LLM === name) onChange('JUDGE_LLM', '');
+            if (name && data.ASK_LLM === name) onChange('ASK_LLM', '');
+            // Items after the removed one move up by one, so their open state moves with them
+            setExpanded(prev => new Set([...prev].filter(i => i !== index).map(i => i > index ? i - 1 : i)));
+        };
+
+        const addLlm = () => {
+            onChange('LLMS_LIST', [...list, { name: '', provider: 'openai', model: '', temperature: '', maxTokens: '', thinkingBudget: '' }]);
+            setExpanded(prev => new Set(prev).add(list.length));
+        };
+
+        const toggleLlm = (index) => {
+            setExpanded(prev => {
+                const next = new Set(prev);
+                next.has(index) ? next.delete(index) : next.add(index);
+                return next;
+            });
+        };
+
+        return (
+            <CollapsibleSection title="LLMs מוגדרים (Named LLMs)" icon="fa-tags" style={{marginTop: '20px'}}>
+                <span className="field-hint" style={{marginBottom: '15px'}}>
+                    כל LLM מקבל שם פנימי (למשל gptJudge) שנבחר למטה עבור השופט ועבור התשובה, והשם הזה מוצג בנתוני הדיבאג.
+                    אפשר להגדיר את אותו מודל פעמיים עם הגדרות שונות.
+                </span>
+                {list.length === 0 && <div className="placeholder-note">לא הוגדרו LLMs</div>}
+                {list.map((llm, index) => {
+                    const isOpen = expanded.has(index);
+                    const name = (llm.name || '').trim();
+                    return (
+                        <div className="llm-item" key={index}>
+                            <div className="llm-item-header" onClick={() => toggleLlm(index)}>
+                                <i className={`fas ${isOpen ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
+                                <span className={`llm-item-name ${name ? '' : 'empty'}`}>{name || '(ללא שם)'}</span>
+                                <span className="llm-item-meta" dir="ltr">{[llm.provider, llm.model].filter(Boolean).join(' · ')}</span>
+                                <button className="llm-remove-btn" onClick={e => { e.stopPropagation(); removeLlm(index); }} title="מחק">
+                                    <i className="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            {isOpen && (
+                                <div className="llm-row">
+                                    <FormInput label="Name" value={llm.name} onChange={v => updateLlm(index, 'name', v)} placeholder="gptJudge" />
+                                    <FormSelect label="Provider" value={llm.provider} onChange={v => updateLlm(index, 'provider', v)} options={['openai', 'google']} />
+                                    <FormInput label="Model" value={llm.model} onChange={v => updateLlm(index, 'model', v)} placeholder="gpt-4o" />
+                                    <FormInput label="Temperature" value={llm.temperature} onChange={v => updateLlm(index, 'temperature', v)} type="number" />
+                                    <FormInput label="Max Tokens" value={llm.maxTokens} onChange={v => updateLlm(index, 'maxTokens', v)} type="number" />
+                                    <FormInput label="Thinking Budget" value={llm.thinkingBudget} onChange={v => updateLlm(index, 'thinkingBudget', v)} type="number" disabled={llm.provider !== 'google'} />
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+                <button className="llm-add-btn" onClick={addLlm}>
+                    <i className="fas fa-plus"></i> הוסף LLM
+                </button>
+            </CollapsibleSection>
+        );
+    }
+
+    function IntermediateModelSection({ data, onChange }) {
+        return (
+            <CollapsibleSection title="מודל הביניים (Intermediate / Judge Model)" icon="fa-gavel" style={{marginTop: '20px'}}>
+                <FormSelect label="Model Settings" value={data.JUDGE_LLM} onChange={v => onChange('JUDGE_LLM', v)} options={getLlmNames(data)} emptyLabel="הזנה ידנית" hint={NAMED_LLM_HINT} />
+                {!data.JUDGE_LLM && (
+                    <div className="form-grid">
+                        <FormSelect label="Judge Provider" value={data.JUDGE_PROVIDER} onChange={v => onChange('JUDGE_PROVIDER', v)} options={['openai', 'google']} />
+                        <FormInput label="Judge Model" value={data.JUDGE_MODEL} onChange={v => onChange('JUDGE_MODEL', v)} />
+                        <FormInput label="Judge Max Tokens" value={data.JUDGE_MAX_TOKENS} onChange={v => onChange('JUDGE_MAX_TOKENS', v)} type="number" />
+                        <FormInput label="Judge Temperature" value={data.JUDGE_TEMPERATURE} onChange={v => onChange('JUDGE_TEMPERATURE', v)} type="number" />
+                    </div>
+                )}
+                <FormCheckbox label="Judge Decide Retrieval" checked={data.JUDGE_DECIDE_RETRIEVAL} onChange={v => onChange('JUDGE_DECIDE_RETRIEVAL', v)} hint="מאפשר למודל הביניים להחליט אם לאחזר פסקאות או לא - לא בשימוש" />
+                <FormTextArea label="Judge System Prompt" value={data.JUDGE_SYSTEM_PROMPT} onChange={v => onChange('JUDGE_SYSTEM_PROMPT', v)} />
+                <FormTextArea label="Judge User Prompt" value={data.JUDGE_USER_PROMPT} onChange={v => onChange('JUDGE_USER_PROMPT', v)} />
+
+                <h4 className="sub-section-title">הגדרות קלט</h4>
+                <FormCheckbox label="Add Current Page to Judge" checked={data.add_current_page_to_judge} onChange={v => onChange('add_current_page_to_judge', v)} />
+                <FormTextArea label="Conversation History Prefix" value={data.CONVERSATION_HISTORY_PREFIX_MACRO} onChange={v => onChange('CONVERSATION_HISTORY_PREFIX_MACRO', v)} rows={2} />
+
+            </CollapsibleSection>
+        );
+    }
+
+    function FinalModelSection({ data, onChange }) {
+        const sendFullPages = data.send_full_pages_to_llm;
+
+        const handleSendFullPagesChange = (checked) => {
+            onChange('send_full_pages_to_llm', checked);
+            if (checked) {
+                onChange('paragraphs_per_page', '');
+                onChange('use_page_based_prompt', false);
+            }
+        };
+
+        return (
+            <CollapsibleSection title="המודל הסופי (Final Model)" icon="fa-brain" style={{marginTop: '20px'}}>
+
+                <FormSelect label="Model Settings" value={data.ASK_LLM} onChange={v => onChange('ASK_LLM', v)} options={getLlmNames(data)} emptyLabel="הזנה ידנית" hint={NAMED_LLM_HINT} />
+                {!data.ASK_LLM && (
+                    <>
+                        <FormSelect label="Ask Provider (Main)" value={data.ASK_PROVIDER} onChange={v => onChange('ASK_PROVIDER', v)} options={['openai', 'google']} />
+
+                        <h4 style={{marginTop:'20px', borderBottom:'1px solid #eee'}}>OpenAI</h4>
+                        <div className="form-grid">
+                            <FormInput label="Model" value={data.OPENAI_MODEL} onChange={v => onChange('OPENAI_MODEL', v)} />
+                            <FormInput label="Temperature" value={data.OPENAI_TEMPERATURE} onChange={v => onChange('OPENAI_TEMPERATURE', v)} type="number" />
+                            <FormInput label="Max Tokens" value={data.OPENAI_MAX_TOKENS} onChange={v => onChange('OPENAI_MAX_TOKENS', v)} type="number" />
+                        </div>
+
+                        <h4 style={{marginTop:'20px', borderBottom:'1px solid #eee'}}>Google / Gemini</h4>
+                        <div className="form-grid">
+                            <FormInput label="Model" value={data.GOOGLE_MODEL} onChange={v => onChange('GOOGLE_MODEL', v)} />
+                            <FormInput label="Temperature" value={data.GOOGLE_TEMPERATURE} onChange={v => onChange('GOOGLE_TEMPERATURE', v)} type="number" />
+                            <FormInput label="Max Tokens" value={data.GOOGLE_MAX_TOKENS} onChange={v => onChange('GOOGLE_MAX_TOKENS', v)} type="number" />
+                            <FormInput label="Thinking Budget" value={data.GOOGLE_THINKING_BUDGET} onChange={v => onChange('GOOGLE_THINKING_BUDGET', v)} type="number" />
+                        </div>
+                    </>
+                )}
+
+                <h4 className="sub-section-title">הגדרות קלט</h4>
+                <div className="form-grid">
+                    <FormInput label="Paragraphs Per Page (comma-separated, e.g. 5, 3, 1)" value={data.paragraphs_per_page} onChange={v => onChange('paragraphs_per_page', v)} disabled={sendFullPages} />
+                    <FormCheckbox label="Use Page-Based Prompt" checked={data.use_page_based_prompt} onChange={v => onChange('use_page_based_prompt', v)} disabled={sendFullPages} hint="מאפשר להעביר את הכותרת והתקציר לפני הפסקאות" />
+                    <FormCheckbox label="Send Full Pages to LLM" checked={data.send_full_pages_to_llm} onChange={handleSendFullPagesChange} />
+                    <FormCheckbox label="Avoid Repeating Documents" checked={data.avoid_repeating_documents} onChange={v => onChange('avoid_repeating_documents', v)}/>
+                    <FormCheckbox label="Save Paragraphs of prompt in Redis" checked={data.IS_SAVING_PARAGRAPHS_OF_PROMPT_IN_REDIS} onChange={v => onChange('IS_SAVING_PARAGRAPHS_OF_PROMPT_IN_REDIS', v)} hint="שמירת הפסקאות בזכרון למקרה של avoid repeating" />
+                    <FormCheckbox label="Add Current Page to LLM" checked={data.add_current_page_to_llm} onChange={v => onChange('add_current_page_to_llm', v)} />
+                    <FormCheckbox label="Add Best Paragraph From Page to LLM" checked={data.add_best_paragraph_from_page_to_llm} onChange={v => onChange('add_best_paragraph_from_page_to_llm', v)} hint="מוסיף לפרומפט, תחת כותרת נפרדת, את הפסקה עם הציון הגבוה ביותר מהעמוד שממנו נשאלה השאלה. הפסקה לא נשמרת בהיסטוריית השיחה" />
+                    <FormInput label="Max Conversation History" value={data.max_conversation_history} onChange={v => onChange('max_conversation_history', v)} type="number" />
+                </div>
+
+                {/* System prompts apply to named LLMs too, by provider */}
+                <h4 className="sub-section-title">System Prompts</h4>
+                <FormTextArea label="System Prompt (OpenAI)" value={data.OPENAI_SYSTEM_PROMPT} onChange={v => onChange('OPENAI_SYSTEM_PROMPT', v)} />
+                <FormTextArea label="System Prompt (Google)" value={data.GOOGLE_SYSTEM_PROMPT} onChange={v => onChange('GOOGLE_SYSTEM_PROMPT', v)} />
+
+            </CollapsibleSection>
+        );
+    }
+
+    function PresetsSection({ data, onChange }) {
+        const [feedback, setFeedback] = React.useState(null);
+
+        const triggerFeedback = (presetName) => {
+            setFeedback(presetName);
+            setTimeout(() => {
+                setFeedback(null);
+            }, 1000);
+        };
+
+        const applyPreset1 = () => {
+            // Preset 1: Avoid Repeating Documents = True
+            onChange('avoid_repeating_documents', true);
+            // Preset 1: Save Full Prompt in Redis = True
+            onChange('IS_SAVING_PARAGRAPHS_OF_PROMPT_IN_REDIS', true);
+
+            triggerFeedback('preset1');
+        };
+
+        const applyPreset2 = () => {
+            // Preset 2: Avoid Repeating Documents = False
+            onChange('avoid_repeating_documents', false);
+            // Preset 2: Save Full Prompt in Redis = False
+            onChange('IS_SAVING_PARAGRAPHS_OF_PROMPT_IN_REDIS', false);
+
+            triggerFeedback('preset2');
+        };
+
+        const getButtonStyle = (btnName) => {
+            if (feedback === btnName) {
+                return { backgroundColor: '#28a745', transform: 'scale(1.02)' }; // Green for success
+            }
+            return { backgroundColor: '#6c757d' }; // Gray default
+        };
+
+        return (
+            <CollapsibleSection title="Presets" icon="fa-sliders-h" style={{marginTop: '20px'}}>
+                <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap'}}>
+                    <button
+                        className="save-btn"
+                        style={getButtonStyle('preset1')}
+                        onClick={applyPreset1}
+                    >
+                        {feedback === 'preset1' ? <i className="fas fa-check"></i> : <i className="fas fa-magic"></i>}
+                        {feedback === 'preset1' ? ' Applied!' : ' Preset 1 (Prompts Focus)'}
+                    </button>
+
+                    <button
+                        className="save-btn"
+                        style={getButtonStyle('preset2')}
+                        onClick={applyPreset2}
+                    >
+                        {feedback === 'preset2' ? <i className="fas fa-check"></i> : <i className="fas fa-undo"></i>}
+                        {feedback === 'preset2' ? ' Applied!' : ' Preset 2 (Questions Focus)'}
+                    </button>
+                </div>
+                <div style={{marginTop: '10px', fontSize: '0.9rem', color: '#666'}}>
+                    <strong>Note:</strong> Applying a preset updates the values locally. Click "Save" to apply changes to the server.
+                </div>
+            </CollapsibleSection>
+        );
+    }
+
+    function MainContent({ formData, onChange, onSave, loading, version }) {
+        return (
+            <div className="main-content">
+                <div className="header-bar">
+                    <div style={{display: 'flex', alignItems: 'center'}}>
+                        <div className="header-title">ניהול קונפיגורציה</div>
+                        {version && <span className="header-version">v{version}</span>}
+                    </div>
+                    <button className="save-btn" onClick={onSave} disabled={loading}>
+                        {loading && <i className="fas fa-spinner fa-spin"></i>}
+                        {!loading && <i className="fas fa-save"></i>}
+                        <span>שמור שינויים (Ctrl+Enter)</span>
+                    </button>
+                </div>
+
+                <UpdateProcessSection data={formData} onChange={onChange} />
+                <RetrievalModelSection data={formData} onChange={onChange} />
+                <NamedLlmsSection data={formData} onChange={onChange} />
+                <IntermediateModelSection data={formData} onChange={onChange} />
+                <FinalModelSection data={formData} onChange={onChange} />
+                <PresetsSection data={formData} onChange={onChange} />
+            </div>
+        );
+    }
+
+    function App() {
+        const { formData, loading, handleChange, saveConfig, version } = useConfiguration();
+
+        useEnterPress(saveConfig);
+
+        if (loading && !formData.paragraphs_per_page) {
+            return <LoadingView />;
+        }
+
+        return (
+            <div className="app-container">
+                <SidebarSummary />
+                <MainContent
+                    formData={formData}
+                    onChange={handleChange}
+                    onSave={saveConfig}
+                    loading={loading}
+                    version={version}
+                />
+            </div>
+        );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+</body>
+</html>

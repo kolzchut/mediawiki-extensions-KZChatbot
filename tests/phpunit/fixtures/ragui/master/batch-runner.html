@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>מערכת הרצת שאלות (Batch Runner)</title>
+
+    <!-- Libraries are vendored by frontend/build.mjs - nothing is loaded from third-party origins -->
+    <script src="build/vendor/react.production.min.js"></script>
+    <script src="build/vendor/react-dom.production.min.js"></script>
+    <script src="build/vendor/papaparse.min.js"></script>
+
+    <link href="build/vendor/fontawesome/css/all.min.css" rel="stylesheet">
+
+    <!-- Structured view of the prompt sent to the LLM ("Question sent to LLM" column) -->
+    <link href="prompt-view.css" rel="stylesheet">
+    <script src="prompt-parser.js"></script>
+    <script src="build/js/prompt-view.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --danger-color: #e74c3c;
+            --bg-color: #f4f6f9;
+            --sidebar-bg: #2c3e50;
+            --sidebar-text: #ecf0f1;
+            --border-color: #dee2e6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        #root { width: 100%; height: 100%; display: flex; }
+
+        .app-container { display: flex; width: 100%; height: 100%; }
+
+        .sidebar {
+            width: 300px;
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            flex-shrink: 0;
+            overflow-y: auto;
+            border-left: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .sidebar-header { margin-bottom: 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
+
+        .control-panel { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+
+        .btn {
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
+
+        .btn-primary { background-color: var(--primary-color); }
+        .btn-success { background-color: var(--success-color); }
+        .btn-danger { background-color: var(--danger-color); }
+        .btn-outline { background-color: transparent; border: 1px solid rgba(255,255,255,0.3); }
+
+        .settings-section { margin-top: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; }
+        .settings-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; color: #bdc3c7; }
+
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.9rem; }
+        .input-row { margin-bottom: 10px; }
+        .input-row label { display: block; font-size: 0.8rem; margin-bottom: 4px; color: #bdc3c7; }
+        .input-row input {
+            width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #555;
+            background: rgba(255,255,255,0.1); color: white;
+        }
+
+        .input-row select {
+            width: 100%;
+            padding: 8px 12px 8px 32px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background-color: rgba(255,255,255,0.08);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23bdc3c7' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 12px center;
+            color: white;
+            font-size: 0.85rem;
+            font-family: inherit;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            text-overflow: ellipsis;
+            transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+        }
+        .input-row select:hover:not(:disabled) { background-color: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.35); }
+        .input-row select:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.25); }
+        .input-row select:disabled { opacity: 0.5; cursor: not-allowed; }
+        .input-row select option { background: #2c3e50; color: white; }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+        }
+
+        .stats { font-size: 0.9rem; color: #555; display: flex; gap: 15px; }
+        .stat-item b { color: var(--primary-color); }
+
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            text-align: right;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--border-color);
+            color: #2c3e50;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        tr:hover { background-color: #f1f2f6; }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: inline-block;
+            min-width: 80px;
+            text-align: center;
+        }
+        .status-idle { background-color: #e0e0e0; color: #555; }
+        .status-loading { background-color: #fff3cd; color: #856404; }
+        .status-done { background-color: #d4edda; color: #155724; }
+        .status-error { background-color: #f8d7da; color: #721c24; }
+
+        .cell-answer {
+            max-width: 400px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .cell-input {
+            width: 100%;
+            border: 1px solid transparent;
+            background: transparent;
+            font-family: inherit;
+            font-size: inherit;
+        }
+        .cell-input:focus { border-color: var(--primary-color); background: white; outline: none; }
+        .cell-input.subtle { color: #7f8c8d; font-size: 0.85rem; }
+
+        .meta-info { font-size: 0.75rem; color: #7f8c8d; margin-top: 5px; }
+        .meta-info.llm-info { font-family: Consolas, monospace; direction: ltr; text-align: left; }
+
+        .fa-spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .danger-btn {
+            width: 100%;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px; /* spacing from previous buttons */
+        }
+
+        .danger-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .danger-btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            color: #333; /* Ensure text is visible on white */
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            color: #e74c3c;
+        }
+
+        .modal-header i {
+            font-size: 2rem;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .modal-body {
+            margin-bottom: 25px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .modal-body p {
+            margin-bottom: 10px;
+        }
+
+        .modal-body strong {
+            color: #e74c3c;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .modal-btn-cancel {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #7f8c8d;
+        }
+
+        .modal-btn-confirm {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .modal-btn-confirm:hover {
+            background: #c0392b;
+        }
+
+        .modal-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="build/js/batch-runner.js"></script>
+</body>
+</html>

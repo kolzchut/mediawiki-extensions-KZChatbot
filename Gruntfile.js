@@ -24,7 +24,8 @@ module.exports = function ( grunt ) {
 				'!node_modules/**',
 				'!vendor/**',
 				'!resources/ext.KZChatbot.react/**',
-				'!resources/ext.KZChatbot.bot/**'
+				'!resources/ext.KZChatbot.bot/**',
+				'!tests/phpunit/fixtures/**'
 			]
 		},
 		banana: conf.MessagesDirs

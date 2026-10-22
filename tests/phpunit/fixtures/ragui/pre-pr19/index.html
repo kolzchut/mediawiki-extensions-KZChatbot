@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>צ'אט בוט כל-זכות</title>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        // Override Babel standalone's react preset to use classic JSX runtime.
+        // This avoids "import statement outside a module" errors caused by the
+        // automatic runtime (which generates import statements in transpiled code).
+        if (typeof Babel !== 'undefined') {
+            var origReactPreset = Babel.availablePresets.react;
+            Babel.availablePresets.react = function (api, opts) {
+                return origReactPreset(api, Object.assign({}, opts || {}, { runtime: 'classic' }));
+            };
+        }
+    </script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Structured view of the prompt sent to the LLM (debug section) -->
+    <link href="prompt-view.css" rel="stylesheet">
+    <script src="prompt-parser.js"></script>
+    <script type="text/babel" src="prompt-view.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --bg-color: #f4f6f9;
+            --chat-bg: #ffffff;
+            --sidebar-bg: #2c3e50;
+            --sidebar-text: #ecf0f1;
+            --user-msg-bg: #e3f2fd;
+            --bot-msg-bg: #f8f9fa;
+            --border-color: #dee2e6;
+            --accent-color: #1abc9c;
+            --like-color: #2ecc71;
+            --dislike-color: #e74c3c;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        .sidebar ::-webkit-scrollbar-track { background: transparent; }
+        .sidebar ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        .sidebar ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+        .messages-container ::-webkit-scrollbar-track { background: transparent; }
+        .messages-container ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+        .messages-container ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.3); }
+
+        #root { width: 100%; height: 100%; display: flex; }
+
+        .app-container { display: flex; width: 100%; height: 100%; }
+
+        .sidebar {
+            width: 320px;
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            flex-shrink: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-header { margin-bottom: 20px; text-align: center; }
+
+        .action-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background 0.2s;
+            margin-bottom: 10px;
+        }
+        .action-btn:hover { background-color: #0056b3; }
+
+        .download-btn { background-color: var(--accent-color); margin-bottom: 20px; }
+        .download-btn:hover { background-color: #16a085; }
+        .download-btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
+
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 150px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+            padding-right: 5px;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #bdc3c7;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .history-item:hover { background-color: rgba(255,255,255,0.1); color: white; }
+        .history-item.active { background-color: rgba(255,255,255,0.2); color: white; border-right: 3px solid var(--primary-color); }
+
+        .settings-area { font-size: 0.9rem; }
+        .settings-section-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #bdc3c7;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 5px;
+        }
+
+        .setting-group {
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            margin-bottom: 8px;
+        }
+        .toggle-container:last-child { margin-bottom: 0; }
+        .toggle-container input { margin-right: 10px; }
+
+        .input-group { margin-bottom: 8px; }
+        .input-group label { display: block; margin-bottom: 4px; color: #bdc3c7; font-size: 0.85rem; }
+        .input-group input {
+            width: 100%;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 0.9rem;
+        }
+        .input-group input:focus { border-color: var(--primary-color); outline: none; }
+        .input-group select {
+            width: 100%;
+            padding: 8px 12px 8px 32px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background-color: rgba(255,255,255,0.08);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23bdc3c7' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 12px center;
+            color: white;
+            font-size: 0.85rem;
+            font-family: inherit;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            text-overflow: ellipsis;
+            transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+        }
+        .input-group select:hover { background-color: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.35); }
+        .input-group select:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.25); }
+        .input-group select option { background: #2c3e50; color: white; }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--chat-bg);
+            position: relative;
+            min-width: 0; /* Prevents flex overflow */
+        }
+
+        .chat-header {
+            padding: 10px 20px;
+            background-color: white;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+            flex-shrink: 0;
+        }
+
+        .chat-title { font-weight: bold; color: #2c3e50; }
+
+        .messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            overflow-x: hidden; /* Hide horizontal scroll */
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 15px;
+            border-radius: 12px;
+            line-height: 1.5;
+            position: relative;
+            font-size: 1rem;
+            /* Wrap long text/URLs */
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .message.user {
+            align-self: flex-start;
+            background-color: var(--user-msg-bg);
+            border-bottom-right-radius: 2px;
+            color: #2c3e50;
+        }
+
+        .message.bot {
+            align-self: flex-end;
+            background-color: var(--bot-msg-bg);
+            border-bottom-left-radius: 2px;
+            border: 1px solid var(--border-color);
+        }
+
+        .message-footer {
+            margin-top: 12px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .message-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .msg-rate-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #bdc3c7;
+            font-size: 1rem;
+            padding: 4px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .msg-rate-btn:hover { color: #7f8c8d; background-color: rgba(0,0,0,0.05); border-radius: 4px; }
+        .msg-rate-btn.like.active { color: var(--like-color); }
+        .msg-rate-btn.dislike.active { color: var(--dislike-color); }
+
+        .actual-question-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            position: relative;
+            max-width: 100%;
+        }
+        .actual-question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(133, 100, 4, 0.2);
+            padding-bottom: 5px;
+        }
+        .debug-toggle-btn {
+            background: none;
+            border: 1px solid #856404;
+            color: #856404;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .debug-toggle-btn:hover { background-color: #856404; color: white; }
+
+        /* Debug Styling */
+        .debug-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 5px;
+            width: 100%;
+        }
+        .debug-sub-section {
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(133, 100, 4, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .debug-sub-header {
+            background-color: rgba(133, 100, 4, 0.1);
+            padding: 5px 8px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: #6d5100;
+        }
+        .debug-llm-name {
+            font-weight: normal;
+            font-family: Consolas, monospace;
+            opacity: 0.8;
+        }
+        .token-row-title .debug-llm-name {
+            white-space: nowrap;
+            font-size: 0.7rem;
+            direction: ltr;
+        }
+        .answer-llm {
+            margin-top: 8px;
+            font-size: 0.75rem;
+            font-family: Consolas, monospace;
+            color: #7f8c8d;
+            direction: ltr;
+            text-align: left;
+        }
+        .debug-sub-content {
+            padding: 8px;
+            white-space: pre-wrap;
+            font-family: Consolas, monospace;
+            font-size: 0.85rem;
+            max-height: 150px;
+            overflow-y: auto;
+            /* Fix overflow issues */
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            display: -webkit-box;
+            -webkit-line-clamp: 6;
+            -webkit-box-orient: vertical;
+        }
+        .debug-sub-content.expanded {
+            display: block;
+            -webkit-line-clamp: unset;
+            max-height: 400px;
+        }
+
+        /* Token Table Styling */
+        .token-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            table-layout: fixed; /* Prevents table expanding */
+        }
+        .token-table th, .token-table td {
+            text-align: left;
+            padding: 4px 8px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            overflow-wrap: break-word;
+        }
+        .token-table th {
+            color: #6d5100;
+            font-weight: 600;
+        }
+        .token-row-title {
+            font-weight: bold;
+            color: #555;
+            width: 30%;
+        }
+
+        .sources-list {
+            font-size: 0.85rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .sources-title {
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            margin-bottom: 2px;
+            width: 100%;
+        }
+        .source-link {
+            display: inline-block;
+            color: var(--primary-color);
+            text-decoration: none;
+            background: rgba(0, 123, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 12px;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .source-link:hover { text-decoration: underline; }
+
+        .input-area {
+            padding: 20px;
+            background-color: white;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"].chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+        input[type="text"].chat-input:focus { border-color: var(--primary-color); outline: none; }
+
+        .send-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 50px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        .send-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        .typing-indicator::after {
+            content: '...';
+            animation: typing 1.5s infinite;
+        }
+        @keyframes typing { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .modal-title { margin-bottom: 15px; color: #2c3e50; }
+
+        .modal-textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            resize: none;
+            margin-bottom: 15px;
+            font-family: inherit;
+        }
+        .modal-textarea:focus { border-color: var(--primary-color); outline: none; }
+
+        .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+        .modal-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .modal-btn.confirm { background-color: var(--primary-color); color: white; }
+        .modal-btn.cancel { background-color: #e0e0e0; color: #333; }
+        .modal-btn:hover { opacity: 0.9; }
+
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    function uuidv4() {
+        return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+    }
+
+    // ========== API SERVICE ==========
+
+    const WikiAPI = {
+        baseUrl: 'https://www.kolzchut.org.il/w/he/api.php',
+
+        async getPageId(title) {
+            const params = new URLSearchParams({
+                action: 'query',
+                format: 'json',
+                titles: title,
+                formatversion: '2',
+                origin: '*'
+            });
+
+            try {
+                const response = await fetch(`${this.baseUrl}?${params}`);
+                const data = await response.json();
+
+                // Ensure we get a valid page object
+                if (!data.query || !data.query.pages || data.query.pages.length === 0) {
+                    throw new Error(`Page data not found`);
+                }
+
+                const page = data.query.pages[0];
+
+                if (page.missing) {
+                    throw new Error(`Page not found: ${title}`);
+                }
+
+                return page.pageid;
+            } catch (error) {
+                console.error('Error fetching page ID:', error);
+                throw error;
+            }
+        }
+    };
+
+    // ========== SOURCE PAGE HANDLER ==========
+
+    async function resolveSourcePage(sourcePage) {
+        if (!sourcePage || sourcePage.toString().trim() === "") {
+            return null;
+        }
+
+        const trimmed = sourcePage.toString().trim();
+
+        // Check if it's already a number
+        if (/^\d+$/.test(trimmed)) {
+            return parseInt(trimmed);
+        }
+
+        // It's a title, fetch the page ID
+        try {
+            const pageId = await WikiAPI.getPageId(trimmed);
+            return parseInt(pageId); // Ensure we return an Integer
+        } catch (error) {
+            throw new Error(`Failed to resolve page: ${trimmed} (${error.message})`);
+        }
+    }
+
+    // The LLM the LLM Manager actually sent the request to ({provider, model, name?}).
+    // Records saved before this was reported have none, so nothing is shown for them.
+    function formatUsedLlm(llm) {
+        if (!llm || typeof llm !== 'object') return null;
+        const providerAndModel = [llm.provider, llm.model].filter(Boolean).join(' / ');
+        if (llm.name) return providerAndModel ? `${llm.name} (${providerAndModel})` : llm.name;
+        return providerAndModel || null;
+    }
+
+    function DebugSection({ debugInfo }) {
+        const [expanded, setExpanded] = useState(false);
+        if (!debugInfo) return null;
+
+        const hasContent = debugInfo.judgePrompt || debugInfo.rephrased || debugInfo.finalLLM || debugInfo.tokens || debugInfo.bestParagraph;
+        if (!hasContent) return null;
+
+        // From prompt-view.js; without it the prompt stays plain text
+        const PromptView = window.KZPromptView?.PromptView;
+
+        return (
+            <div className="actual-question-box">
+                <div className="actual-question-header">
+                    <span>נתוני דיבאג (Debug Data)</span>
+                    <button className="debug-toggle-btn" onClick={() => setExpanded(!expanded)}>
+                        {expanded ? <i className="fas fa-compress-alt"></i> : <i className="fas fa-expand-alt"></i>}
+                        {expanded ? ' צמצם' : ' הרחב'}
+                    </button>
+                </div>
+                {expanded && (
+                    <div className="debug-container">
+                        {debugInfo.judgePrompt && (
+                            <div className="debug-sub-section">
+                                <div className="debug-sub-header">
+                                    פרומפט לשופט (Judge Prompt)
+                                    {formatUsedLlm(debugInfo.judgeLlm) && <span className="debug-llm-name"> · {formatUsedLlm(debugInfo.judgeLlm)}</span>}
+                                </div>
+                                <div className="debug-sub-content expanded">{debugInfo.judgePrompt}</div>
+                            </div>
+                        )}
+                        {debugInfo.rephrased && (
+                            <div className="debug-sub-section">
+                                <div className="debug-sub-header">
+                                    שאלה מנוסחת מחדש (Rephrased)
+                                    {/* The judge is the LLM that rephrases; without a judge run the question is left as asked */}
+                                    {formatUsedLlm(debugInfo.judgeLlm) && <span className="debug-llm-name"> · {formatUsedLlm(debugInfo.judgeLlm)}</span>}
+                                </div>
+                                <div className="debug-sub-content expanded">{debugInfo.rephrased}</div>
+                            </div>
+                        )}
+                        {debugInfo.bestParagraph && (
+                            <div className="debug-sub-section">
+                                <div className="debug-sub-header">פסקה נבחרת מהדף (Best Paragraph From Page)</div>
+                                <div className="debug-sub-content expanded">
+                                    {[
+                                        `page_id: ${debugInfo.bestParagraph.page_id ?? '-'}`,
+                                        `selection: ${debugInfo.bestParagraph.selection}`,
+                                        debugInfo.bestParagraph.section && `section: ${debugInfo.bestParagraph.section}`,
+                                        debugInfo.bestParagraph.content_preview && `preview: ${debugInfo.bestParagraph.content_preview}`,
+                                    ].filter(Boolean).join('\n')}
+                                </div>
+                            </div>
+                        )}
+                        {debugInfo.finalLLM && (
+                            <div className="debug-sub-section">
+                                <div className="debug-sub-header">
+                                    שאלה שנשלחה ל-LLM
+                                    {formatUsedLlm(debugInfo.finalLlm) && <span className="debug-llm-name"> · {formatUsedLlm(debugInfo.finalLlm)}</span>}
+                                </div>
+                                {/* Keyed by the prompt: messages are keyed by index, so without it the raw/collapsed
+                                    state would carry over to the message at the same index in another chat */}
+                                {PromptView
+                                    ? <PromptView key={debugInfo.finalLLM} raw={debugInfo.finalLLM} questionLlm={formatUsedLlm(debugInfo.judgeLlm)} />
+                                    : <div className="debug-sub-content expanded">{debugInfo.finalLLM}</div>}
+                            </div>
+                        )}
+
+                        {debugInfo.tokens && (
+                            <div className="debug-sub-section">
+                                <div className="debug-sub-header">שימוש בטוקנים (Tokens)</div>
+                                <div className="debug-sub-content expanded">
+                                    <table className="token-table">
+                                        <thead>
+                                        <tr>
+                                            <th>סוג</th>
+                                            <th>Prompt</th>
+                                            <th>Completion</th>
+                                            <th>Total</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {debugInfo.tokens.llm_answer_tokens && (
+                                            <tr>
+                                                <td className="token-row-title">
+                                                    תשובת LLM
+                                                    {formatUsedLlm(debugInfo.finalLlm) && <div className="debug-llm-name">{formatUsedLlm(debugInfo.finalLlm)}</div>}
+                                                </td>
+                                                <td>{debugInfo.tokens.llm_answer_tokens.prompt_tokens}</td>
+                                                <td>{debugInfo.tokens.llm_answer_tokens.completion_tokens}</td>
+                                                <td>{debugInfo.tokens.llm_answer_tokens.total_tokens}</td>
+                                            </tr>
+                                        )}
+                                        {debugInfo.tokens.judge_tokens && (
+                                            <tr>
+                                                <td className="token-row-title">
+                                                    LLM Judge
+                                                    {formatUsedLlm(debugInfo.judgeLlm) && <div className="debug-llm-name">{formatUsedLlm(debugInfo.judgeLlm)}</div>}
+                                                </td>
+                                                <td>{debugInfo.tokens.judge_tokens.prompt_tokens}</td>
+                                                <td>{debugInfo.tokens.judge_tokens.completion_tokens}</td>
+                                                <td>{debugInfo.tokens.judge_tokens.total_tokens}</td>
+                                            </tr>
+                                        )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    function RatingModal({ isOpen, onClose, onSubmit, score }) {
+        const [description, setDescription] = useState("");
+
+        useEffect(() => {
+            if (isOpen) setDescription("");
+        }, [isOpen]);
+
+        if (!isOpen) return null;
+
+        return (
+            <div className="modal-overlay" onClick={onClose}>
+                <div className="modal-content" onClick={e => e.stopPropagation()}>
+                    <h3 className="modal-title">
+                        {score === 'like' ? 'מה אהבת בתשובה?' : 'מה אפשר לשפר?'}
+                    </h3>
+                    <p style={{fontSize:'0.85rem', color:'#7f8c8d', marginBottom:'10px'}}>
+                        (אופציונלי - ניתן לשלוח גם ריק)
+                    </p>
+                    <textarea
+                        className="modal-textarea"
+                        placeholder="הוסף הערות כאן..."
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                    />
+                    <div className="modal-actions">
+                        <button className="modal-btn confirm" onClick={() => onSubmit(score, description)}>
+                            שלח דירוג
+                        </button>
+                        <button className="modal-btn cancel" onClick={onClose}>
+                            ביטול
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    function App() {
+        const [input, setInput] = useState("");
+        const [messages, setMessages] = useState([]);
+        const [loading, setLoading] = useState(false);
+        const [sessionId, setSessionId] = useState("");
+        const [history, setHistory] = useState([]);
+
+        const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+        const [pendingScore, setPendingScore] = useState(null);
+        const [pendingConversationId, setPendingConversationId] = useState(null);
+
+        const [streamingEnabled, setStreamingEnabled] = useState(false);
+        const [includeDebug, setIncludeDebug] = useState(true);
+        const [pageId, setPageId] = useState("");
+        const [execJudge, setExecJudge] = useState(true);
+        const [execRetrieval, setExecRetrieval] = useState(true);
+        const [execLLM, setExecLLM] = useState(true);
+        // '' = use the system-wide LLM; resets on every page load
+        const [llmConfig, setLlmConfig] = useState({ names: [], ask: '', judge: '' });
+        const [askLlm, setAskLlm] = useState('');
+        const [judgeLlm, setJudgeLlm] = useState('');
+
+        useEffect(() => {
+            fetch('/get_config').then(r => r.json()).then(cfg => {
+                setLlmConfig({ names: Object.keys(cfg.LLMS || {}), ask: cfg.ASK_LLM || '', judge: cfg.JUDGE_LLM || '' });
+            }).catch(err => console.error('Failed to load LLM list', err));
+        }, []);
+
+        const messagesEndRef = useRef(null);
+        const inputRef = useRef(null);
+
+        useEffect(() => {
+            loadHistory();
+            startNewChat();
+        }, []);
+
+        useEffect(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, [messages]);
+
+        const loadHistory = () => {
+            const saved = localStorage.getItem("kolzchut_chat_history");
+            if (saved) {
+                try { setHistory(JSON.parse(saved)); } catch (e) { console.error(e); }
+            }
+        };
+
+        const saveSessionToHistory = (currentSessId, currentMessages) => {
+            if (currentMessages.length === 0) return;
+            const preview = currentMessages.find(m => m.role === 'user')?.content || "שיחה חדשה";
+            const sessionData = {
+                id: currentSessId,
+                date: new Date().toISOString(),
+                preview: preview.substring(0, 40) + (preview.length > 40 ? "..." : ""),
+                messages: currentMessages
+            };
+            let newHistory = [...history].filter(h => h.id !== currentSessId);
+            newHistory.unshift(sessionData);
+            newHistory = newHistory.slice(0, 25);
+            setHistory(newHistory);
+            localStorage.setItem("kolzchut_chat_history", JSON.stringify(newHistory));
+        };
+
+        const startNewChat = () => {
+            const newId = uuidv4();
+            setSessionId(newId);
+            setMessages([]);
+            inputRef.current?.focus();
+        };
+
+        const loadPreviousChat = (session) => {
+            setSessionId(session.id);
+            setMessages(session.messages || []);
+        };
+
+        const downloadHistory = () => {
+            if (history.length === 0) return;
+            try {
+                const jsonString = JSON.stringify(history, null, 2);
+                const blob = new Blob([jsonString], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `kolzchut_history_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error("Failed to download history:", err);
+                alert("שגיאה בהורדת ההיסטוריה");
+            }
+        };
+
+        useEffect(() => {
+            if(sessionId && messages.length > 0) saveSessionToHistory(sessionId, messages);
+        }, [messages, sessionId]);
+
+        const handleRateMessage = (conversationId, score) => {
+            if (!conversationId) {
+                alert("Cannot rate this message (missing ID).");
+                return;
+            }
+            setPendingConversationId(conversationId);
+            setPendingScore(score);
+            setIsRatingModalOpen(true);
+        };
+
+        const submitRating = async (score, text) => {
+            setIsRatingModalOpen(false);
+
+            if (!pendingConversationId) return;
+
+            setMessages(prevMessages => prevMessages.map(msg =>
+                msg.conversationId === pendingConversationId
+                    ? { ...msg, rating: score }
+                    : msg
+            ));
+
+            try {
+                const scoreVal = score === 'like' ? 'like' : 'dislike';
+
+                const params = new URLSearchParams();
+                params.append('thread_id', sessionId);
+                params.append('conversation_id', pendingConversationId);
+                params.append('score', scoreVal);
+                if (text) params.append('text', text);
+                else params.append('text', "");
+
+                await fetch(`/rating?${params.toString()}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                console.log(`Rating saved for convo ${pendingConversationId}`);
+            } catch (err) {
+                console.error("Failed to send rating:", err);
+            }
+        };
+
+        const handleSend = async () => {
+            if (!input.trim() || loading) return;
+            const userText = input;
+            setInput("");
+            const newMessages = [...messages, { role: 'user', content: userText }];
+            setMessages(newMessages);
+            setLoading(true);
+            const botMsgId = Date.now();
+            setMessages(prev => [...prev, { id: botMsgId, role: 'bot', content: '', loading: true }]);
+
+            let resolvedPageId = null;
+            try {
+                resolvedPageId = await resolveSourcePage(pageId);
+            } catch (err) {
+                setMessages(prev => prev.map(msg => msg.id === botMsgId ? { ...msg, content: `שגיאה: ${err.message}`, loading: false } : msg));
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const endpoint = streamingEnabled ? '/search/stream' : '/search';
+                const payload = {
+                    query: userText,
+                    asked_from: window.location.href,
+                    thread_id: sessionId,
+                    include_debug_data: includeDebug,
+                    page_id: resolvedPageId,
+                    execution_flags: { llm_judge: execJudge, retrieval: execRetrieval, llm_answer: execLLM },
+                    ask_llm: askLlm || undefined,
+                    judge_llm: judgeLlm || undefined
+                };
+
+                if (streamingEnabled) await handleStreamingResponse(endpoint, payload, botMsgId);
+                else await handleStandardResponse(endpoint, payload, botMsgId);
+            } catch (error) {
+                console.error("Error:", error);
+                const errorMsg = error.message.includes('string indices')
+                    ? `שגיאה בשרת: ${error.message}`
+                    : `שגיאה: ${error.message}`;
+                setMessages(prev => prev.map(msg => msg.id === botMsgId ? { ...msg, content: errorMsg, loading: false } : msg));
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const handleStandardResponse = async (endpoint, payload, botMsgId) => {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                // Try to parse error details
+                const errText = await response.text();
+                let errMsg = `Server Error (${response.status})`;
+                try {
+                    const errJson = JSON.parse(errText);
+                    if (errJson.detail) errMsg = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+                } catch(e) {}
+                throw new Error(errMsg);
+            }
+
+            const data = await response.json();
+
+            const convoId = data.conversation_id || data.debug_data?.ids?.conversation_id || null;
+
+            const debugInfo = {
+                judgePrompt: data.debug_data?.general?.judge_prompt,
+                judgeLlm: data.debug_data?.general?.judge_llm,
+                rephrased: data.rephrased_question || data.debug_data?.general?.rephrased_question,
+                finalLLM: data.debug_data?.general?.question_to_send_to_llm,
+                finalLlm: data.debug_data?.general?.answer_llm,
+                tokens: data.debug_data?.tokens,
+                bestParagraph: data.debug_data?.general?.best_paragraph_from_page
+            };
+
+            setMessages(prev => prev.map(msg => msg.id === botMsgId ? {
+                ...msg,
+                content: data.llm_answer,
+                sources: data.docs || [],
+                loading: false,
+                debugInfo: debugInfo,
+                conversationId: convoId
+            } : msg));
+        };
+
+        const handleStreamingResponse = async (endpoint, payload, botMsgId) => {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                // Try to parse error details from body
+                const errText = await response.text();
+                let errMsg = `Server Error (${response.status})`;
+                try {
+                    const errJson = JSON.parse(errText);
+                    if (errJson.detail) errMsg = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+                } catch(e) {}
+                throw new Error(errMsg);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let accumulatedText = "";
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n\n');
+                buffer = lines.pop();
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.type === 'content') {
+                                accumulatedText += data.content;
+                                setMessages(prev => prev.map(msg => msg.id === botMsgId ? { ...msg, content: accumulatedText, loading: false } : msg));
+                            } else if (data.type === 'final_result') {
+                                const convoId = data.data?.conversation_id || data.data?.debug_data?.ids?.conversation_id || null;
+
+                                const debugInfo = {
+                                    judgePrompt: data.data?.debug_data?.general?.judge_prompt,
+                                    judgeLlm: data.data?.debug_data?.general?.judge_llm,
+                                    rephrased: data.data?.rephrased_question || data.data?.debug_data?.general?.rephrased_question,
+                                    finalLLM: data.data?.debug_data?.general?.question_to_send_to_llm,
+                                    finalLlm: data.data?.debug_data?.general?.answer_llm,
+                                    tokens: data.data?.debug_data?.tokens,
+                                    bestParagraph: data.data?.debug_data?.general?.best_paragraph_from_page
+                                };
+
+                                setMessages(prev => prev.map(msg => msg.id === botMsgId ? {
+                                    ...msg,
+                                    content: data.data.llm_answer,
+                                    sources: data.data.docs || [],
+                                    loading: false,
+                                    debugInfo: debugInfo,
+                                    conversationId: convoId
+                                } : msg));
+                            }
+                        } catch (e) { console.warn("Stream error", e); }
+                    }
+                }
+            }
+        };
+
+        return (
+            <div className="app-container">
+                <RatingModal
+                    isOpen={isRatingModalOpen}
+                    onClose={() => setIsRatingModalOpen(false)}
+                    onSubmit={submitRating}
+                    score={pendingScore}
+                />
+
+                <div className="sidebar">
+                    <div className="sidebar-header">
+                        <h3>בוט כל-זכות</h3>
+                    </div>
+                    <button className="action-btn" onClick={startNewChat}>
+                        <i className="fas fa-plus"></i> שיחה חדשה
+                    </button>
+                    <button className="action-btn download-btn" onClick={downloadHistory} disabled={history.length === 0}>
+                        <i className="fas fa-file-download"></i> הורד היסטוריה (JSON)
+                    </button>
+                    <div className="history-list">
+                        {history.map(item => (
+                            <div key={item.id} className={`history-item ${item.id === sessionId ? 'active' : ''}`} onClick={() => loadPreviousChat(item)}>
+                                <i className="far fa-comment-dots"></i> {item.preview}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="settings-area">
+                        <div className="settings-section-title">הגדרות כלליות</div>
+                        <div className="setting-group">
+                            <label className="toggle-container">
+                                <span>סטרימינג (Streaming)</span>
+                                <input type="checkbox" checked={streamingEnabled} onChange={(e) => setStreamingEnabled(e.target.checked)} />
+                            </label>
+                            <label className="toggle-container">
+                                <span>כלול מידע דיבאג</span>
+                                <input type="checkbox" checked={includeDebug} onChange={(e) => setIncludeDebug(e.target.checked)} />
+                            </label>
+                        </div>
+                        <div className="settings-section-title">בקרת שלבים</div>
+                        <div className="setting-group">
+                            <label className="toggle-container"><span>1. LLM Judge</span><input type="checkbox" checked={execJudge} onChange={(e) => setExecJudge(e.target.checked)} /></label>
+                            <label className="toggle-container"><span>2. Retrieval (אחזור)</span><input type="checkbox" checked={execRetrieval} onChange={(e) => setExecRetrieval(e.target.checked)} /></label>
+                            <label className="toggle-container"><span>3. LLM Answer</span><input type="checkbox" checked={execLLM} onChange={(e) => setExecLLM(e.target.checked)} /></label>
+                        </div>
+                        {llmConfig.names.length > 0 && (<>
+                        <div className="settings-section-title">בחירת מודל (LLM)</div>
+                        <div className="setting-group">
+                            <div className="input-group">
+                                <label>Judge LLM</label>
+                                <select value={judgeLlm} onChange={(e) => setJudgeLlm(e.target.value)}>
+                                    <option value="">ברירת מחדל של המערכת ({llmConfig.judge || '-'})</option>
+                                    {llmConfig.names.map(n => <option key={n} value={n}>{n}</option>)}
+                                </select>
+                            </div>
+                            <div className="input-group">
+                                <label>Answer LLM</label>
+                                <select value={askLlm} onChange={(e) => setAskLlm(e.target.value)}>
+                                    <option value="">ברירת מחדל של המערכת ({llmConfig.ask || '-'})</option>
+                                    {llmConfig.names.map(n => <option key={n} value={n}>{n}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        </>)}
+                        <div className="settings-section-title">פרמטרים מתקדמים</div>
+                        <div className="setting-group">
+                            <div className="input-group">
+                                <label>Page ID / Title (אופציונלי)</label>
+                                <input type="text" placeholder="לדוגמה: 1234 או 'דמי הבראה'" value={pageId} onChange={(e) => setPageId(e.target.value)} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="chat-area">
+                    <div className="chat-header">
+                        <div className="chat-title">צ'אט</div>
+                    </div>
+
+                    <div className="messages-container">
+                        {messages.length === 0 && (
+                            <div style={{textAlign:'center', marginTop: '100px', color: '#aaa'}}>
+                                <h2>שלום! איך אני יכול לעזור לך היום?</h2>
+                            </div>
+                        )}
+                        {messages.map((msg, index) => (
+                            <div key={index} className={`message ${msg.role}`}>
+                                <div className="message-content">
+                                    {msg.debugInfo && <DebugSection debugInfo={msg.debugInfo} />}
+                                    {msg.loading && !msg.content ? <span className="typing-indicator">מעבד</span> : msg.content}
+                                    {/* Only with debug data: the LLM that wrote this answer */}
+                                    {!msg.loading && formatUsedLlm(msg.debugInfo?.finalLlm) && (
+                                        <div className="answer-llm">
+                                            <i className="fas fa-robot"></i> {formatUsedLlm(msg.debugInfo.finalLlm)}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {msg.role === 'bot' && !msg.loading && (
+                                    <div className="message-footer">
+                                        {msg.sources && msg.sources.length > 0 && (
+                                            <div className="sources-list">
+                                                <div className="sources-title">מקורות:</div>
+                                                {msg.sources.map((doc, idx) => (
+                                                    <a key={idx} href={doc.url} target="_blank" className="source-link">
+                                                        <i className="fas fa-external-link-alt"></i> {doc.title}
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <div className="message-actions">
+                                            <button
+                                                className={`msg-rate-btn like ${msg.rating === 'like' ? 'active' : ''}`}
+                                                onClick={() => handleRateMessage(msg.conversationId, 'like')}
+                                                title="תשובה טובה"
+                                                disabled={!msg.conversationId}
+                                            >
+                                                <i className="fas fa-thumbs-up"></i>
+                                            </button>
+                                            <button
+                                                className={`msg-rate-btn dislike ${msg.rating === 'dislike' ? 'active' : ''}`}
+                                                onClick={() => handleRateMessage(msg.conversationId, 'dislike')}
+                                                title="תשובה לא טובה"
+                                                disabled={!msg.conversationId}
+                                            >
+                                                <i className="fas fa-thumbs-down"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    <div className="input-area">
+                        <input ref={inputRef} className="chat-input" type="text" placeholder="הקלד שאלה..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSend()} disabled={loading} />
+                        <button className="send-btn" onClick={handleSend} disabled={loading || !input.trim()}>
+                            <i className="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

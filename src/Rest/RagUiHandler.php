@@ -13,8 +13,9 @@ use RequestContext;
  * Serves the RAG backend's own HTML interfaces (admin / single tester / batch
  * runner) for the KZChatbot special pages to embed in an iframe.
  *
- * The backend HTML is third-party-controlled code: it loads unpinned scripts from
- * public CDNs, compiles JSX in the browser, and renders model output. It therefore
+ * The backend HTML is third-party-controlled code: it renders model output, and a
+ * backend built before kolzchut/chatbot PR #19 also loads unpinned scripts from
+ * public CDNs and compiles JSX in the browser. It therefore
  * runs SANDBOXED - both the iframe's sandbox attribute and this response's CSP
  * `sandbox` directive withhold allow-same-origin - so the document gets an opaque
  * origin. Whatever script runs in it cannot read the wiki's cookies or DOM, cannot
@@ -75,17 +76,53 @@ class RagUiHandler extends Handler {
 	/**
 	 * The backend's own JS/CSS files the interfaces load, inlined into the HTML.
 	 *
-	 * A sandboxed document cannot load them as separate files from the wiki: they
-	 * would be cross-origin requests from an opaque origin, and Babel standalone
-	 * fetches a `type="text/babel" src=` script with XHR, which MediaWiki's REST
-	 * API does not allow cross-origin. Only files named here are ever fetched.
+	 * A sandboxed document cannot load them as separate files from the wiki: a
+	 * relative URL resolves under rest.php/kzchatbot/v0/ragui/, which has no route
+	 * for them, and from the opaque origin any such request is cross-origin anyway
+	 * (Babel standalone even fetches a `type="text/babel" src=` script with XHR).
+	 * Only files named here are ever fetched, plus the fonts their stylesheets
+	 * reference (see inlineCssFonts()). Any other backend-relative script or
+	 * stylesheet is dropped, unfetched, for a "could not load" comment.
 	 * Value: the element the file is inlined as.
 	 */
 	private const INLINE_ASSETS = [
+		// The page shape before kolzchut/chatbot PR #19. Kept so a backend still
+		// on that build keeps working.
 		'prompt-parser.js' => 'script',
 		'prompt-view.js' => 'script',
 		'prompt-view.css' => 'style',
+		// Since kolzchut/chatbot PR #19 the pages load prebuilt bundles and
+		// vendored libraries instead of CDN scripts compiled by Babel standalone.
+		'build/vendor/react.production.min.js' => 'script',
+		'build/vendor/react-dom.production.min.js' => 'script',
+		'build/vendor/papaparse.min.js' => 'script',
+		'build/vendor/fontawesome/css/all.min.css' => 'style',
+		'build/js/prompt-view.js' => 'script',
+		'build/js/index.js' => 'script',
+		'build/js/admin.js' => 'script',
+		'build/js/batch-runner.js' => 'script',
 	];
+
+	/**
+	 * Font files an inlined stylesheet may have inlined as data: URIs, by
+	 * extension: the MIME type and the leading bytes the file must start with.
+	 * In order of preference; see inlineCssFonts().
+	 */
+	private const FONT_TYPES = [
+		'woff2' => [ 'font/woff2', [ 'wOF2' ] ],
+		'woff' => [ 'font/woff', [ 'wOFF' ] ],
+		'ttf' => [ 'font/ttf', [ "\x00\x01\x00\x00", 'true', 'OTTO' ] ],
+	];
+
+	/** Largest font file inlined, in bytes (Font Awesome 6's largest woff2 is ~155 KiB). */
+	private const FONT_MAX_BYTES = 512 * 1024;
+
+	/**
+	 * Most font bytes inlined into one document, counting a font once per url()
+	 * it replaces: CSS cannot share one data: URI between @font-face rules, and
+	 * Font Awesome 6 names each of its woff2 files up to three times (~0.9 MiB).
+	 */
+	private const FONT_BUDGET_BYTES = 2 * 1024 * 1024;
 
 	/**
 	 * Sandbox flags for the iframe attribute and the CSP `sandbox` directive.
@@ -99,6 +136,17 @@ class RagUiHandler extends Handler {
 	 */
 	public const SANDBOX_FLAGS = 'allow-scripts allow-forms allow-modals allow-downloads '
 		. 'allow-popups allow-popups-to-escape-sandbox';
+
+	/** @var callable Fetches a backend file; see the constructor */
+	private $fetchFile;
+
+	/**
+	 * @param callable|null $fetchFile Fetches a backend file: ( apiUrl, path, maxBytes )
+	 *  to contents or null. Defaults to an HTTP GET; tests pass a recording one.
+	 */
+	public function __construct( ?callable $fetchFile = null ) {
+		$this->fetchFile = $fetchFile ?? self::fetchBackendFile( ... );
+	}
 
 	/**
 	 * The iframe a special page embeds an interface with.
@@ -142,7 +190,7 @@ class RagUiHandler extends Handler {
 		}
 
 		$apiUrl = $mainConfig->get( 'KZChatbotLlmApiUrl' );
-		$html = self::fetchBackendFile( $apiUrl, $iface['file'] );
+		$html = ( $this->fetchFile )( $apiUrl, $iface['file'], 0 );
 		if ( $html === null ) {
 			return $this->errorResponse( 502, 'The RAG backend is unreachable.' );
 		}
@@ -161,10 +209,11 @@ class RagUiHandler extends Handler {
 		// with Access-Control-Allow-Origin, whatever `origin=*` says. The shim
 		// therefore relays calls to this URL to the embedding page, which performs
 		// them same-origin (see ext.KZChatbot.ragui).
+		// The rewrite runs after inlining: since kolzchut/chatbot PR #19 the URL is
+		// in the bundled build/js/*.js files, not in the HTML itself.
 		$localApi = $mainConfig->get( 'ScriptPath' ) . '/api.php';
-		$html = str_replace( 'https://www.kolzchut.org.il/w/he/api.php', $localApi, $html );
-
 		$html = $this->inlineAssets( $html, $apiUrl );
+		$html = str_replace( 'https://www.kolzchut.org.il/w/he/api.php', $localApi, $html );
 
 		$kzProxy = [
 			'paths' => $iface['proxyPaths'],
@@ -192,9 +241,11 @@ class RagUiHandler extends Handler {
 		$response->setHeader( 'X-Content-Type-Options', 'nosniff' );
 		// The `sandbox` directive is what contains this document: it also applies
 		// when the URL is opened directly rather than through the special page's
-		// iframe. The rest of the policy allows the backend HTML's CDN deps and
-		// inline/eval (Babel standalone); inside the sandbox they no longer run
-		// with the wiki's origin. Nothing in the frame reaches the wiki directly:
+		// iframe. The rest of the policy allows inline scripts and styles (the
+		// inlined assets), data: fonts (see inlineCssFonts()), and, for a backend
+		// still on the pre-PR #19 build, its CDN deps and eval (Babel standalone);
+		// inside the sandbox none of them run with the wiki's origin.
+		// Nothing in the frame reaches the wiki directly:
 		// RAG endpoint calls and page lookups both go through the relay, because
 		// from the opaque origin a direct call is cross-origin, which CSP's 'self'
 		// (matched against the document's URL) does not change.
@@ -216,8 +267,18 @@ class RagUiHandler extends Handler {
 
 	/**
 	 * Replace each <script src> / <link rel=stylesheet href> that names one of
-	 * self::INLINE_ASSETS (relative or root-absolute) with the file's contents,
-	 * inline. A script keeps its other attributes, so `type="text/babel"` survives.
+	 * self::INLINE_ASSETS (relative, `./`-relative or root-absolute) with the
+	 * file's contents, inline. A script keeps its other attributes, so
+	 * `type="text/babel"` survives. Fonts an inlined stylesheet names are
+	 * inlined too (inlineCssFonts()).
+	 *
+	 * Any other script or stylesheet whose URL is relative to the backend is
+	 * replaced, without being fetched, by a "could not load" comment: in the
+	 * sandbox it could only fail, as a request for a rest.php path with no route.
+	 * Absolute URLs (an old build's CDN scripts) are left to the CSP.
+	 *
+	 * It is a single pass, so nothing it inlines is scanned again, and it steps
+	 * over inline <script> bodies and HTML comments without changing them.
 	 *
 	 * @param string $html
 	 * @param string $apiUrl
@@ -225,43 +286,251 @@ class RagUiHandler extends Handler {
 	 */
 	private function inlineAssets( string $html, string $apiUrl ): string {
 		$cache = [];
-		$load = static function ( string $file ) use ( &$cache, $apiUrl ): ?string {
+		$fetch = $this->fetchFile;
+		$load = static function ( string $file, int $maxBytes = 0 ) use ( &$cache, $apiUrl, $fetch ): ?string {
 			if ( !array_key_exists( $file, $cache ) ) {
-				$cache[$file] = self::fetchBackendFile( $apiUrl, $file );
+				$cache[$file] = $fetch( $apiUrl, $file, $maxBytes );
 			}
 			return $cache[$file];
 		};
-		$names = implode( '|', array_map( 'preg_quote', array_keys( self::INLINE_ASSETS ) ) );
-
-		$html = preg_replace_callback(
-			'/<script\b([^>]*?)\ssrc=(["\'])\/?(' . $names . ')\2([^>]*)>\s*<\/script>/i',
-			static function ( array $m ) use ( $load ) {
-				$body = $load( $m[3] );
-				if ( $body === null || self::INLINE_ASSETS[$m[3]] !== 'script' ) {
-					return '<!-- KZChatbot: could not load ' . htmlspecialchars( $m[3] ) . ' -->';
-				}
-				// Nothing in the file may close the element early.
-				$body = preg_replace( '/<\/script/i', '<\\\\/script', $body );
-				return '<script' . $m[1] . $m[4] . ">\n" . $body . "\n</script>";
-			},
-			$html
-		);
+		$fontBudget = self::FONT_BUDGET_BYTES;
 
 		return preg_replace_callback(
-			'/<link\b[^>]*\shref=(["\'])\/?(' . $names . ')\1[^>]*>/i',
-			static function ( array $m ) use ( $load ) {
-				if ( !preg_match( '/\srel=(["\']?)stylesheet\1/i', $m[0] ) ) {
-					return $m[0];
+			'/<!--.*?-->'
+			. '|<script\b(?<pre>[^>]*?)\ssrc=(?<sq>["\'])(?<src>[^"\']*)\k<sq>(?<post>[^>]*)>\s*<\/script\s*>'
+			. '|<script\b[^>]*>.*?<\/script\s*>'
+			. '|<link\b[^>]*>/is',
+			function ( array $m ) use ( $load, &$fontBudget ) {
+				$tag = $m[0];
+				if ( isset( $m['src'] ) && $m['src'] !== '' ) {
+					return $this->inlineScript( $m['src'], $m['pre'], $m['post'], $tag, $load );
 				}
-				$body = $load( $m[2] );
-				if ( $body === null || self::INLINE_ASSETS[$m[2]] !== 'style' ) {
-					return '<!-- KZChatbot: could not load ' . htmlspecialchars( $m[2] ) . ' -->';
+				if ( !preg_match( '/^<link\b/i', $tag )
+					|| !preg_match( '/\srel=(["\']?)stylesheet\1/i', $tag )
+					|| !preg_match( '/\shref=(["\'])([^"\']*)\1/i', $tag, $href )
+				) {
+					return $tag;
 				}
+				$file = self::assetPath( $href[2] );
+				if ( $file === null ) {
+					return $tag;
+				}
+				$body = ( self::INLINE_ASSETS[$file] ?? null ) === 'style' ? $load( $file ) : null;
+				if ( $body === null ) {
+					return self::couldNotLoad( $file );
+				}
+				$body = self::inlineCssFonts( $body, $file, $load, $fontBudget );
 				$body = preg_replace( '/<\/style/i', '<\\\\/style', $body );
 				return "<style>\n" . $body . "\n</style>";
 			},
 			$html
 		);
+	}
+
+	/**
+	 * @param string $src The script's src attribute
+	 * @param string $pre Attributes before src
+	 * @param string $post Attributes after src
+	 * @param string $tag The whole element
+	 * @param callable $load
+	 * @return string
+	 */
+	private function inlineScript( string $src, string $pre, string $post, string $tag, callable $load ): string {
+		$file = self::assetPath( $src );
+		if ( $file === null ) {
+			return $tag;
+		}
+		$body = ( self::INLINE_ASSETS[$file] ?? null ) === 'script' ? $load( $file ) : null;
+		if ( $body === null ) {
+			return self::couldNotLoad( $file );
+		}
+		// Nothing in the file may close the element early.
+		$body = preg_replace( '/<\/script/i', '<\\\\/script', $body );
+		return '<script' . $pre . $post . ">\n" . $body . "\n</script>";
+	}
+
+	/**
+	 * The backend path an asset URL in the backend HTML names, or null for one
+	 * that is not relative to the backend (has a scheme, or is protocol-relative).
+	 *
+	 * @param string $url
+	 * @return string|null
+	 */
+	private static function assetPath( string $url ): ?string {
+		$url = trim( $url );
+		if ( preg_match( '/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i', $url ) ) {
+			return null;
+		}
+		return preg_replace( '/^(?:\.\/|\/)/', '', $url );
+	}
+
+	/**
+	 * @param string $file
+	 * @return string
+	 */
+	private static function couldNotLoad( string $file ): string {
+		return '<!-- KZChatbot: could not load ' . str_replace( '--', '-&#45;', htmlspecialchars( $file ) ) . ' -->';
+	}
+
+	/**
+	 * Rewrite the fonts an inlined stylesheet names into data: URIs.
+	 *
+	 * Font Awesome's all.min.css names its webfonts as `url(../webfonts/…)`. In
+	 * the sandbox that resolves under rest.php/kzchatbot/v0/, and from the opaque
+	 * origin a font request is a CORS request the wiki does not answer, so no
+	 * icon would render. The CSP allows data: fonts.
+	 *
+	 * For each `src:` list in an @font-face rule, at most one entry is inlined:
+	 * the first woff2 that loads; a woff, then a ttf, only when the list has no
+	 * woff2 entry at all (the browser stops at the first src it can use, and a
+	 * ttf is two to three times the size). The other relative entries are
+	 * dropped, since in the sandbox they could only fail. local() entries and
+	 * absolute URLs are kept as they are. A rule left with nothing is left
+	 * without its src, which the browser ignores, plus a comment saying why.
+	 *
+	 * What may be fetched is derived from the allowlisted stylesheet only:
+	 * - the url() must be relative to the stylesheet: no scheme, not root-
+	 *   absolute or protocol-relative, only [A-Za-z0-9._~/-] (no %-escapes,
+	 *   backslashes or spaces), with any ?query / #fragment ignored;
+	 * - it is resolved against the stylesheet's own path, and refused if a `..`
+	 *   climbs above the backend's static root;
+	 * - it must end in .woff2, .woff or .ttf, and the file must start with that
+	 *   format's signature;
+	 * - each file is at most FONT_MAX_BYTES, and one document gets at most
+	 *   FONT_BUDGET_BYTES of inlined fonts, counting a font once per rule it is
+	 *   inlined into. A font past either limit is left out, and its icons with it.
+	 *
+	 * Limits: only url()s inside @font-face src descriptors are handled, not CSS
+	 * imports or images; the parser is a set of regexes over the CSS, written for
+	 * well-formed stylesheets like Font Awesome's, and a rule whose src it cannot
+	 * read is left as it is.
+	 *
+	 * @param string $css
+	 * @param string $cssPath The stylesheet's path below the backend's static root
+	 * @param callable $load ( path, maxBytes ) to contents or null
+	 * @param int &$budget Font bytes this document may still inline
+	 * @return string
+	 */
+	private static function inlineCssFonts( string $css, string $cssPath, callable $load, int &$budget ): string {
+		// One CSS token: a quoted string, a function call (url(), format(), local())
+		// whose argument holds no unquoted ')', or any other character in $other.
+		$token = static fn ( string $other ) => '(?:[a-z-]+\((?:"[^"]*"|\'[^\']*\'|[^)"\'])*\)'
+			. '|"[^"]*"|\'[^\']*\'|[^' . $other . '"\'(])';
+
+		return preg_replace_callback( '/@font-face\s*\{[^}]*\}/i', static function ( array $rule ) use (
+			$token, $cssPath, $load, &$budget
+		) {
+			return preg_replace_callback(
+				'/(?<![\w-])src\s*:\s*(' . $token( ';}' ) . '+)/i',
+				static function ( array $decl ) use ( $token, $cssPath, $load, &$budget ) {
+					preg_match_all( '/' . $token( ',' ) . '+/i', $decl[1], $parts );
+					return self::rewriteFontSrc( array_map( 'trim', $parts[0] ), $cssPath, $load, $budget );
+				},
+				$rule[0]
+			);
+		}, $css );
+	}
+
+	/**
+	 * @param string[] $entries The entries of one @font-face src list
+	 * @param string $cssPath
+	 * @param callable $load
+	 * @param int &$budget
+	 * @return string The src declaration to use, or a comment if none is left
+	 */
+	private static function rewriteFontSrc( array $entries, string $cssPath, callable $load, int &$budget ): string {
+		$kept = [];
+		// Per relative entry: [ index in $kept, resolved path or null, extension, format hint ]
+		$candidates = [];
+		foreach ( $entries as $entry ) {
+			if ( !preg_match( '/^url\(\s*(?:"([^"]*)"|\'([^\']*)\'|([^)\s]*))\s*\)\s*(.*)$/is', $entry, $m ) ) {
+				// local(), or something this does not understand: leave it.
+				$kept[] = $entry;
+				continue;
+			}
+			$url = $m[1] . ( $m[2] ?? '' ) . ( $m[3] ?? '' );
+			if ( preg_match( '/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i', $url ) ) {
+				$kept[] = $entry;
+				continue;
+			}
+			$path = self::resolveFontPath( $cssPath, $url );
+			$ext = $path === null ? null : strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
+			$candidates[] = [ count( $kept ), $path, $ext, $m[4] ];
+			$kept[] = null;
+		}
+		if ( !$candidates ) {
+			return 'src:' . implode( ',', $entries );
+		}
+
+		$hasType = static fn ( string $t ) => (bool)array_filter( $candidates, static fn ( $c ) => $c[2] === $t );
+		$chosen = $hasType( 'woff2' ) ? [ 'woff2' ] : [ 'woff', 'ttf' ];
+		$notes = [];
+		$done = false;
+		foreach ( $chosen as $type ) {
+			foreach ( $candidates as [ $slot, $path, $ext, $format ] ) {
+				if ( $done || $ext !== $type ) {
+					continue;
+				}
+				[ $mime, $signatures ] = self::FONT_TYPES[$type];
+				$font = (string)$load( $path, self::FONT_MAX_BYTES );
+				$valid = $font !== '' && strlen( $font ) <= self::FONT_MAX_BYTES
+					&& (bool)array_filter( $signatures, static fn ( $sig ) => str_starts_with( $font, $sig ) );
+				if ( !$valid ) {
+					$notes[] = "could not load $path";
+					continue;
+				}
+				if ( strlen( $font ) > $budget ) {
+					$notes[] = "font budget exhausted, left out $path";
+					continue;
+				}
+				$budget -= strlen( $font );
+				$kept[$slot] = 'url("data:' . $mime . ';base64,' . base64_encode( $font ) . '")'
+					. ( $format !== '' ? ' ' . $format : '' );
+				$done = true;
+			}
+		}
+		foreach ( $candidates as [ , $path, $ext ] ) {
+			if ( $path === null ) {
+				$notes[] = 'refused a font URL that is not a plain path inside the backend\'s static files';
+			} elseif ( !isset( self::FONT_TYPES[$ext] ) ) {
+				$notes[] = "left out $path, not woff2, woff or ttf";
+			}
+		}
+
+		$kept = array_filter( $kept, static fn ( $e ) => $e !== null );
+		$note = $notes ? '/* KZChatbot: ' . implode( '; ', array_unique( $notes ) ) . ' */' : '';
+		return $kept ? 'src:' . implode( ',', $kept ) . $note : $note;
+	}
+
+	/**
+	 * Resolve a font url() against the stylesheet that names it.
+	 *
+	 * @param string $cssPath The stylesheet's path below the backend's static root
+	 * @param string $url A relative url() from that stylesheet
+	 * @return string|null The font's path below the static root, or null if the
+	 *  URL is refused for its shape or for leaving the root (see inlineCssFonts())
+	 */
+	private static function resolveFontPath( string $cssPath, string $url ): ?string {
+		$url = preg_replace( '/[?#].*$/s', '', trim( $url ) );
+		if ( $url === '' || $url[0] === '/' || !preg_match( '/^[A-Za-z0-9._~\/-]+$/', $url ) ) {
+			return null;
+		}
+		$segments = explode( '/', $cssPath );
+		array_pop( $segments );
+		foreach ( explode( '/', $url ) as $segment ) {
+			if ( $segment === '' || $segment === '.' ) {
+				continue;
+			}
+			if ( $segment === '..' ) {
+				if ( !$segments ) {
+					return null;
+				}
+				array_pop( $segments );
+				continue;
+			}
+			$segments[] = $segment;
+		}
+		return implode( '/', $segments );
 	}
 
 	/**
@@ -285,21 +554,27 @@ class RagUiHandler extends Handler {
 	/**
 	 * @param string $apiUrl
 	 * @param string $file
+	 * @param int $maxBytes Give up on a file larger than this; 0 for no limit
 	 * @return string|null File contents, or null on failure
 	 */
-	private static function fetchBackendFile( string $apiUrl, string $file ): ?string {
+	private static function fetchBackendFile( string $apiUrl, string $file, int $maxBytes = 0 ): ?string {
 		$url = rtrim( $apiUrl, '/' ) . '/' . ltrim( $file, '/' );
+		$body = '';
 		$ch = curl_init( $url );
 		curl_setopt_array( $ch, [
-			CURLOPT_RETURNTRANSFER => true,
 			CURLOPT_TIMEOUT => 30,
+			// Stop reading once past the limit, rather than buffering all of it.
+			CURLOPT_WRITEFUNCTION => static function ( $ch, string $chunk ) use ( &$body, $maxBytes ): int {
+				if ( $maxBytes > 0 && strlen( $body ) + strlen( $chunk ) > $maxBytes ) {
+					return 0;
+				}
+				$body .= $chunk;
+				return strlen( $chunk );
+			},
 		] );
-		$body = curl_exec( $ch );
-		$failed = curl_errno( $ch ) || curl_getinfo( $ch, CURLINFO_HTTP_CODE ) >= 400;
-		if ( $body === false || $failed ) {
-			return null;
-		}
-		return $body;
+		$ok = curl_exec( $ch );
+		$failed = !$ok || curl_errno( $ch ) || curl_getinfo( $ch, CURLINFO_HTTP_CODE ) >= 400;
+		return $failed ? null : $body;
 	}
 
 	/**

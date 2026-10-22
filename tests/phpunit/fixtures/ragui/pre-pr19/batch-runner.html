@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>מערכת הרצת שאלות (Batch Runner)</title>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        // Override Babel standalone's react preset to use classic JSX runtime.
+        // This avoids "import statement outside a module" errors caused by the
+        // automatic runtime (which generates import statements in transpiled code).
+        if (typeof Babel !== 'undefined') {
+            var origReactPreset = Babel.availablePresets.react;
+            Babel.availablePresets.react = function (api, opts) {
+                return origReactPreset(api, Object.assign({}, opts || {}, { runtime: 'classic' }));
+            };
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Structured view of the prompt sent to the LLM ("Question sent to LLM" column) -->
+    <link href="prompt-view.css" rel="stylesheet">
+    <script src="prompt-parser.js"></script>
+    <script type="text/babel" src="prompt-view.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --danger-color: #e74c3c;
+            --bg-color: #f4f6f9;
+            --sidebar-bg: #2c3e50;
+            --sidebar-text: #ecf0f1;
+            --border-color: #dee2e6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        #root { width: 100%; height: 100%; display: flex; }
+
+        .app-container { display: flex; width: 100%; height: 100%; }
+
+        .sidebar {
+            width: 300px;
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            flex-shrink: 0;
+            overflow-y: auto;
+            border-left: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .sidebar-header { margin-bottom: 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
+
+        .control-panel { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+
+        .btn {
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
+
+        .btn-primary { background-color: var(--primary-color); }
+        .btn-success { background-color: var(--success-color); }
+        .btn-danger { background-color: var(--danger-color); }
+        .btn-outline { background-color: transparent; border: 1px solid rgba(255,255,255,0.3); }
+
+        .settings-section { margin-top: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; }
+        .settings-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; color: #bdc3c7; }
+
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.9rem; }
+        .input-row { margin-bottom: 10px; }
+        .input-row label { display: block; font-size: 0.8rem; margin-bottom: 4px; color: #bdc3c7; }
+        .input-row input {
+            width: 100%; padding: 6px; border-radius: 4px; border: 1px solid #555;
+            background: rgba(255,255,255,0.1); color: white;
+        }
+
+        .input-row select {
+            width: 100%;
+            padding: 8px 12px 8px 32px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background-color: rgba(255,255,255,0.08);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23bdc3c7' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 12px center;
+            color: white;
+            font-size: 0.85rem;
+            font-family: inherit;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            text-overflow: ellipsis;
+            transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+        }
+        .input-row select:hover:not(:disabled) { background-color: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.35); }
+        .input-row select:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.25); }
+        .input-row select:disabled { opacity: 0.5; cursor: not-allowed; }
+        .input-row select option { background: #2c3e50; color: white; }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            overflow: hidden;
+        }
+
+        .top-bar {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+        }
+
+        .stats { font-size: 0.9rem; color: #555; display: flex; gap: 15px; }
+        .stat-item b { color: var(--primary-color); }
+
+        .table-container {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            text-align: right;
+            padding: 12px;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--border-color);
+            color: #2c3e50;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        tr:hover { background-color: #f1f2f6; }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            display: inline-block;
+            min-width: 80px;
+            text-align: center;
+        }
+        .status-idle { background-color: #e0e0e0; color: #555; }
+        .status-loading { background-color: #fff3cd; color: #856404; }
+        .status-done { background-color: #d4edda; color: #155724; }
+        .status-error { background-color: #f8d7da; color: #721c24; }
+
+        .cell-answer {
+            max-width: 400px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .cell-input {
+            width: 100%;
+            border: 1px solid transparent;
+            background: transparent;
+            font-family: inherit;
+            font-size: inherit;
+        }
+        .cell-input:focus { border-color: var(--primary-color); background: white; outline: none; }
+        .cell-input.subtle { color: #7f8c8d; font-size: 0.85rem; }
+
+        .meta-info { font-size: 0.75rem; color: #7f8c8d; margin-top: 5px; }
+        .meta-info.llm-info { font-family: Consolas, monospace; direction: ltr; text-align: left; }
+
+        .fa-spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .danger-btn {
+            width: 100%;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px; /* spacing from previous buttons */
+        }
+
+        .danger-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .danger-btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            color: #333; /* Ensure text is visible on white */
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            color: #e74c3c;
+        }
+
+        .modal-header i {
+            font-size: 2rem;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .modal-body {
+            margin-bottom: 25px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .modal-body p {
+            margin-bottom: 10px;
+        }
+
+        .modal-body strong {
+            color: #e74c3c;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .modal-btn-cancel {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #7f8c8d;
+        }
+
+        .modal-btn-confirm {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .modal-btn-confirm:hover {
+            background: #c0392b;
+        }
+
+        .modal-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // ========== UTILITIES ==========
+
+    function uuidv4() {
+        return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+    }
+
+    // ========== API SERVICE ==========
+
+    const WikiAPI = {
+        baseUrl: 'https://www.kolzchut.org.il/w/he/api.php',
+
+        async getPageId(title) {
+            const params = new URLSearchParams({
+                action: 'query',
+                format: 'json',
+                titles: title,
+                formatversion: '2',
+                origin: '*'
+            });
+
+            try {
+                const response = await fetch(`${this.baseUrl}?${params}`);
+                const data = await response.json();
+                const page = data.query.pages[0];
+
+                if (page.missing) {
+                    throw new Error(`Page not found: ${title}`);
+                }
+
+                return page.pageid;
+            } catch (error) {
+                console.error('Error fetching page ID:', error);
+                throw error;
+            }
+        }
+    };
+
+    // ========== SOURCE PAGE HANDLER ==========
+
+    async function resolveSourcePage(sourcePage) {
+        if (!sourcePage || sourcePage.toString().trim() === "") {
+            return null;
+        }
+
+        const trimmed = sourcePage.toString().trim();
+
+        // Check if it's already a number
+        if (/^\d+$/.test(trimmed)) {
+            return parseInt(trimmed);
+        }
+
+        // It's a title, fetch the page ID
+        try {
+            const pageId = await WikiAPI.getPageId(trimmed);
+            return pageId;
+        } catch (error) {
+            throw new Error(`Failed to resolve page: ${trimmed}`);
+        }
+    }
+
+    // ========== CSV PARSING ==========
+
+    function parseCSVRow(row) {
+        return {
+            id: uuidv4(),
+            threadId: row.threadId || row['threadId'] || row.thread_id || "",
+            sourcePage: row.sourcePage || row['sourcePage'] || row.source_page || row.pageId || row['pageId'] || row.page_id || "",
+            questionNumber: row.questionNumber || row['questionNumber'] || row.question_number || "",
+            question: row.question || row['question'] || "",
+            answer: "",
+            intermediateQuery: "",
+            finalLLM: row.finalLLM || row['finalLLM'] || row.final_llm_prompt || row['final_llm_prompt'] || "",
+            standaloneQuestion: "", // New field
+            docs: [],
+            timers: {},
+            tokens: {},
+            status: "idle",
+            errorMsg: ""
+        };
+    }
+
+    // ========== CSV EXPORT ==========
+
+    function buildExportRow(row) {
+        const csvRow = {
+            threadId: row.threadId,
+            sourcePage: row.sourcePage,
+            questionNumber: row.questionNumber,
+            question: row.question,
+            answer: row.answer,
+            question_to_send_to_llm: row.intermediateQuery,
+            finalLLM: row.finalLLM || row.intermediateQuery || "",
+            standalone_question: row.standaloneQuestion, // Export new field
+            docs_urls: (row.docs || []).map(d => d.url).join(', '),
+            status: row.status,
+            error: row.errorMsg
+        };
+
+        const docsStr = (row.docs || [])
+            .map(d => `[${d.id}] ${d.title}`)
+            .join('; ');
+        csvRow['retrieved_docs'] = docsStr;
+
+        if (row.timers) {
+            Object.entries(row.timers).forEach(([key, value]) => {
+                csvRow[`timer_${key}`] = value;
+            });
+        }
+
+        if (row.llmNames) {
+            csvRow['answer_llm'] = row.llmNames.answer;
+            csvRow['judge_llm'] = row.llmNames.judge;
+        }
+
+        if (row.tokens) {
+            if (row.tokens.judge_tokens) {
+                csvRow['judge_prompt_tokens'] = row.tokens.judge_tokens.prompt_tokens;
+                csvRow['judge_completion_tokens'] = row.tokens.judge_tokens.completion_tokens;
+                csvRow['judge_total_tokens'] = row.tokens.judge_tokens.total_tokens;
+            }
+            if (row.tokens.llm_answer_tokens) {
+                csvRow['llm_prompt_tokens'] = row.tokens.llm_answer_tokens.prompt_tokens;
+                csvRow['llm_completion_tokens'] = row.tokens.llm_answer_tokens.completion_tokens;
+                csvRow['llm_total_tokens'] = row.tokens.llm_answer_tokens.total_tokens;
+            }
+        }
+
+        return csvRow;
+    }
+
+    function exportToCSV(rows) {
+        if (rows.length === 0) return;
+
+        const exportData = rows.map(buildExportRow);
+        const csv = Papa.unparse(exportData);
+        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute("download", `batch_results_${new Date().toISOString().slice(0,19)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // ========== API REQUEST HANDLERS ==========
+
+    async function buildRequestPayload(row, settings) {
+        const resolvedPageId = await resolveSourcePage(row.sourcePage);
+
+        return {
+            query: row.question,
+            asked_from: "batch_runner",
+            thread_id: row.threadId,
+            page_id: resolvedPageId,
+            include_debug_data: settings.includeDebug,
+            execution_flags: {
+                llm_judge: settings.execJudge,
+                retrieval: settings.execRetrieval,
+                llm_answer: settings.execLLM
+            },
+            ask_llm: settings.askLlm || undefined,
+            judge_llm: settings.judgeLlm || undefined
+        };
+    }
+
+    function extractResponseData(data) {
+        const finalLLM = data.debug_data?.general?.question_to_send_to_llm || data.question_to_send_to_llm || "";
+
+        return {
+            answer: data.llm_answer || JSON.stringify(data),
+            intermediateQuery: finalLLM,
+            finalLLM,
+            standaloneQuestion: data.rephrased_question || "",
+            docs: data.docs || [],
+            timers: data.timers || {},
+            tokens: data.debug_data?.tokens || {},
+            llmNames: {
+                answer: formatUsedLlm(data.debug_data?.general?.answer_llm),
+                judge: formatUsedLlm(data.debug_data?.general?.judge_llm)
+            }
+        };
+    }
+
+    // The LLM the LLM Manager actually sent the request to ({provider, model, name?}) as one CSV cell
+    function formatUsedLlm(llm) {
+        if (!llm || typeof llm !== 'object') return "";
+        const providerAndModel = [llm.provider, llm.model].filter(Boolean).join(' / ');
+        if (llm.name) return providerAndModel ? `${llm.name} (${providerAndModel})` : llm.name;
+        return providerAndModel;
+    }
+
+    async function processStandardRequest(endpoint, payload, signal) {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return extractResponseData(data);
+    }
+
+    async function processStreamChunk(line, accumulated) {
+        if (!line.startsWith('data: ')) return accumulated;
+
+        try {
+            const jsonStr = line.slice(6);
+            if (jsonStr === '[DONE]') return accumulated;
+
+            const data = JSON.parse(jsonStr);
+
+            if (data.type === 'content') {
+                accumulated.text += data.content;
+            } else if (data.type === 'final_result') {
+                accumulated.text = data.data.llm_answer;
+                accumulated.docs = data.data.docs || [];
+                accumulated.timers = data.data.timers || {};
+                const finalLLM = data.data.debug_data?.general?.question_to_send_to_llm ||
+                                 data.data.question_to_send_to_llm || "";
+                accumulated.intermediateQuery = finalLLM;
+                accumulated.finalLLM = finalLLM;
+                accumulated.standaloneQuestion = data.data.rephrased_question || ""; // Extract rephrased_question from stream
+                accumulated.tokens = data.data.debug_data?.tokens || {}; // Extract tokens from stream
+                accumulated.llmNames = {
+                    answer: formatUsedLlm(data.data.debug_data?.general?.answer_llm),
+                    judge: formatUsedLlm(data.data.debug_data?.general?.judge_llm)
+
+                };
+            }
+        } catch (e) {
+            console.error('Error parsing stream chunk:', e);
+        }
+
+        return accumulated;
+    }
+
+    async function processStreamRequest(endpoint, payload, rowId, updateCallback, signal) {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let accumulated = { text: "", docs: [], timers: {}, intermediateQuery: "", finalLLM: "", standaloneQuestion: "", tokens: {} };
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+                accumulated = await processStreamChunk(line, accumulated);
+                updateCallback(rowId, 'loading', {
+                    answer: accumulated.text,
+                    intermediateQuery: accumulated.intermediateQuery,
+                    finalLLM: accumulated.finalLLM,
+                    standaloneQuestion: accumulated.standaloneQuestion
+                });
+            }
+        }
+
+        return {
+            answer: accumulated.text,
+            intermediateQuery: accumulated.intermediateQuery,
+            finalLLM: accumulated.finalLLM,
+            standaloneQuestion: accumulated.standaloneQuestion,
+            docs: accumulated.docs,
+            timers: accumulated.timers,
+            tokens: accumulated.tokens,
+            llmNames: accumulated.llmNames
+        };
+    }
+
+    // ========== MAIN COMPONENT ==========
+
+    function App() {
+        const [rows, setRows] = useState([]);
+        const [isProcessing, setIsProcessing] = useState(false);
+        const [progress, setProgress] = useState({ total: 0, done: 0, success: 0, failed: 0 });
+
+        const [streamingEnabled, setStreamingEnabled] = useState(false);
+        const [includeDebug, setIncludeDebug] = useState(true);
+        const [execJudge, setExecJudge] = useState(true);
+        const [execRetrieval, setExecRetrieval] = useState(true);
+        const [execLLM, setExecLLM] = useState(true);
+        // '' = use the system-wide LLM; resets on every page load
+        const [llmConfig, setLlmConfig] = useState({ names: [], ask: '', judge: '' });
+        const [askLlm, setAskLlm] = useState('');
+        const [judgeLlm, setJudgeLlm] = useState('');
+
+        useEffect(() => {
+            fetch('/get_config').then(r => r.json()).then(cfg => {
+                setLlmConfig({ names: Object.keys(cfg.LLMS || {}), ask: cfg.ASK_LLM || '', judge: cfg.JUDGE_LLM || '' });
+            }).catch(err => console.error('Failed to load LLM list', err));
+        }, []);
+
+        const [showModal, setShowModal] = useState(false);
+        const [isDeletingHistory, setIsDeletingHistory] = useState(false);
+
+        // Row whose "Question sent to LLM" is open in the structured view
+        const [promptRowId, setPromptRowId] = useState(null);
+        const { PromptCellPreview, PromptViewModal } = window.KZPromptView || {};
+        const promptRow = promptRowId ? rows.find(r => r.id === promptRowId) : null;
+        // The prompt of the row's latest run; before the row runs, the one imported from the CSV
+        const promptOf = row => row.intermediateQuery || (row.status === 'idle' ? row.finalLLM : '');
+        // The LLM the LLM Manager used for the row's latest run ('answer' / 'judge'); none while it runs again
+        const llmOf = (row, kind) => (row.status === 'done' && row.llmNames?.[kind]) || '';
+
+        const abortControllerRef = useRef(null);
+
+        const settings = {
+            streamingEnabled,
+            includeDebug,
+            execJudge,
+            execRetrieval,
+            execLLM,
+            askLlm,
+            judgeLlm
+        };
+
+        const handleFileUpload = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    const newRows = results.data.map(parseCSVRow);
+                    setRows(prev => [...prev, ...newRows]);
+                }
+            });
+            e.target.value = null;
+        };
+
+        const handleExport = () => exportToCSV(rows);
+
+        const clearTable = () => {
+            if (confirm("האם אתה בטוח שברצונך לנקות את הטבלה?")) {
+                setRows([]);
+                setProgress({ total: 0, done: 0, success: 0, failed: 0 });
+            }
+        };
+
+        const addNewRow = () => {
+            setRows(prev => [...prev, {
+                ...parseCSVRow({}),
+                threadId: uuidv4(),
+                questionNumber: prev.length + 1
+            }]);
+        };
+
+        const updateRowData = (id, field, value) => {
+            setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
+        };
+
+        const deleteRow = (id) => {
+            setRows(prev => prev.filter(r => r.id !== id));
+        };
+
+        const updateRowStatus = (id, status, data = {}) => {
+            setRows(prev => prev.map(r => {
+                if (r.id !== id) return r;
+                return {
+                    ...r,
+                    status,
+                    answer: data.answer !== undefined ? data.answer : r.answer,
+                    intermediateQuery: data.intermediateQuery !== undefined ? data.intermediateQuery : r.intermediateQuery,
+                    finalLLM: data.finalLLM !== undefined ? data.finalLLM : r.finalLLM,
+                    standaloneQuestion: data.standaloneQuestion !== undefined ? data.standaloneQuestion : r.standaloneQuestion,
+                    docs: data.docs || r.docs,
+                    timers: data.timers || r.timers,
+                    tokens: data.tokens || r.tokens,
+                    llmNames: data.llmNames || r.llmNames,
+                    errorMsg: data.errorMsg || ""
+                };
+            }));
+        };
+
+        const handleDeleteHistory = async () => {
+            setIsDeletingHistory(true);
+            try {
+                const response = await fetch('/clean_redis_history', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    alert('היסטוריית Redis נמחקה בהצלחה!');
+                } else {
+                    alert('שגיאה במחיקת ההיסטוריה');
+                }
+            } catch (error) {
+                console.error('Error deleting history:', error);
+                alert('שגיאה בתקשורת עם השרת');
+            } finally {
+                setIsDeletingHistory(false);
+                setShowModal(false);
+            }
+        };
+
+        const runBatch = async () => {
+            setIsProcessing(true);
+            abortControllerRef.current = new AbortController();
+            const signal = abortControllerRef.current.signal;
+
+            const rowsToProcess = rows.filter(r => r.status === 'idle' || r.status === 'error');
+
+            for (const row of rowsToProcess) {
+                if (signal.aborted) break;
+
+                updateRowStatus(row.id, 'loading');
+
+                try {
+                    const payload = await buildRequestPayload(row, settings);
+                    const endpoint = streamingEnabled ? '/search/stream' : '/search';
+
+                    let result;
+                    if (streamingEnabled) {
+                        result = await processStreamRequest(endpoint, payload, row.id, updateRowStatus, signal);
+                    } else {
+                        result = await processStandardRequest(endpoint, payload, signal);
+                    }
+
+                    updateRowStatus(row.id, 'done', result);
+                } catch (err) {
+                    if (err.name === 'AbortError') break;
+                    console.error(`Error processing row ${row.id}`, err);
+                    updateRowStatus(row.id, 'error', { errorMsg: err.message });
+                }
+
+                setProgress(prev => ({ ...prev, done: prev.done + 1 }));
+            }
+
+            setIsProcessing(false);
+        };
+
+        const stopBatch = () => {
+            if (abortControllerRef.current) abortControllerRef.current.abort();
+            setIsProcessing(false);
+        };
+
+        useEffect(() => {
+            const done = rows.filter(r => r.status === 'done').length;
+            const failed = rows.filter(r => r.status === 'error').length;
+            setProgress({
+                total: rows.length,
+                done: done + failed,
+                success: done,
+                failed: failed
+            });
+        }, [rows]);
+
+        return (
+            <div className="app-container">
+                <div className="sidebar">
+                    <div className="sidebar-header">
+                        <h3><i className="fas fa-robot"></i> מנהל הרצות</h3>
+                    </div>
+
+                    <div className="control-panel">
+                        <label className="btn btn-primary">
+                            <i className="fas fa-file-upload"></i> טען CSV
+                            <input type="file" accept=".csv" hidden onChange={handleFileUpload} />
+                        </label>
+                        <button
+                            className="danger-btn"
+                            onClick={() => setShowModal(true)}
+                            disabled={isDeletingHistory}
+                        >
+                            <i className="fas fa-trash-alt"></i>
+                            <span>מחק היסטוריית Redis</span>
+                        </button>
+                        {!isProcessing ? (
+                            <button className="btn btn-success" onClick={runBatch} disabled={rows.length === 0}>
+                                <i className="fas fa-play"></i> הרץ הכל
+                            </button>
+                        ) : (
+                            <button className="btn btn-danger" onClick={stopBatch}>
+                                <i className="fas fa-stop"></i> עצור ריצה
+                            </button>
+                        )}
+
+                        <button className="btn btn-outline" onClick={handleExport} disabled={rows.length === 0}>
+                            <i className="fas fa-file-download"></i> ייצוא מלא (CSV)
+                        </button>
+
+                        <button className="btn btn-outline" style={{borderColor: '#e74c3c', color: '#e74c3c'}} onClick={clearTable} disabled={rows.length === 0}>
+                            <i className="fas fa-trash"></i> נקה טבלה
+                        </button>
+                    </div>
+
+                    <div className="settings-section">
+                        <div className="settings-title">הגדרות בוט</div>
+
+                        <div className="input-row">
+                            <label className="toggle-row">
+                                <span>Streaming (תשובה חיה)</span>
+                                <input type="checkbox" checked={streamingEnabled} onChange={e => setStreamingEnabled(e.target.checked)} />
+                            </label>
+                        </div>
+
+                        <div className="settings-title" style={{marginTop:'15px'}}>שלבי ריצה</div>
+                        <div className="toggle-row">
+                            <span>1. LLM Judge</span>
+                            <input type="checkbox" checked={execJudge} onChange={e => setExecJudge(e.target.checked)} />
+                        </div>
+                        <div className="toggle-row">
+                            <span>2. Retrieval</span>
+                            <input type="checkbox" checked={execRetrieval} onChange={e => setExecRetrieval(e.target.checked)} />
+                        </div>
+                        <div className="toggle-row">
+                            <span>3. LLM Answer</span>
+                            <input type="checkbox" checked={execLLM} onChange={e => setExecLLM(e.target.checked)} />
+                        </div>
+
+                        {llmConfig.names.length > 0 && (<>
+                        <div className="settings-title" style={{marginTop:'15px'}}>בחירת מודל (LLM)</div>
+                        <div className="input-row">
+                            <label>Judge LLM</label>
+                            <select style={{width:'100%'}} value={judgeLlm} onChange={e => setJudgeLlm(e.target.value)} disabled={isProcessing}>
+                                <option value="">ברירת מחדל של המערכת ({llmConfig.judge || '-'})</option>
+                                {llmConfig.names.map(n => <option key={n} value={n}>{n}</option>)}
+                            </select>
+                        </div>
+                        <div className="input-row">
+                            <label>Answer LLM</label>
+                            <select style={{width:'100%'}} value={askLlm} onChange={e => setAskLlm(e.target.value)} disabled={isProcessing}>
+                                <option value="">ברירת מחדל של המערכת ({llmConfig.ask || '-'})</option>
+                                {llmConfig.names.map(n => <option key={n} value={n}>{n}</option>)}
+                            </select>
+                        </div>
+                        </>)}
+                    </div>
+
+                    {showModal && (
+                        <div className="modal-overlay" onClick={() => !isDeletingHistory && setShowModal(false)}>
+                            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <i className="fas fa-exclamation-triangle"></i>
+                                    <h3>אישור מחיקה</h3>
+                                </div>
+                                <div className="modal-body">
+                                    <p>האם אתה בטוח שברצונך למחוק את <strong>כל</strong> היסטוריית Redis?</p>
+                                    <p>פעולה זו <strong>בלתי הפיכה</strong> ותמחק את כל נתוני ההיסטוריה של המשתמשים.</p>
+                                </div>
+                                <div className="modal-actions">
+                                    <button
+                                        className="modal-btn modal-btn-cancel"
+                                        onClick={() => setShowModal(false)}
+                                        disabled={isDeletingHistory}
+                                    >
+                                        ביטול
+                                    </button>
+                                    <button
+                                        className="modal-btn modal-btn-confirm"
+                                        onClick={handleDeleteHistory}
+                                        disabled={isDeletingHistory}
+                                    >
+                                        {isDeletingHistory ? (
+                                            <>
+                                                <i className="fas fa-spinner fa-spin"></i> מוחק...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="fas fa-trash-alt"></i> מחק
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="main-content">
+                    <div className="top-bar">
+                        <div className="stats">
+                            <div className="stat-item">סה"כ: <b>{progress.total}</b></div>
+                            <div className="stat-item">הושלמו: <b>{progress.success}</b></div>
+                            <div className="stat-item" style={{color: progress.failed > 0 ? 'red' : 'inherit'}}>נכשלו: <b>{progress.failed}</b></div>
+                        </div>
+                        <button className="btn btn-primary" style={{padding: '5px 15px', fontSize:'0.85rem'}} onClick={addNewRow}>
+                            <i className="fas fa-plus"></i> הוסף שורה ידנית
+                        </button>
+                    </div>
+
+                    <div className="table-container">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th style={{width: '50px'}}>#</th>
+                                <th style={{width: '140px'}}>Thread ID</th>
+                                <th style={{width: '80px'}}>Q Num</th>
+                                <th style={{width: '120px'}}>Source Page</th>
+                                <th style={{width: '15%'}}>Question</th>
+                                <th style={{width: '100px'}}>Status</th>
+                                <th style={{width: '15%'}}>Docs URLs</th>
+                                <th style={{width: '12%'}}>Standalone Question</th>
+                                <th style={{width: '15%'}}>Question sent to LLM</th>
+                                <th>Answer (Live)</th>
+                                <th style={{width: '50px'}}></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {rows.map((row, index) => (
+                                <tr key={row.id}>
+                                    <td>{index + 1}</td>
+                                    <td>
+                                        <input
+                                            className="cell-input"
+                                            value={row.threadId}
+                                            onChange={(e) => updateRowData(row.id, 'threadId', e.target.value)}
+                                            readOnly={isProcessing}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            className="cell-input"
+                                            value={row.questionNumber}
+                                            onChange={(e) => updateRowData(row.id, 'questionNumber', e.target.value)}
+                                            readOnly={isProcessing}
+                                        />
+                                    </td>
+                                    <td>
+                                        <input
+                                            className="cell-input subtle"
+                                            value={row.sourcePage}
+                                            placeholder="ID or Title"
+                                            onChange={(e) => updateRowData(row.id, 'sourcePage', e.target.value)}
+                                            readOnly={isProcessing}
+                                        />
+                                    </td>
+                                    <td>
+                                            <textarea
+                                                className="cell-input"
+                                                style={{resize:'vertical', minHeight:'40px'}}
+                                                value={row.question}
+                                                onChange={(e) => updateRowData(row.id, 'question', e.target.value)}
+                                                readOnly={isProcessing}
+                                            />
+                                    </td>
+                                    <td>
+                                            <span className={`status-badge status-${row.status}`}>
+                                                {row.status === 'loading' && <i className="fas fa-spinner fa-spin" style={{marginLeft:'5px'}}></i>}
+                                                {row.status === 'idle' && 'ממתין'}
+                                                {row.status === 'loading' && 'מעבד'}
+                                                {row.status === 'done' && 'הושלם'}
+                                                {row.status === 'error' && 'שגיאה'}
+                                            </span>
+                                    </td>
+                                    <td>
+                                        <div className="cell-answer" style={{fontSize: '0.75rem'}}>
+                                            {row.docs && row.docs.length > 0 ? (
+                                                row.docs.map((doc, idx) => (
+                                                    <div key={idx} style={{marginBottom: '4px'}}>
+                                                        <a href={doc.url} target="_blank" rel="noopener noreferrer"
+                                                           style={{color: '#007bff', textDecoration: 'none'}}>
+                                                            {doc.url}
+                                                        </a>
+                                                    </div>
+                                                ))
+                                            ) : ''}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div className="cell-answer">
+                                            {row.standaloneQuestion}
+                                            {llmOf(row, 'judge') && <div className="meta-info llm-info"><i className="fas fa-robot"></i> {llmOf(row, 'judge')}</div>}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {PromptCellPreview ? (
+                                            <PromptCellPreview raw={promptOf(row)} rowId={row.id} onOpen={setPromptRowId} questionLlm={llmOf(row, 'judge')} />
+                                        ) : (
+                                            <div className="cell-answer">
+                                                {promptOf(row)}
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td>
+                                        <div className="cell-answer">
+                                            {row.errorMsg ? <span style={{color:'red'}}>{row.errorMsg}</span> : row.answer}
+                                            {row.status === 'done' && row.timers && row.timers.total_time && (
+                                                <div className="meta-info">
+                                                    <i className="fas fa-clock"></i> {row.timers.total_time.toFixed(2)}s |
+                                                    Docs: {row.docs ? row.docs.length : 0}
+                                                </div>
+                                            )}
+                                            {llmOf(row, 'answer') && <div className="meta-info llm-info"><i className="fas fa-robot"></i> {llmOf(row, 'answer')}</div>}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button
+                                            style={{border:'none', background:'none', color:'#e74c3c', cursor:'pointer'}}
+                                            onClick={() => deleteRow(row.id)}
+                                            disabled={isProcessing}
+                                        >
+                                            <i className="fas fa-times"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {rows.length === 0 && (
+                                <tr>
+                                    <td colSpan="11" style={{textAlign:'center', padding:'40px', color:'#95a5a6'}}>
+                                        טען קובץ CSV הכולל עמודות: threadId, sourcePage, questionNumber, question
+                                    </td>
+                                </tr>
+                            )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {PromptViewModal && (
+                    <PromptViewModal
+                        raw={promptRow ? promptOf(promptRow) : null}
+                        title={promptRow
+                            ? [`שאלה שנשלחה ל-LLM · שורה ${rows.indexOf(promptRow) + 1}`, llmOf(promptRow, 'answer')].filter(Boolean).join(' · ')
+                            : ""}
+                        questionLlm={promptRow ? llmOf(promptRow, 'judge') : null}
+                        onClose={() => setPromptRowId(null)}
+                    />
+                )}
+            </div>
+        );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+</body>
+</html>

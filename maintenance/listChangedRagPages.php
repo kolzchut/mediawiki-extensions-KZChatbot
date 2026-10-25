@@ -189,7 +189,8 @@ class ListChangedRagPages extends Maintenance {
 
 		if ( preg_match( '/^\d{14}$/', $value ) ) {
 			$unix = wfTimestampOrNull( TS_UNIX, $value );
-			if ( $unix !== null ) {
+			// A failed parse returns false, not null; let it fall through to the error path.
+			if ( is_string( $unix ) ) {
 				return (int)$unix;
 			}
 		}

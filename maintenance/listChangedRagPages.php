@@ -6,6 +6,8 @@ use MediaWiki\Extension\ChatbotRagContent\ChatbotRagContent;
 use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
+use Wikimedia\Rdbms\IReadableDatabase;
+use Wikimedia\Timestamp\TimestampException;
 
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
@@ -85,8 +87,8 @@ class ListChangedRagPages extends Maintenance {
 		$services = MediaWikiServices::getInstance();
 		$dbr = $services->getConnectionProvider()->getReplicaDatabase();
 
-		$fromUnix = $this->parseTime( $this->getOption( 'from', '-2m' ), 'from' );
-		$toUnix = $this->parseTime( $this->getOption( 'to', 'now' ), 'to' );
+		$fromUnix = $this->parseTime( $this->getOption( 'from', '-2m' ), 'from', $dbr );
+		$toUnix = $this->parseTime( $this->getOption( 'to', 'now' ), 'to', $dbr );
 		if ( $fromUnix >= $toUnix ) {
 			$this->fatalError(
 				'Refusing to run: --from (' . wfTimestamp( TS_ISO_8601, $fromUnix )
@@ -182,31 +184,48 @@ class ListChangedRagPages extends Maintenance {
 	 *
 	 * @param string $value
 	 * @param string $optionName Used only for the error message.
+	 * @param IReadableDatabase $dbr Whose timestamp formatter the result must satisfy.
 	 * @return int
 	 */
-	private function parseTime( string $value, string $optionName ): int {
+	private function parseTime( string $value, string $optionName, IReadableDatabase $dbr ): int {
 		$value = trim( $value );
+		$unix = false;
 
 		if ( preg_match( '/^\d{14}$/', $value ) ) {
-			$unix = wfTimestampOrNull( TS_UNIX, $value );
-			// A failed parse returns false, not null; let it fall through to the error path.
-			if ( is_string( $unix ) ) {
-				return (int)$unix;
+			$mw = wfTimestampOrNull( TS_UNIX, $value );
+			// A failed parse returns false, not null; let it fall through to strtotime().
+			if ( is_string( $mw ) ) {
+				$unix = (int)$mw;
 			}
 		}
 
-		// -30d / +2w / -90min — strtotime rejects the bare suffixes, so expand them.
-		if ( preg_match( '/^([+-]?\d+)\s*([a-z]+)$/i', $value, $m )
-			&& isset( self::UNITS[strtolower( $m[2] )] )
-		) {
-			$value = $m[1] . ' ' . self::UNITS[strtolower( $m[2] )];
+		if ( $unix === false ) {
+			// -30d / +2w / -90min — strtotime rejects the bare suffixes, so expand them.
+			if ( preg_match( '/^([+-]?\d+)\s*([a-z]+)$/i', $value, $m )
+				&& isset( self::UNITS[strtolower( $m[2] )] )
+			) {
+				$value = $m[1] . ' ' . self::UNITS[strtolower( $m[2] )];
+			}
+			$unix = strtotime( $value );
 		}
 
-		$unix = strtotime( $value );
-		if ( $unix === false ) {
-			$this->fatalError( "Could not parse --$optionName value: '$value'" );
+		// A successful parse can still be a time the window query cannot use.
+		// Overflowing 14-digit input normalises instead of failing:
+		// 00000000000000 becomes year -1 and 99999999999999 year 10007, and the
+		// DB formatter throws TimestampException on both. It also reads 0 as
+		// "now", so the epoch would silently become the current time. No
+		// revision predates the epoch, so refuse it and anything earlier, and
+		// let the formatter itself decide the upper end.
+		if ( $unix !== false && $unix > 0 ) {
+			try {
+				$dbr->timestamp( $unix );
+				return $unix;
+			} catch ( TimestampException ) {
+				// Fall through to the error path.
+			}
 		}
-		return $unix;
+
+		$this->fatalError( "Could not parse --$optionName value: '$value'" );
 	}
 }
 

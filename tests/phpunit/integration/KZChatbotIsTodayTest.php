@@ -55,6 +55,9 @@ class KZChatbotIsTodayTest extends MediaWikiIntegrationTestCase {
 		return [
 			'null' => [ null ],
 			'empty string' => [ '' ],
+			'empty BINARY(14) column, as MySQL returns it' => [ str_repeat( "\0", 14 ) ],
+			'NUL padded' => [ "\0\0\0  \0" ],
+			'whitespace only' => [ "  \t " ],
 			'garbage' => [ 'not a timestamp' ],
 		];
 	}

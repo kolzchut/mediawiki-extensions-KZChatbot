@@ -209,13 +209,15 @@ class KZChatbot {
 	 * that from $wgLocaltimezone at startup.
 	 *
 	 * An empty or unreadable timestamp is not today, so the caller starts the
-	 * day's count afresh instead of carrying a stored one.
+	 * day's count afresh instead of carrying a stored one. That includes a
+	 * BINARY(14) column holding '', which MySQL returns as 14 NUL bytes:
+	 * wfTimestamp() would read that, like any empty value, as the current time.
 	 *
 	 * @param string|int|null $timestamp Any format wfTimestamp() accepts
 	 * @return bool
 	 */
 	public static function isToday( $timestamp ): bool {
-		if ( !$timestamp ) {
+		if ( !$timestamp || trim( (string)$timestamp, "\0 \t\n\r\x0B" ) === '' ) {
 			return false;
 		}
 		$unix = wfTimestamp( TS_UNIX, $timestamp );

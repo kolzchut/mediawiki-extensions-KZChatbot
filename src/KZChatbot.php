@@ -196,13 +196,35 @@ class KZChatbot {
 		$userData = self::getUserData( $uuid );
 		$settings = self::getGeneralSettings();
 		$dailyLimit = $settings['questions_daily_limit'] ?? 100;
-		$lastActive = wfTimestamp( TS_UNIX, $userData['kzcbu_last_active'] );
-		$lastActiveDay = date( 'z', $lastActive );
-		if ( $lastActiveDay !== date( 'z' ) ) {
+		if ( !self::isToday( $userData['kzcbu_last_active'] ) ) {
 			return $dailyLimit;
 		}
 		$questionsLastActiveDay = $userData['kzcbu_questions_last_active_day'] ?? 0;
 		return $dailyLimit - $questionsLastActiveDay;
+	}
+
+	/**
+	 * Whether a stored timestamp falls on today's calendar date (year, month
+	 * and day), in PHP's default timezone, the one date() uses. MediaWiki sets
+	 * that from $wgLocaltimezone at startup.
+	 *
+	 * An empty or unreadable timestamp is not today, so the caller starts the
+	 * day's count afresh instead of carrying a stored one. That includes a
+	 * BINARY(14) column holding '', which MySQL returns as 14 NUL bytes:
+	 * wfTimestamp() would read that, like any empty value, as the current time.
+	 *
+	 * @param string|int|null $timestamp Any format wfTimestamp() accepts
+	 * @return bool
+	 */
+	public static function isToday( $timestamp ): bool {
+		if ( !$timestamp || trim( (string)$timestamp, "\0 \t\n\r\x0B" ) === '' ) {
+			return false;
+		}
+		$unix = wfTimestamp( TS_UNIX, $timestamp );
+		if ( $unix === false ) {
+			return false;
+		}
+		return date( 'Y-m-d', (int)$unix ) === date( 'Y-m-d', (int)wfTimestamp( TS_UNIX ) );
 	}
 
 	/**
@@ -221,11 +243,8 @@ class KZChatbot {
 		$rawUuid = self::rawUuidFromFormatted( $uuid );
 
 		// Check if the user already asked some questions today, or we should start from scratch
-		$userLastActiveTimestamp = wfTimestamp( TS_UNIX, $userData['kzcbu_last_active'] );
-		$userLastActiveDay = date( 'z', $userLastActiveTimestamp );
-		$currentDayOfYear = date( 'z' );
 		$userQuestionsLastActiveDay = $userData['kzcbu_questions_last_active_day'] ?? 0;
-		$questionsLastActiveDay = ( $userLastActiveDay === $currentDayOfYear )
+		$questionsLastActiveDay = self::isToday( $userData['kzcbu_last_active'] )
 			? $userQuestionsLastActiveDay
 			: 0;
 

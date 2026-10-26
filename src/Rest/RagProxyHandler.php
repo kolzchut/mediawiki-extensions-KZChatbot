@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Extension\KZChatbot\Rest;
 
+use MediaWiki\Extension\KZChatbot\BackendTimeouts;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\RequestInterface;
@@ -88,10 +89,16 @@ class RagProxyHandler extends Handler {
 		$method = strtoupper( $this->getRequest()->getMethod() );
 		$headers = [ 'Accept: application/json' ];
 
+		// Bounded like the chatbot's own call (see BackendTimeouts): a slower
+		// response would reach no one, since the edge has already given up on it.
+		$timeout = BackendTimeouts::total( $config->get( 'KZChatbotLlmApiTimeout' ) );
 		$ch = curl_init( $apiUrl );
 		$curlOptions = [
 			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_TIMEOUT => 180,
+			CURLOPT_CONNECTTIMEOUT => BackendTimeouts::connect(
+				$config->get( 'KZChatbotLlmApiConnectTimeout' ), $timeout
+			),
+			CURLOPT_TIMEOUT => $timeout,
 			CURLOPT_CUSTOMREQUEST => $method,
 		];
 

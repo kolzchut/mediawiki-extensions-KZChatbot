@@ -179,12 +179,18 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 			}
 		}
 
+		// The LLM judge + answer can exceed core's default HTTP timeout, so allow
+		// more, but never past the edge's own limit (see BackendTimeouts); and
+		// fail fast when the backend cannot be reached at all.
+		$timeout = BackendTimeouts::total( $config->get( 'KZChatbotLlmApiTimeout' ) );
 		$httpRequestFactory = MediaWikiServices::getInstance()->getHttpRequestFactory();
 		$req = $httpRequestFactory->create( $apiUrl, [
 			'method' => 'POST',
 			'postData' => json_encode( $params ),
-			// The LLM judge + answer can exceed the default HTTP timeout; allow more.
-			'timeout' => $config->get( 'KZChatbotLlmApiTimeout' ),
+			'timeout' => $timeout,
+			'connectTimeout' => BackendTimeouts::connect(
+				$config->get( 'KZChatbotLlmApiConnectTimeout' ), $timeout
+			),
 			'originalRequest' => RequestContext::getMain()->getRequest(),
 		], __METHOD__ );
 		$req->setHeader( 'Content-Type', 'application/json' );

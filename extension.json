@@ -21,8 +21,13 @@
 			"value": null
 		},
 		"KZChatbotLlmApiTimeout": {
-			"value": 120,
-			"description": "Timeout in seconds for requests to the RAG backend's /search endpoint. The LLM judge + answer steps can take well over the default HTTP timeout, so this is set higher to avoid premature timeouts while the backend is still answering.",
+			"value": 90,
+			"description": "Total timeout in seconds for requests to the RAG backend's /search endpoint and for the RAG admin proxy. The LLM judge + answer steps can take well over the default HTTP timeout, so this is set higher. It is capped at 90 seconds less the time the request has already spent (BackendTimeouts::MAX_TOTAL), because Cloudflare gives up on the origin at 100 seconds and a later answer would reach no one.",
+			"public": false
+		},
+		"KZChatbotLlmApiConnectTimeout": {
+			"value": 5,
+			"description": "Connect timeout in seconds for every request to the RAG backend, so an unreachable backend fails fast with the extension's own error instead of holding the request until the edge gives up.",
 			"public": false
 		},
 		"KZChatbotLimitBypassToken": {

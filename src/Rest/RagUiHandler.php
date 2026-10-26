@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Extension\KZChatbot\Rest;
 
+use MediaWiki\Extension\KZChatbot\BackendTimeouts;
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
@@ -558,11 +559,22 @@ class RagUiHandler extends Handler {
 	 * @return string|null File contents, or null on failure
 	 */
 	private static function fetchBackendFile( string $apiUrl, string $file, int $maxBytes = 0 ): ?string {
+		// One page load fetches the HTML and then each asset in turn, so each
+		// fetch gets only what is left of the request's budget (BackendTimeouts),
+		// and none is started once that is spent.
+		if ( BackendTimeouts::remaining() < 1 ) {
+			return null;
+		}
+		$timeout = BackendTimeouts::total( 30 );
+		$config = MediaWikiServices::getInstance()->getMainConfig();
 		$url = rtrim( $apiUrl, '/' ) . '/' . ltrim( $file, '/' );
 		$body = '';
 		$ch = curl_init( $url );
 		curl_setopt_array( $ch, [
-			CURLOPT_TIMEOUT => 30,
+			CURLOPT_CONNECTTIMEOUT => BackendTimeouts::connect(
+				$config->get( 'KZChatbotLlmApiConnectTimeout' ), $timeout
+			),
+			CURLOPT_TIMEOUT => $timeout,
 			// Stop reading once past the limit, rather than buffering all of it.
 			CURLOPT_WRITEFUNCTION => static function ( $ch, string $chunk ) use ( &$body, $maxBytes ): int {
 				if ( $maxBytes > 0 && strlen( $body ) + strlen( $chunk ) > $maxBytes ) {

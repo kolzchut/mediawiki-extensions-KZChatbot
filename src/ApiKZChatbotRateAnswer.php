@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Extension\KZChatbot;
 
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\LocalizedHttpException;
@@ -103,9 +104,17 @@ class ApiKZChatbotRateAnswer extends Handler {
 			'text' => $text,
 		] );
 
-		$httpRequestFactory = MediaWikiServices::getInstance()->getHttpRequestFactory();
+		// A rating is quick: keep core's default total timeout ($wgHTTPTimeout),
+		// but never past the edge's own limit, and fail fast when unreachable.
+		$services = MediaWikiServices::getInstance();
+		$timeout = BackendTimeouts::total( $services->getMainConfig()->get( MainConfigNames::HTTPTimeout ) );
+		$httpRequestFactory = $services->getHttpRequestFactory();
 		$req = $httpRequestFactory->create( $apiUrl, [
 			'method' => 'POST',
+			'timeout' => $timeout,
+			'connectTimeout' => BackendTimeouts::connect(
+				$config->get( 'KZChatbotLlmApiConnectTimeout' ), $timeout
+			),
 			'originalRequest' => RequestContext::getMain()->getRequest(),
 		], __METHOD__ );
 		$req->setHeader( 'X-Forwarded-For', RequestContext::getMain()->getRequest()->getIP() );

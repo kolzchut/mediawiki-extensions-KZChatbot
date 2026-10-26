@@ -52,6 +52,8 @@ These settings can be configured in `LocalSettings.php`.
 | Setting                                | Default           | Description                                                                                                                             |
 |----------------------------------------|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
 | `$wgKZChatbotLlmApiUrl`                | null              | LLM API URL                                                                                                                             |
+| `$wgKZChatbotLlmApiTimeout`            | 90                | Total timeout (seconds) for the RAG backend's `/search` call and the RAG admin proxy. Capped at 90 s less the time the request has already spent, since Cloudflare gives up on the origin at 100 s. |
+| `$wgKZChatbotLlmApiConnectTimeout`     | 5                 | Connect timeout (seconds) for every RAG backend call, so an unreachable backend fails fast with the extension's own error.            |
 | `$wgKZChatbotLimitBypassToken`         | false             | Secret token that allows bypassing the active users limit when provided as a URL parameter. Only a non-empty string enables it.          |
 | `$wgKZChatbotAutoOpenParam`            | "autoOpenChatbot" | URL parameter that triggers the chatbot to open automatically. Set to an empty string to disable this feature.                          |
 | `$wgKZChatbotSendPageId`               | true              | Whether to send page_id as additional context to the RAG backend. Set to false to disable sending page context.                         |

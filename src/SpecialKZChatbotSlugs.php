@@ -356,6 +356,8 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	 * @return bool
 	 */
 	public function handleSlugSave( $postData ): bool {
+		// Refuse with core's "database is locked" page rather than a 500.
+		$this->checkReadOnly();
 		$slug = $postData['kzcSlug'];
 		$text = $postData['kzcText'];
 
@@ -380,6 +382,8 @@ class SpecialKZChatbotSlugs extends SpecialPage {
 	 * @return bool
 	 */
 	public function handleSlugDelete( $slug ): bool {
+		// Refuse with core's "database is locked" page rather than a 500.
+		$this->checkReadOnly();
 		// Delete word/pattern.
 		$status = Slugs::deleteSlug( $slug );
 

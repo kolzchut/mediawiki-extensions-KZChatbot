@@ -117,6 +117,21 @@ The chatbot uses a controlled rollout system to manage user access:
 	- Users with valid UUID: chatbot loads normally
 	- Users without any cookie: go through selection process again
 
+### While the wiki is read-only
+When the wiki is read-only (`$wgReadOnly`, `$wgReadOnlyFile`, or a read-only
+primary database), the chatbot cannot write to `kzchatbot_users`:
+
+- A visitor with no user record is not selected or created. `status` answers
+  with `chatbotIsShown: false` and echoes back the uuid it was sent, so the
+  launcher renders nothing and leaves the cookie alone. No rejection cookie is
+  set, and the visitor goes through selection again once the wiki is writable.
+- A returning visitor's `status` is a read, and works as usual.
+- A question is refused before it reaches the RAG backend, with HTTP 423 and the
+  `read_only` slug. The React client shows the message of a 4xx response to the
+  reader, so the reader sees that text rather than the general error.
+- Saving or deleting settings, slugs and banned words shows core's
+  "database is locked" page.
+
 ### Active Users Limit Bypass
 You can enable a bypass mechanism for the active users limit:
 

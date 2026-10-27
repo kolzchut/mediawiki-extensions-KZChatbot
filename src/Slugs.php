@@ -70,6 +70,7 @@ class Slugs {
 			'question_character_limit' => 'ניתן להזין עד $1 תווים',
 			'banned_word_found' => 'אנא נסחו את השאלה מחדש.',
 			'general_error' => 'אירעה שגיאה במערכת. אנא נסו שנית מאוחר יותר.',
+			'read_only' => 'הצ\'אט לא זמין כרגע בגלל עבודות תחזוקה באתר. אפשר לנסות שוב בעוד זמן קצר.',
 			'send_button' => 'שליחה',
 			'chat_description' => 'שאלו את ה-AI שלנו',
 			'by' => 'by',

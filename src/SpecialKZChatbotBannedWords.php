@@ -245,6 +245,8 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 	 * @return string|bool Return true on success, error message on failure
 	 */
 	public function handleBannedWordSave( $postData ) {
+		// Refuse with core's "database is locked" page rather than a 500.
+		$this->checkReadOnly();
 		$pattern = $postData['kzcNewBannedWord'];
 		if ( empty( $pattern ) ) {
 			return 'kzchatbot-banned-words-error-empty-string';
@@ -281,6 +283,8 @@ class SpecialKZChatbotBannedWords extends SpecialPage {
 	 * @throws \MWException
 	 */
 	public function handleBannedWordDelete( $id ) {
+		// Refuse with core's "database is locked" page rather than a 500.
+		$this->checkReadOnly();
 		$doomedWord = new BannedWord( $id );
 		if ( !$doomedWord->exists() ) {
 			throw new \MWException( "No banned word with id $id  was found" );

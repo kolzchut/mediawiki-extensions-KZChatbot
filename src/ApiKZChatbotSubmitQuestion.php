@@ -11,8 +11,20 @@ use RequestContext;
 use Throwable;
 use Title;
 use Wikimedia\ParamValidator\ParamValidator;
+use Wikimedia\Rdbms\DBReadOnlyError;
 
 class ApiKZChatbotSubmitQuestion extends Handler {
+
+	/**
+	 * HTTP status for a question refused because the wiki is read-only.
+	 *
+	 * 503 would be the textbook code for a maintenance window, but the React
+	 * client shows the server's message only for a 4xx, and replaces anything
+	 * else with its own general error. The reader should see why the question
+	 * failed, so this is 423 Locked, which matches MediaWiki's own wording for a
+	 * read-only wiki ("the database is locked").
+	 */
+	private const READ_ONLY_STATUS = 423;
 
 	/**
 	 * @var string The UUID associated with the user.
@@ -55,8 +67,17 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 			return $this->answerQuestion();
 		} catch ( HttpException $e ) {
 			// Deliberate: the message is an operator-authored slug, meant for the
-			// reader (daily limit, banned word, character limit, general error).
+			// reader (daily limit, banned word, character limit, read-only, general error).
 			throw $e;
+		} catch ( DBReadOnlyError $e ) {
+			// The wiki went read-only after answerQuestion() checked. Counting the
+			// question is the write that threw. It runs before the RAG call, so no
+			// answer was thrown away, and the reader can be told why.
+			KZChatbot::getLogger()->warning(
+				'Chatbot question refused: the wiki became read-only mid-request',
+				[ 'exception' => $e ]
+			);
+			throw $this->readOnlyException();
 		} catch ( Throwable $e ) {
 			KZChatbot::getLogger()->error(
 				'Unhandled error answering a chatbot question: {exception_class}: {exception_message}',
@@ -71,7 +92,25 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	}
 
 	/**
+	 * The reader-facing refusal for a question asked while the wiki is read-only.
+	 *
+	 * @return HttpException
+	 */
+	private function readOnlyException(): HttpException {
+		return new HttpException( $this->reliableSlug( 'read_only' ), self::READ_ONLY_STATUS );
+	}
+
+	/**
 	 * The reader-facing text for an error we did not plan for.
+	 *
+	 * @return string
+	 */
+	private function generalErrorMessage(): string {
+		return $this->reliableSlug( 'general_error' );
+	}
+
+	/**
+	 * A slug's text, for the error paths.
 	 *
 	 * Deliberately does not trust the database. `Slugs::getSlug()` reads
 	 * `kzchatbot_text` and the general settings, so on the one fault most likely
@@ -80,11 +119,12 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	 * `Error: exception of type DBQueryError` this boundary exists to prevent.
 	 * `Slugs::getDefaultSlugs()` is a compiled-in array, so it always answers.
 	 *
+	 * @param string $slugName A key of Slugs::getDefaultSlugs()
 	 * @return string
 	 */
-	private function generalErrorMessage(): string {
+	private function reliableSlug( string $slugName ): string {
 		try {
-			$slug = Slugs::getSlug( 'general_error' );
+			$slug = Slugs::getSlug( $slugName );
 			if ( is_string( $slug ) && $slug !== '' ) {
 				return $slug;
 			}
@@ -95,12 +135,12 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 			// reader-facing bug for an invisible operator-facing one, and a
 			// failing slug lookup means the database is in trouble.
 			KZChatbot::getLogger()->warning(
-				'general_error slug lookup failed; using the compiled-in default',
-				[ 'exception' => $e ]
+				'{slug} slug lookup failed; using the compiled-in default',
+				[ 'exception' => $e, 'slug' => $slugName ]
 			);
 		}
 
-		return Slugs::getDefaultSlugs()['general_error'];
+		return Slugs::getDefaultSlugs()[$slugName];
 	}
 
 	/**
@@ -109,6 +149,13 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 	 * @throws MWException
 	 */
 	private function answerQuestion(): array {
+		// Each question is counted against the reader's daily limit, a write to
+		// kzchatbot_users, so none can be answered while the wiki is read-only.
+		// Refuse up front: before the RAG call, and with a message the reader sees.
+		if ( KZChatbot::isReadOnly() ) {
+			throw $this->readOnlyException();
+		}
+
 		$body = $this->getValidatedBody();
 		$this->uuid = $body['uuid'];
 		$this->validateUser();

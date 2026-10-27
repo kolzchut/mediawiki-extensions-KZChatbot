@@ -18,6 +18,9 @@ class ApiKZChatbotGetStatus extends Handler {
 			$userData = KZChatbot::getUserData( $uuid );
 		}
 		if ( empty( $userData ) ) {
+			if ( KZChatbot::isReadOnly() ) {
+				return self::notAvailableWhileReadOnly( $uuid );
+			}
 			$userData = KZChatbot::newUser();
 		}
 		if ( $userData === false ) {
@@ -33,6 +36,34 @@ class ApiKZChatbotGetStatus extends Handler {
 			'chatbotIsShown' => true,
 			'questionsPermitted' => KZChatbot::getQuestionsPermitted( $uuid ),
 			'cookieExpiry' => $cookieExpiry,
+		];
+	}
+
+	/**
+	 * The answer for a visitor we would have to create a user for while the wiki
+	 * is read-only. Inserting the user would throw, so we tell the launcher not to
+	 * render the chatbot this time, without changing the visitor's cookie.
+	 *
+	 * The launcher (resources/ext.KZChatbot.launcher) acts on three things:
+	 * - `uuid: false` would set the one-day exclusion cookie, so a visitor who
+	 *   arrived during a maintenance window would miss the chatbot for a day.
+	 * - Any other `uuid` that differs from the one it sent is saved as the new
+	 *   cookie, which would overwrite a stale uuid with whatever we return.
+	 * - The chatbot is rendered only when `chatbotIsShown` is true.
+	 *
+	 * So we echo back the uuid the launcher sent ('' for a first visit), and set
+	 * `chatbotIsShown` to false. The cookie is left as it was, nothing is
+	 * rendered, and the visitor goes through selection again on a later page view.
+	 * `readOnly` is there for anyone reading the response; the launcher ignores it.
+	 *
+	 * @param string|null $requestedUuid The uuid query parameter, if any
+	 * @return array
+	 */
+	private static function notAvailableWhileReadOnly( ?string $requestedUuid ): array {
+		return [
+			'uuid' => $requestedUuid ?? '',
+			'chatbotIsShown' => false,
+			'readOnly' => true,
 		];
 	}
 

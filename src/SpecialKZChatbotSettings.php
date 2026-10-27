@@ -295,6 +295,8 @@ class SpecialKZChatbotSettings extends SpecialPage {
 	 * @return true
 	 */
 	public function handleSettingsSave( array $postData ): bool {
+		// Refuse with core's "database is locked" page rather than a 500.
+		$this->checkReadOnly();
 		// Save new values to database.
 		$formNameToDbName = $this->getFormNameToDbNameMapping();
 		$data = array_map(

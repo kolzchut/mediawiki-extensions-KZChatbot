@@ -10,6 +10,7 @@ use Psr\Log\LoggerInterface;
 use Random\RandomException;
 use RequestContext;
 use Wikimedia\Rdbms\DBQueryError;
+use Wikimedia\Rdbms\DBReadOnlyError;
 
 /**
  * @todo general class description
@@ -45,6 +46,24 @@ class KZChatbot {
 	}
 
 	/**
+	 * Whether the wiki refuses writes right now: $wgReadOnly or $wgReadOnlyFile
+	 * (a maintenance window), or a primary database that is itself read-only.
+	 *
+	 * Every write the chatbot makes for a reader goes to kzchatbot_users, and
+	 * while the wiki is read-only each one throws DBReadOnlyError. Callers check
+	 * this first and answer in a way the client understands, instead of letting
+	 * the error reach the reader as a 500.
+	 *
+	 * @return bool
+	 */
+	public static function isReadOnly(): bool {
+		return MediaWikiServices::getInstance()->getReadOnlyMode()->isReadOnly();
+	}
+
+	/**
+	 * Callers must check isReadOnly() first: false means "do not show this
+	 * visitor the chatbot", which the launcher remembers for a day.
+	 *
 	 * @return array|false The new user data, or false if the user should not be shown the chatbot
 	 */
 	public static function newUser(): false|array {
@@ -110,7 +129,10 @@ class KZChatbot {
 
 			$userData['kzcbu_uuid'] = $formattedUuid;
 			return $userData;
-		} catch ( DBQueryError $e ) {
+		} catch ( DBQueryError | DBReadOnlyError $e ) {
+			// DBReadOnlyError is not a DBQueryError (both extend DBExpectedError),
+			// so it used to escape as a 500. Reaching it here means the wiki went
+			// read-only after the caller's isReadOnly() check.
 			self::getLogger()->error( 'Failed to insert new user: ' . $e->getMessage() );
 			return false;
 		}
@@ -146,11 +168,18 @@ class KZChatbot {
 	}
 
 	/**
+	 * Memoised general settings. A class property rather than a function-static
+	 * variable, so that a test can clear it; null means "not loaded".
+	 *
+	 * @var array|null
+	 */
+	private static ?array $generalSettings = null;
+
+	/**
 	 * @return array|bool
 	 */
 	public static function getGeneralSettings(): bool|array {
-		static $settings;
-		if ( !isset( $settings ) ) {
+		if ( self::$generalSettings === null ) {
 			$settings = [];
 			$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 			$generalSettingsNames = self::getGeneralSettingsNames();
@@ -163,8 +192,9 @@ class KZChatbot {
 			for ( $setting = $res->fetchRow(); !empty( $setting ); $setting = $res->fetchRow() ) {
 				$settings[ $setting['kzcbs_name'] ] = $setting['kzcbs_value'];
 			}
+			self::$generalSettings = $settings;
 		}
-		return $settings;
+		return self::$generalSettings;
 	}
 
 	/**

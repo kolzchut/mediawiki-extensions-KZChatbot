@@ -5,9 +5,11 @@ namespace MediaWiki\Extension\KZChatbot\Tests\Integration;
 use ErrorPageError;
 use MediaWiki\Extension\KZChatbot\Slugs;
 use MediaWiki\Extension\KZChatbot\SpecialKZChatbotSlugs;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Session\CsrfTokenSet;
+use ReadOnlyError;
 use ReflectionProperty;
 use SpecialPageTestBase;
 
@@ -258,6 +260,48 @@ class SpecialKZChatbotSlugsTest extends SpecialPageTestBase {
 		);
 
 		$this->expectException( ErrorPageError::class );
+		try {
+			$this->executeAsAdmin( $request );
+		} finally {
+			$this->assertSame(
+				'text left behind by a rename',
+				$this->storedText( self::RETIRED_SLUG )
+			);
+		}
+	}
+
+	/**
+	 * While the wiki is read-only a save used to end in DBReadOnlyError, a 500.
+	 * The test database stays writable, so the unchanged row shows the guard,
+	 * not the database, refused the write.
+	 */
+	public function testSaveIsRefusedWhileReadOnly() {
+		$this->insertOverride( self::LIVE_SLUG, 'original text' );
+		// The admin's group membership is itself a write, so make it first.
+		$this->admin();
+		$this->overrideConfigValue( MainConfigNames::ReadOnly, 'Maintenance window (test)' );
+		$request = new FauxRequest( [
+			'wpkzcAction' => 'edit',
+			'wpkzcSlug' => self::LIVE_SLUG,
+			'wpkzcText' => 'text saved during the window',
+			'wpFormIdentifier' => 'KZChatbotSlugForm',
+		], true, [] );
+
+		$this->expectException( ReadOnlyError::class );
+		try {
+			$this->executeAsAdmin( $request );
+		} finally {
+			$this->assertSame( 'original text', $this->storedText( self::LIVE_SLUG ) );
+		}
+	}
+
+	public function testDeleteIsRefusedWhileReadOnly() {
+		$this->insertOverride( self::RETIRED_SLUG, 'text left behind by a rename' );
+		// The admin's group membership is itself a write, so make it first.
+		$request = $this->deleteRequest( self::RETIRED_SLUG );
+		$this->overrideConfigValue( MainConfigNames::ReadOnly, 'Maintenance window (test)' );
+
+		$this->expectException( ReadOnlyError::class );
 		try {
 			$this->executeAsAdmin( $request );
 		} finally {

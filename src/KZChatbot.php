@@ -176,6 +176,23 @@ class KZChatbot {
 	private static ?array $generalSettings = null;
 
 	/**
+	 * Values for general settings that are read without a fallback of their
+	 * own, used when kzchatbot_settings has no row for them: a fresh install,
+	 * or a table never saved through Special:KZChatbotSettings (#93). Without
+	 * them the read raises an undefined-key warning, and the length check
+	 * compares against null, which refuses every non-empty text.
+	 *
+	 * 150 is the React client's own fallback for both limits. The other
+	 * settings keep their fallback at the point where they are read.
+	 */
+	private const GENERAL_SETTINGS_DEFAULTS = [
+		'question_character_limit' => 150,
+		'feedback_character_limit' => 150,
+	];
+
+	/**
+	 * The general settings, each stored row overriding GENERAL_SETTINGS_DEFAULTS.
+	 *
 	 * @return array|bool
 	 */
 	public static function getGeneralSettings(): bool|array {
@@ -192,7 +209,7 @@ class KZChatbot {
 			for ( $setting = $res->fetchRow(); !empty( $setting ); $setting = $res->fetchRow() ) {
 				$settings[ $setting['kzcbs_name'] ] = $setting['kzcbs_value'];
 			}
-			self::$generalSettings = $settings;
+			self::$generalSettings = $settings + self::GENERAL_SETTINGS_DEFAULTS;
 		}
 		return self::$generalSettings;
 	}

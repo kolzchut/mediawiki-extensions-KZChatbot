@@ -145,11 +145,16 @@ class ApiKZChatbotRateAnswer extends Handler {
 		$status = $req->execute();
 		$code = $req->getStatus();
 		if ( !$status->isOK() ) {
+			// Message keys only: an HTTP error's text can quote the request URL,
+			// whose query string carries the reader's feedback.
 			KZChatbot::getLogger()->warning(
-				'RAG backend rating request failed (HTTP {code}): {status}',
+				'RAG backend rating request failed (HTTP {code}): {errors}',
 				[
 					'code' => $code,
-					'status' => $status->getWikiText( false, false, 'en' ),
+					'errors' => array_map(
+						static fn ( $message ) => $message->getKey(),
+						$status->getMessages()
+					),
 				]
 			);
 		}

@@ -4,12 +4,15 @@ namespace MediaWiki\Extension\KZChatbot\Tests\Integration;
 
 use MediaWiki\Extension\KZChatbot\ApiKZChatbotRateAnswer;
 use MediaWiki\Extension\KZChatbot\KZChatbot;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Rest\RequestData;
 use MediaWiki\Rest\Response;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWikiIntegrationTestCase;
 use MockHttpTrait;
 use ReflectionProperty;
+use StatusValue;
+use TestLogger;
 
 /**
  * The rate route passes the RAG backend's status through. When the backend
@@ -77,6 +80,37 @@ class RateAnswerBackendStatusTest extends MediaWikiIntegrationTestCase {
 		// Status 0 is what MWHttpRequest reports when no HTTP answer arrived.
 		$this->installMockHttp( $this->makeFakeHttpRequest( '', 0 ) );
 		$this->assertUnreachableAnswer( $this->rate() );
+	}
+
+	public function testFailureLogCarriesNoUrl() {
+		// An HTTP error message can carry the request URL, and this URL's query
+		// string holds the reader's feedback text. The fixture is shaped like a
+		// Guzzle error that quotes the URL; only the message keys may be logged.
+		$url = 'http://backend.test/rating?thread_id=thread&text=private+feedback';
+		$status = StatusValue::newGood( 0 );
+		$status->fatal( 'http-curl-error', "cURL error 7: Failed to connect for $url" );
+		$status->fatal( 'http-bad-status', 0, 'Error' );
+		$this->installMockHttp( $this->makeFakeHttpRequest( '', $status ) );
+
+		$logger = new TestLogger( true, null, true );
+		$cached = new ReflectionProperty( KZChatbot::class, 'logger' );
+		$cached->setAccessible( true );
+		$cached->setValue( null, $logger );
+		try {
+			$this->assertSame( 503, $this->rate()->getStatusCode() );
+		} finally {
+			$cached->setValue( null, LoggerFactory::getInstance( 'KZChatbot' ) );
+		}
+
+		$buffer = $logger->getBuffer();
+		$this->assertCount( 1, $buffer, 'The failure is logged once' );
+		[ , , $context ] = $buffer[0];
+		$logged = json_encode( $context );
+		foreach ( [ 'backend.test', '/rating', 'thread_id', 'private' ] as $needle ) {
+			$this->assertStringNotContainsString( $needle, $logged );
+		}
+		$this->assertSame( 0, $context['code'] ?? null );
+		$this->assertSame( [ 'http-curl-error', 'http-bad-status' ], $context['errors'] ?? null );
 	}
 
 	public static function provideBackendStatuses(): array {

@@ -13,6 +13,12 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class ApiKZChatbotRateAnswer extends Handler {
 
+	/** HTTP status when the RAG backend gave no HTTP answer. */
+	private const UNREACHABLE_STATUS = 503;
+
+	/** Seconds the client is told to wait before rating again. */
+	private const UNREACHABLE_RETRY_AFTER = 30;
+
 	/**
 	 * Body schema. JSON-only, which is the core default for
 	 * getSupportedRequestTypes(), so core answers any other Content-Type with 415.
@@ -67,10 +73,27 @@ class ApiKZChatbotRateAnswer extends Handler {
 
 	/**
 	 * Pass user rating on specified chatbot answer to the RAG backend.
+	 *
+	 * The backend's own status is passed through. When the backend gave no HTTP
+	 * answer at all (unreachable, timed out), MWHttpRequest reports status 0;
+	 * sent on as-is, nginx rejects it and answers a bare 502 (#91). Answer 503
+	 * instead, with the REST framework's localized error body, which the client
+	 * reads. Not 502 or 504: Cloudflare replaces an origin 502 or 504 with its
+	 * own page (#77).
+	 *
 	 * @return \MediaWiki\Rest\Response
 	 */
 	public function execute() {
 		$responseCode = $this->rateAnswer();
+		if ( $responseCode < 100 || $responseCode > 599 ) {
+			$response = $this->getResponseFactory()->createLocalizedHttpError(
+				self::UNREACHABLE_STATUS,
+				new MessageValue( 'kzchatbot-rate-backend-unreachable' ),
+				[ 'errorKey' => 'kzchatbot-rate-backend-unreachable' ]
+			);
+			$response->setHeader( 'Retry-After', (string)self::UNREACHABLE_RETRY_AFTER );
+			return $response;
+		}
 		$response = $this->getResponseFactory()->create();
 		$response->setStatus( $responseCode );
 		return $response;
@@ -83,7 +106,7 @@ class ApiKZChatbotRateAnswer extends Handler {
 
 	/**
 	 * Send the user's rating for an answer to the RAG backend.
-	 * @return int HTTP status code from the backend
+	 * @return int HTTP status code from the backend, or 0 when it gave no answer
 	 */
 	private function rateAnswer() {
 		$body = $this->getValidatedBody();
@@ -119,8 +142,23 @@ class ApiKZChatbotRateAnswer extends Handler {
 		], __METHOD__ );
 		$req->setHeader( 'X-Forwarded-For', RequestContext::getMain()->getRequest()->getIP() );
 
-		$req->execute();
-		return $req->getStatus();
+		$status = $req->execute();
+		$code = $req->getStatus();
+		if ( !$status->isOK() ) {
+			// Message keys only: an HTTP error's text can quote the request URL,
+			// whose query string carries the reader's feedback.
+			KZChatbot::getLogger()->warning(
+				'RAG backend rating request failed (HTTP {code}): {errors}',
+				[
+					'code' => $code,
+					'errors' => array_map(
+						static fn ( $message ) => $message->getKey(),
+						$status->getMessages()
+					),
+				]
+			);
+		}
+		return $code;
 	}
 
 }

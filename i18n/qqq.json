@@ -108,5 +108,6 @@
 	"kzchatbot-testing-nav-to-rag-settings": "Navigation link label from the testing interface to the RAG settings page.",
 	"kzchatbot-testing-nav-to-batch": "Navigation link label from the single-query tester to the batch runner.",
 	"kzchatbot-testing-nav-to-single": "Navigation link label from the batch runner to the single-query tester.",
-	"kzchatbot-rag-settings-nav-to-testing": "Navigation link label from the RAG settings page to the testing interface."
+	"kzchatbot-rag-settings-nav-to-testing": "Navigation link label from the RAG settings page to the testing interface.",
+	"kzchatbot-rate-backend-unreachable": "Error returned by the chatbot's rating endpoint when the RAG backend gives no HTTP answer (unreachable or timed out). The chatbot client receives it in the JSON error body."
 }

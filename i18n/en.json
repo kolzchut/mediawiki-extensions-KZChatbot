@@ -108,5 +108,6 @@
 	"kzchatbot-testing-nav-to-rag-settings": "RAG Settings",
 	"kzchatbot-testing-nav-to-batch": "Batch testing",
 	"kzchatbot-testing-nav-to-single": "Single-query testing",
-	"kzchatbot-rag-settings-nav-to-testing": "Testing Interface"
+	"kzchatbot-rag-settings-nav-to-testing": "Testing Interface",
+	"kzchatbot-rate-backend-unreachable": "The rating could not be saved right now. Please try again later."
 }

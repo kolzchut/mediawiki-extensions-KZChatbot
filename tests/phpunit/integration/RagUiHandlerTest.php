@@ -5,6 +5,7 @@ namespace MediaWiki\Extension\KZChatbot\Tests\Integration;
 use Closure;
 use MediaWiki\Extension\KZChatbot\Rest\RagUiHandler;
 use MediaWiki\Rest\RequestData;
+use MediaWiki\Rest\ResponseInterface;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWikiIntegrationTestCase;
 
@@ -20,9 +21,10 @@ use MediaWikiIntegrationTestCase;
  * the real backend pages: master/ from kolzchut/chatbot master after PR
  * kolzchut/chatbot#19 (commit 4f363cd), which load prebuilt bundles from build/;
  * pre-pr19/ from its parent (eaed52a), which loaded CDN scripts compiled by
- * Babel standalone. fontawesome-6.7.2-all.min.css is the stylesheet that build
- * vendors, from @fortawesome/fontawesome-free 6.7.2 (MIT, see its header). The
- * JS bundles and fonts are stubs, since only their names and bytes matter here.
+ * Babel standalone, and which the response's CSP now refuses.
+ * fontawesome-6.7.2-all.min.css is the stylesheet that build vendors, from the
+ * package @fortawesome/fontawesome-free 6.7.2 (MIT, see its header). The JS
+ * bundles and fonts are stubs, since only their names and bytes matter here.
  *
  * @covers \MediaWiki\Extension\KZChatbot\Rest\RagUiHandler
  */
@@ -157,9 +159,9 @@ class RagUiHandlerTest extends MediaWikiIntegrationTestCase {
 	 * and then fetches it the real way.
 	 *
 	 * @param string $iface
-	 * @return string The response body
+	 * @return ResponseInterface
 	 */
-	private function render( string $iface ): string {
+	private function respond( string $iface ): ResponseInterface {
 		$right = $iface === 'admin' ? 'kzchatbot-view-rag-settings' : 'kzchatbot-testing';
 		$this->setGroupPermissions( '*', $right, true );
 		$real = self::realFetch();
@@ -173,7 +175,32 @@ class RagUiHandlerTest extends MediaWikiIntegrationTestCase {
 			[ 'interface' => $iface, 'viewRight' => $right ]
 		);
 		$this->assertSame( 200, $response->getStatusCode() );
-		return (string)$response->getBody();
+		return $response;
+	}
+
+	/**
+	 * @param string $iface
+	 * @return string The response body
+	 */
+	private function render( string $iface ): string {
+		return (string)$this->respond( $iface )->getBody();
+	}
+
+	/**
+	 * The response's Content-Security-Policy, as directive name => sources.
+	 *
+	 * @param ResponseInterface $response
+	 * @return string[][]
+	 */
+	private static function policy( ResponseInterface $response ): array {
+		$policy = [];
+		foreach ( explode( ';', $response->getHeaderLine( 'Content-Security-Policy' ) ) as $directive ) {
+			$parts = preg_split( '/\s+/', trim( $directive ), -1, PREG_SPLIT_NO_EMPTY );
+			if ( $parts ) {
+				$policy[array_shift( $parts )] = $parts;
+			}
+		}
+		return $policy;
 	}
 
 	/** @return Closure The handler's own backend fetcher */
@@ -280,13 +307,42 @@ class RagUiHandlerTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * A backend still on the build before kolzchut/chatbot PR #19 keeps working:
-	 * its own files are inlined, a Babel script keeps its type, and its CDN
-	 * scripts are left alone.
+	 * The frame may load nothing from a third-party origin and may not eval:
+	 * since kolzchut/chatbot PR #19 the pages need neither (kolzchut/chatbot#16).
+	 * It keeps 'unsafe-inline', because the handler inlines every asset and
+	 * injects the shim, and data: fonts (inlineCssFonts()). The sandbox stays.
 	 *
 	 * @dataProvider providePages
 	 */
-	public function testPrePr19PagesStillWork( string $iface, string $file ) {
+	public function testPolicyAllowsNoThirdPartyOriginOrEval( string $iface, string $file ) {
+		$this->serveMasterBuild();
+		$this->serve( [ $file => file_get_contents( self::FIXTURES . "/master/$file" ) ] );
+
+		$policy = self::policy( $this->respond( $iface ) );
+
+		$this->assertSame( [ "'self'", "'unsafe-inline'" ], $policy['script-src'] );
+		$this->assertSame( [ "'self'", "'unsafe-inline'" ], $policy['style-src'] );
+		$this->assertSame( [ "'self'", 'data:' ], $policy['font-src'] );
+		$this->assertSame( explode( ' ', RagUiHandler::SANDBOX_FLAGS ), $policy['sandbox'] );
+		$this->assertNotContains( 'allow-same-origin', $policy['sandbox'] );
+		foreach ( $policy as $name => $sources ) {
+			foreach ( $sources as $source ) {
+				$this->assertStringNotContainsString( '://', $source, $name );
+				$this->assertNotSame( "'unsafe-eval'", $source, $name );
+			}
+		}
+	}
+
+	/**
+	 * Negative control for the policy: a backend still on the build before
+	 * kolzchut/chatbot PR #19 cannot run. Every script and stylesheet it loads
+	 * from a CDN has an origin the policy does not list, its Babel scripts need
+	 * the eval the policy withholds, and its root prompt-view.js (the JSX that
+	 * Babel compiled) is no longer inlined.
+	 *
+	 * @dataProvider providePages
+	 */
+	public function testPrePr19PagesAreRefused( string $iface, string $file ) {
 		$page = file_get_contents( self::FIXTURES . "/pre-pr19/$file" );
 		$this->serve( [
 			$file => $page,
@@ -295,22 +351,23 @@ class RagUiHandlerTest extends MediaWikiIntegrationTestCase {
 			'prompt-view.css' => '/* STUB old prompt-view css */',
 		] );
 
-		$body = $this->render( $iface );
+		$response = $this->respond( $iface );
+		$body = (string)$response->getBody();
+		$policy = self::policy( $response );
 
-		$this->assertSame( [], self::backendRelativeAssets( $body ) );
-		$this->assertStringNotContainsString( 'could not load', $body );
-		$this->assertStringNotContainsString( 'kolzchut.org.il', $body );
-		$this->assertStringContainsString( 'https://unpkg.com/@babel/standalone/babel.min.js', $body );
-		$expected = self::backendRelativeAssets( $page );
-		$fetched = array_slice( $this->fetched, 1 );
-		sort( $expected );
-		sort( $fetched );
-		$this->assertSame( $expected, $fetched );
+		preg_match_all( '/<(?:script|link)\b[^>]*\s(?:src|href)=["\'](https:\/\/[^\/"\']+)/i', $body, $m );
+		$cdnOrigins = array_unique( $m[1] );
+		$this->assertContains( 'https://unpkg.com', $cdnOrigins, 'the fixture loads CDN scripts' );
+		$this->assertContains( 'https://cdnjs.cloudflare.com', $cdnOrigins, 'the fixture loads a CDN stylesheet' );
+		foreach ( $cdnOrigins as $origin ) {
+			$this->assertNotContains( $origin, $policy['script-src'] );
+			$this->assertNotContains( $origin, $policy['style-src'] );
+		}
+		$this->assertStringContainsString( 'type="text/babel"', $body );
+		$this->assertNotContains( "'unsafe-eval'", $policy['script-src'] );
+		$this->assertNotContains( 'prompt-view.js', $this->fetched );
 		if ( $iface !== 'admin' ) {
-			$this->assertMatchesRegularExpression(
-				'/<script type="text\/babel">\s*\/\* STUB old prompt-view jsx \*\//',
-				$body
-			);
+			$this->assertStringContainsString( '<!-- KZChatbot: could not load prompt-view.js -->', $body );
 		}
 	}
 

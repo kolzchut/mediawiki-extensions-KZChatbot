@@ -14,12 +14,10 @@ use RequestContext;
  * Serves the RAG backend's own HTML interfaces (admin / single tester / batch
  * runner) for the KZChatbot special pages to embed in an iframe.
  *
- * The backend HTML is third-party-controlled code: it renders model output, and a
- * backend built before kolzchut/chatbot PR #19 also loads unpinned scripts from
- * public CDNs and compiles JSX in the browser. It therefore
- * runs SANDBOXED - both the iframe's sandbox attribute and this response's CSP
- * `sandbox` directive withhold allow-same-origin - so the document gets an opaque
- * origin. Whatever script runs in it cannot read the wiki's cookies or DOM, cannot
+ * The backend HTML is third-party-controlled code: it renders model output. It
+ * therefore runs SANDBOXED - both the iframe's sandbox attribute and this
+ * response's CSP `sandbox` directive withhold allow-same-origin - so the document
+ * gets an opaque origin. Whatever script runs in it cannot read the wiki's cookies or DOM, cannot
  * make a credentialed request to the wiki, and is never handed the user's CSRF
  * token (kolzchut/kz-mediawiki-main#148).
  *
@@ -79,21 +77,19 @@ class RagUiHandler extends Handler {
 	 *
 	 * A sandboxed document cannot load them as separate files from the wiki: a
 	 * relative URL resolves under rest.php/kzchatbot/v0/ragui/, which has no route
-	 * for them, and from the opaque origin any such request is cross-origin anyway
-	 * (Babel standalone even fetches a `type="text/babel" src=` script with XHR).
+	 * for them, and from the opaque origin any such request is cross-origin anyway.
 	 * Only files named here are ever fetched, plus the fonts their stylesheets
 	 * reference (see inlineCssFonts()). Any other backend-relative script or
 	 * stylesheet is dropped, unfetched, for a "could not load" comment.
 	 * Value: the element the file is inlined as.
 	 */
 	private const INLINE_ASSETS = [
-		// The page shape before kolzchut/chatbot PR #19. Kept so a backend still
-		// on that build keeps working.
 		'prompt-parser.js' => 'script',
-		'prompt-view.js' => 'script',
 		'prompt-view.css' => 'style',
 		// Since kolzchut/chatbot PR #19 the pages load prebuilt bundles and
 		// vendored libraries instead of CDN scripts compiled by Babel standalone.
+		// A backend still on the build before it is not supported: this CSP
+		// refuses its CDN scripts and the eval Babel standalone needs.
 		'build/vendor/react.production.min.js' => 'script',
 		'build/vendor/react-dom.production.min.js' => 'script',
 		'build/vendor/papaparse.min.js' => 'script',
@@ -242,10 +238,11 @@ class RagUiHandler extends Handler {
 		$response->setHeader( 'X-Content-Type-Options', 'nosniff' );
 		// The `sandbox` directive is what contains this document: it also applies
 		// when the URL is opened directly rather than through the special page's
-		// iframe. The rest of the policy allows inline scripts and styles (the
-		// inlined assets), data: fonts (see inlineCssFonts()), and, for a backend
-		// still on the pre-PR #19 build, its CDN deps and eval (Babel standalone);
-		// inside the sandbox none of them run with the wiki's origin.
+		// iframe. The rest of the policy allows only inline scripts and styles
+		// (the inlined assets and the shim) and data: fonts (see inlineCssFonts());
+		// inside the sandbox neither runs with the wiki's origin. No third-party
+		// origin and no eval: since kolzchut/chatbot PR #19 the backend vendors
+		// its libraries and prebuilds its JSX (kolzchut/chatbot#16).
 		// Nothing in the frame reaches the wiki directly:
 		// RAG endpoint calls and page lookups both go through the relay, because
 		// from the opaque origin a direct call is cross-origin, which CSP's 'self'
@@ -253,9 +250,9 @@ class RagUiHandler extends Handler {
 		$response->setHeader( 'Content-Security-Policy',
 			'sandbox ' . self::SANDBOX_FLAGS . '; '
 			. "default-src 'self'; "
-			. "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdnjs.cloudflare.com; "
-			. "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
-			. "font-src 'self' data: https://cdnjs.cloudflare.com; "
+			. "script-src 'self' 'unsafe-inline'; "
+			. "style-src 'self' 'unsafe-inline'; "
+			. "font-src 'self' data:; "
 			. "img-src 'self' data:; "
 			. "connect-src 'self'; "
 			. "form-action 'none'; "
@@ -269,14 +266,13 @@ class RagUiHandler extends Handler {
 	/**
 	 * Replace each <script src> / <link rel=stylesheet href> that names one of
 	 * self::INLINE_ASSETS (relative, `./`-relative or root-absolute) with the
-	 * file's contents, inline. A script keeps its other attributes, so
-	 * `type="text/babel"` survives. Fonts an inlined stylesheet names are
-	 * inlined too (inlineCssFonts()).
+	 * file's contents, inline. A script keeps its other attributes. Fonts an
+	 * inlined stylesheet names are inlined too (inlineCssFonts()).
 	 *
 	 * Any other script or stylesheet whose URL is relative to the backend is
 	 * replaced, without being fetched, by a "could not load" comment: in the
 	 * sandbox it could only fail, as a request for a rest.php path with no route.
-	 * Absolute URLs (an old build's CDN scripts) are left to the CSP.
+	 * Absolute URLs are left as they are, for the CSP to refuse.
 	 *
 	 * It is a single pass, so nothing it inlines is scanned again, and it steps
 	 * over inline <script> bodies and HTML comments without changing them.

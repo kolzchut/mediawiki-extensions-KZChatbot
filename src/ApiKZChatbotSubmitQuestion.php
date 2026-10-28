@@ -186,9 +186,19 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		}
 		$answer = $this->generateAnswer();
 		if ( $answer['llmResult'] === null ) {
+			// The question is reader content and can carry personal details, so
+			// it is never logged (#94). Its length, the thread id (which starts
+			// with the reader's uuid) and the RAG's conversation id are enough to
+			// find the exchange.
 			KZChatbot::getLogger()->error(
-				'RAG backend returned null. Question: {question}; answer: {answer}',
-				[ 'question' => $this->question, 'answer' => print_r( $answer, true ) ]
+				'RAG backend returned no answer: thread {thread_id}, conversation {conversation_id}, '
+					. 'question length {question_length}, {doc_count} docs',
+				[
+					'thread_id' => $answer['threadId'],
+					'conversation_id' => $answer['conversationId'],
+					'question_length' => mb_strlen( $this->question ),
+					'doc_count' => count( $answer['docs'] ),
+				]
 			);
 			throw new HttpException( $this->generalErrorMessage(), 500 );
 		}

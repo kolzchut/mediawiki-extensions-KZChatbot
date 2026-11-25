@@ -74,18 +74,24 @@ These settings can be configured through `Special:KZChatbotSettings`:
 | Cookie Expiry Days      | Integer | 365     | Client-side cookie expiration period                       |
 
 #### Usage Limits
-| Setting                   | Values  | Default | Description                                      |
-|---------------------------|---------|---------|--------------------------------------------------|
-| Questions Daily Limit     | Integer | -       | Maximum questions per user per day               |
-| Question Character Limit  | Integer | -       | Maximum characters per question                  |
-| Feedback Character Limit  | Integer | -       | Maximum characters in feedback text              |
-| UUID Per-IP Request Limit | Integer | -       | (NOT IMPLEMENTED) New UUID requests limit per IP |
+| Setting                   | Values  | Default | Description                                                         |
+|---------------------------|---------|---------|---------------------------------------------------------------------|
+| Questions Daily Limit     | Integer | -       | Maximum questions per user per day                                  |
+| Question Character Limit  | Integer | -       | Maximum characters per question                                     |
+| Feedback Character Limit  | Integer | -       | Maximum characters in feedback text                                 |
+| UUID Per-IP Request Limit | Integer | 0       | New UUIDs created per IP address within an hour. 0 for no limit. |
 
 #### Interface Settings
 | Setting              | Values | Default | Description                 |
 |----------------------|--------|---------|-----------------------------|
 | Usage Help URL       | URL    | -       | Link to usage documentation |
 | Terms of Service URL | URL    | -       | Link to terms of service    |
+
+Both URLs must be absolute `http://` or `https://` URLs. The form refuses
+anything else on save, and a stored value that is not one is not sent to the
+page. The same rule applies to the source links in an answer: a document from
+the RAG backend whose `url` is not an absolute http(s) URL is dropped from the
+`question` response.
 
 ### RAG Settings
 These settings are stored in the RAG database and configured through `Special:KZChatbotRagSettings`:
@@ -116,6 +122,26 @@ The chatbot uses a controlled rollout system to manage user access:
 	- Users with rejection cookie: chatbot remains hidden
 	- Users with valid UUID: chatbot loads normally
 	- Users without any cookie: go through selection process again
+
+### New UUIDs per IP address
+Every new UUID starts its own daily question quota and takes an active-user
+seat, so a client that drops its cookie could otherwise reset its quota, or
+fill the seats, at will. `uuid_request_limit` caps how many UUIDs `status`
+creates for one IP address within an hour (an IPv6 address counts with the
+rest of its /64). Past the limit, `status` answers `uuid: false`, as it does
+for a visitor who was not selected, and the launcher sets its one-day
+rejection cookie. Only UUIDs that were actually created count; a visitor who
+was not selected, or who found no free seat, does not use up the limit.
+
+0, the form's value for a field never filled in, means no limit. The bypass
+token (see below) skips this limit with the others. The counts are kept in
+core's WRStats store (`$wgMicroStashType`), not in the database, so clearing
+that cache resets them. WRStats counts in two-minute buckets, so a creation
+stops counting between 60 and 62 minutes after it happened.
+
+Visitors behind one shared address (an office, a school, a mobile carrier's
+NAT) share the limit, so set it well above the number of new readers you
+expect from one address in an hour.
 
 ### While the wiki is read-only
 When the wiki is read-only (`$wgReadOnly`, `$wgReadOnlyFile`, or a read-only
@@ -337,6 +363,5 @@ Note that no bot filter is applied: `isRelevantTitle()` has no notion of who mad
   requests temporarily in Redis or similar to handle it
 - Consider caching in memory the count of active users to avoid querying the database on every request
 - What is kzchatbot_users.kzcbu_ranking_eligible_answer_id?
-- Implement UUID request limit functionality
 - @TODO: `kzchatbot_users.kzcbu_cookie_expiry` (and its index) appears to be dead weight — it is written by `KZChatbot::newUser()` but never read anywhere in PHP, JS, or templates (the API recomputes the cookie expiry on every `getStatus` call). If further investigation confirms this, drop the column and its index in a schema update.
 

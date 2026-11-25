@@ -282,12 +282,7 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 		}
 
 		$rawDocs = is_array( $response->docs ?? null ) ? $response->docs : [];
-		$docs = array_map( static function ( $doc ) {
-			return [
-				'title' => $doc->title ?? '',
-				'url' => $doc->url ?? '',
-			];
-		}, $rawDocs );
+		$docs = self::normaliseDocs( $rawDocs );
 
 		// Check config to determine behavior when no links are found
 		$replaceAnswerWhenNoLinks = $config->get( 'KZChatbotReplaceAnswerWhenNoLinks' );
@@ -302,6 +297,31 @@ class ApiKZChatbotSubmitQuestion extends Handler {
 			// Echo the thread id so the client carries it on subsequent turns.
 			'threadId' => $response->thread_id ?? $this->threadId,
 		];
+	}
+
+	/**
+	 * The answer's source documents as the client renders them: a title and a
+	 * link. Each is shown as a link, so a document whose url is not an
+	 * absolute http(s) URL is dropped. That includes one with no url at all,
+	 * which has nothing to link to.
+	 *
+	 * @param array $rawDocs The backend's docs, decoded as objects
+	 * @return array[] List of [ 'title' => string, 'url' => string ]
+	 */
+	public static function normaliseDocs( array $rawDocs ): array {
+		$docs = [];
+		foreach ( $rawDocs as $doc ) {
+			$url = is_object( $doc ) ? ( $doc->url ?? null ) : null;
+			if ( !KZChatbot::isHttpUrl( $url ) ) {
+				continue;
+			}
+			$title = $doc->title ?? '';
+			$docs[] = [
+				'title' => is_scalar( $title ) ? (string)$title : '',
+				'url' => trim( $url, "\x00..\x20" ),
+			];
+		}
+		return $docs;
 	}
 
 	/**

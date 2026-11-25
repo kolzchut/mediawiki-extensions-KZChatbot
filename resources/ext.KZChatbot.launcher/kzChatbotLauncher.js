@@ -1,5 +1,5 @@
 const initializeChatbot = () => {
-	const scriptVersion = 40;
+	const scriptVersion = 41;
 	const cookieName = 'kzchatbot-uuid';
 	const cookie = mw.cookie.get( cookieName );
 	const uuid = cookie !== null ? cookie : '';

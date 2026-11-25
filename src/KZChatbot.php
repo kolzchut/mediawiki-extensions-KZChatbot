@@ -9,8 +9,12 @@ use MWException;
 use Psr\Log\LoggerInterface;
 use Random\RandomException;
 use RequestContext;
+use Wikimedia\IPUtils;
 use Wikimedia\Rdbms\DBQueryError;
 use Wikimedia\Rdbms\DBReadOnlyError;
+use Wikimedia\WRStats\LimitCondition;
+use Wikimedia\WRStats\LocalEntityKey;
+use Wikimedia\WRStats\WRStatsRateLimiter;
 
 /**
  * @todo general class description
@@ -19,6 +23,15 @@ class KZChatbot {
 
 	/** @var LoggerInterface */
 	private static LoggerInterface $logger;
+
+	/**
+	 * The window of the uuid_request_limit setting, in seconds: that many new
+	 * identities per IP address within an hour.
+	 */
+	public const UUID_REQUEST_LIMIT_WINDOW = 3600;
+
+	/** The WRStats condition name of the per-IP limit on new identities. */
+	private const UUID_REQUEST_LIMIT_CONDITION = 'new-uuid';
 
 	/**
 	 * Utility to maintain static logger
@@ -71,10 +84,11 @@ class KZChatbot {
 		$cookieExpiry = time() + ( $settings['cookie_expiry_days'] ?? 365 ) * 24 * 60 * 60;
 
 		// Quick bypass check before any DB operations
-		$isShown = UserLimitBypass::shouldBypass();
+		$bypass = UserLimitBypass::shouldBypass();
+		$isShown = $bypass;
 
 		// Only do the complex checks if we're not bypassing
-		if ( !$isShown ) {
+		if ( !$bypass ) {
 			$newUsersChatbotRate = $settings['new_users_chatbot_rate'] ?? 0;
 			$activeUsersLimit = $settings['active_users_limit'] ?? null;
 
@@ -109,6 +123,18 @@ class KZChatbot {
 			return false;
 		}
 
+		// Each new identity starts a fresh daily question quota and takes an
+		// active-user seat, so a client that drops its cookie and asks again
+		// is limited per IP address (uuid_request_limit).
+		$uuidLimiter = $bypass ? null : self::newUuidRequestLimiter( $settings );
+		$uuidLimitKey = new LocalEntityKey( [ self::uuidRequestLimitKey( $ipAddress ) ] );
+		if ( $uuidLimiter
+			&& !$uuidLimiter->peek( self::UUID_REQUEST_LIMIT_CONDITION, $uuidLimitKey )->isAllowed()
+		) {
+			self::getLogger()->info( 'New chatbot identity refused: the per-IP hourly limit is reached' );
+			return false;
+		}
+
 		// All the checks passed, generate a UUID and insert new user record
 		$globalIdGenerator = MediaWikiServices::getInstance()->getGlobalIdGenerator();
 
@@ -126,6 +152,8 @@ class KZChatbot {
 		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 		try {
 			$dbw->insert( 'kzchatbot_users', $userData, __METHOD__ );
+			// Count only the identities that were actually created.
+			$uuidLimiter?->incr( self::UUID_REQUEST_LIMIT_CONDITION, $uuidLimitKey );
 
 			$userData['kzcbu_uuid'] = $formattedUuid;
 			return $userData;
@@ -136,6 +164,71 @@ class KZChatbot {
 			self::getLogger()->error( 'Failed to insert new user: ' . $e->getMessage() );
 			return false;
 		}
+	}
+
+	/**
+	 * The rate limiter for new identities per IP address, or null when
+	 * uuid_request_limit is unset, empty, zero or negative, which all mean
+	 * "no limit". The form saves 0 for a field that was never filled in, so 0
+	 * has to mean "no limit": read as "no new identities" it would hide the
+	 * chatbot from every new visitor.
+	 *
+	 * The counts live in the WRStats store (core's MicroStash).
+	 *
+	 * @param array $settings The general settings
+	 * @return WRStatsRateLimiter|null
+	 */
+	private static function newUuidRequestLimiter( array $settings ): ?WRStatsRateLimiter {
+		$limit = (int)( $settings['uuid_request_limit'] ?? 0 );
+		if ( $limit <= 0 ) {
+			return null;
+		}
+		return MediaWikiServices::getInstance()->getWRStatsFactory()->createRateLimiter(
+			[ self::UUID_REQUEST_LIMIT_CONDITION => new LimitCondition( $limit, self::UUID_REQUEST_LIMIT_WINDOW ) ],
+			[ 'KZChatbot', 'uuid-request-limit' ]
+		);
+	}
+
+	/**
+	 * The key that the per-IP limit on new identities counts under. An IPv4
+	 * address counts on its own. An IPv6 address counts with the rest of its
+	 * /64, since a single client is usually handed a whole /64 and can rotate
+	 * through it.
+	 *
+	 * @param string $ip
+	 * @return string
+	 */
+	public static function uuidRequestLimitKey( string $ip ): string {
+		if ( IPUtils::isIPv6( $ip ) ) {
+			$subnet = IPUtils::getSubnet( $ip );
+			if ( $subnet !== false ) {
+				return $subnet . '/64';
+			}
+		}
+		return IPUtils::sanitizeIP( $ip ) ?? $ip;
+	}
+
+	/**
+	 * Whether a value is an absolute http:// or https:// URL with a host.
+	 *
+	 * Settings URLs and the answer service's source URLs are rendered as link
+	 * targets, so anything else (another scheme, a relative or
+	 * protocol-relative URL, a non-string) is refused. Leading and trailing
+	 * whitespace and control characters are ignored, as browsers ignore them.
+	 *
+	 * @param mixed $url
+	 * @return bool
+	 */
+	public static function isHttpUrl( $url ): bool {
+		if ( !is_string( $url ) ) {
+			return false;
+		}
+		$url = trim( $url, "\x00..\x20" );
+		if ( !preg_match( '#^https?://#i', $url ) ) {
+			return false;
+		}
+		$host = parse_url( $url, PHP_URL_HOST );
+		return is_string( $host ) && $host !== '';
 	}
 
 	/**

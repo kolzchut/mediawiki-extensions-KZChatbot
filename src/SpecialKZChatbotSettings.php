@@ -218,18 +218,21 @@ class SpecialKZChatbotSettings extends SpecialPage {
 				'help-message' => 'kzchatbot-settings-help-uuid-request-limit',
 				'section' => 'kzchatbot-settings-section-per-user',
 				'required' => true,
+				'min' => 0,
 			],
 			'kzcTermsOfServiceUrl' => [
 				'type' => 'url',
 				'label-message' => 'kzchatbot-settings-label-terms-of-service-url',
 				'section' => 'kzchatbot-settings-section-general',
 				'required' => true,
+				'validation-callback' => [ self::class, 'validateHttpUrl' ],
 			],
 			'kzcUsageHelpUrl' => [
 				'type' => 'url',
 				'label-message' => 'kzchatbot-settings-label-usage-help-url',
 				'section' => 'kzchatbot-settings-section-general',
 				'required' => true,
+				'validation-callback' => [ self::class, 'validateHttpUrl' ],
 			],
 			'kzcMaxQuestionsPerConversation' => [
 				'type' => 'int',
@@ -287,6 +290,27 @@ class SpecialKZChatbotSettings extends SpecialPage {
 		}
 
 		return $form;
+	}
+
+	/**
+	 * HTMLForm validation callback for the URL fields. The 'url' field type
+	 * is checked only by the browser, so the server checks the scheme itself:
+	 * the value is rendered as a link on every page that shows the chatbot.
+	 *
+	 * An empty value is left to the field's 'required' check.
+	 *
+	 * @param mixed $value
+	 * @param array $allData
+	 * @param HTMLForm|null $form
+	 * @return bool|Message true when the value is acceptable
+	 */
+	public static function validateHttpUrl( $value, array $allData, ?HTMLForm $form ): bool|Message {
+		if ( $value === null || $value === '' || KZChatbot::isHttpUrl( $value ) ) {
+			return true;
+		}
+		return $form
+			? $form->msg( 'kzchatbot-settings-error-url-not-http' )
+			: wfMessage( 'kzchatbot-settings-error-url-not-http' );
 	}
 
 	/**

@@ -83,8 +83,10 @@ class Hooks implements
 		$vars['KZChatbotSettings'] = [
 			'feedbackCharacterLimit' => $chatbotSettings['feedback_character_limit'],
 			'questionCharacterLimit' => $chatbotSettings['question_character_limit'],
-			'usageHelpUrl' => $chatbotSettings['usage_help_url'] ?? null,
-			'termsofServiceUrl' => $chatbotSettings['terms_of_service_url'] ?? null,
+			// Rendered as links, so a value saved before the form checked the
+			// scheme, or written to the table directly, is not sent on.
+			'usageHelpUrl' => self::httpUrlOrNull( $chatbotSettings['usage_help_url'] ?? null ),
+			'termsofServiceUrl' => self::httpUrlOrNull( $chatbotSettings['terms_of_service_url'] ?? null ),
 			// Continuous conversation settings consumed by the React app.
 			// maxQuestionsPerConversation must stay <= the RAG's
 			// max_conversation_history (default 8) so the client caps first.
@@ -94,6 +96,14 @@ class Hooks implements
 			'historyStorageMode' => $chatbotSettings['history_storage_mode'] ?? 'local',
 		];
 		$vars['KZChatbotAutoOpenParam'] = $config->get( 'KZChatbotAutoOpenParam' );
+	}
+
+	/**
+	 * @param mixed $url
+	 * @return string|null The URL when it is an absolute http(s) URL, else null
+	 */
+	private static function httpUrlOrNull( $url ): ?string {
+		return KZChatbot::isHttpUrl( $url ) ? $url : null;
 	}
 
 }
